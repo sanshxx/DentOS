@@ -40,7 +40,7 @@ const UserSchema = new mongoose.Schema({
   clinic: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Clinic',
-    required: true
+    required: false //We have changed this
   },
   resetPasswordToken: String,
   resetPasswordExpire: Date,
