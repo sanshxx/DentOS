@@ -25,7 +25,11 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors());
+//app.use(cors());  replacing this line with the following
+const cors = require('cors');
+app.use(cors({
+  origin: 'https://dent-os.vercel.app' // <-- PUT YOUR VERCEL URL HERE
+}));
 app.use(morgan('dev'));
 
 // Connect to MongoDB
