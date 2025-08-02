@@ -1,7 +1,139 @@
 const asyncHandler = require('../middleware/async');
 const Inventory = require('../models/Inventory');
 
-// Mock data for inventory items
+// @desc    Get all inventory items
+// @route   GET /api/inventory
+// @access  Private
+exports.getInventoryItems = asyncHandler(async (req, res) => {
+  try {
+    const inventoryItems = await Inventory.find();
+    
+    res.status(200).json({
+      success: true,
+      count: inventoryItems.length,
+      data: inventoryItems
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      message: 'Server Error'
+    });
+  }
+});
+
+// @desc    Get single inventory item
+// @route   GET /api/inventory/:id
+// @access  Private
+exports.getInventoryItem = asyncHandler(async (req, res) => {
+  try {
+    const inventoryItem = await Inventory.findById(req.params.id);
+    
+    if (!inventoryItem) {
+      return res.status(404).json({
+        success: false,
+        message: 'Inventory item not found'
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      data: inventoryItem
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      message: 'Server Error'
+    });
+  }
+});
+
+// @desc    Create new inventory item
+// @route   POST /api/inventory
+// @access  Private
+exports.createInventoryItem = asyncHandler(async (req, res) => {
+  try {
+    const inventoryItem = await Inventory.create(req.body);
+    
+    res.status(201).json({
+      success: true,
+      data: inventoryItem
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      message: 'Server Error'
+    });
+  }
+});
+
+// @desc    Update inventory item
+// @route   PUT /api/inventory/:id
+// @access  Private
+exports.updateInventoryItem = asyncHandler(async (req, res) => {
+  try {
+    let inventoryItem = await Inventory.findById(req.params.id);
+    
+    if (!inventoryItem) {
+      return res.status(404).json({
+        success: false,
+        message: 'Inventory item not found'
+      });
+    }
+    
+    inventoryItem = await Inventory.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true, runValidators: true }
+    );
+    
+    res.status(200).json({
+      success: true,
+      data: inventoryItem
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      message: 'Server Error'
+    });
+  }
+});
+
+// @desc    Delete inventory item
+// @route   DELETE /api/inventory/:id
+// @access  Private
+exports.deleteInventoryItem = asyncHandler(async (req, res) => {
+  try {
+    const inventoryItem = await Inventory.findById(req.params.id);
+    
+    if (!inventoryItem) {
+      return res.status(404).json({
+        success: false,
+        message: 'Inventory item not found'
+      });
+    }
+    
+    await inventoryItem.remove();
+    
+    res.status(200).json({
+      success: true,
+      data: {}
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      message: 'Server Error'
+    });
+  }
+});
+
+// Legacy mock data for reference
+/*
 const mockInventoryItems = [
   {
     _id: '60d21b4667d0d8992e610c85',
@@ -220,3 +352,4 @@ exports.updateInventoryStock = asyncHandler(async (req, res, next) => {
     }
   });
 });
+*/

@@ -53,7 +53,16 @@ exports.register = async (req, res) => {
       (err, token) => {
         if (err) throw err;
         // 5. Send the token back to the client
-        res.status(201).json({ success: true, token });
+        res.status(201).json({ 
+          success: true, 
+          token,
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role
+          }
+        });
       }
     );
 
@@ -86,8 +95,8 @@ exports.login = async (req, res) => {
     }
 
     // 2. Compare the provided password with the hashed password in the database
-    // Your User model must have a "matchPassword" method for this to work
-    const isMatch = await bcrypt.compare(password, user.password);
+    // Using the User model's matchPassword method
+    const isMatch = await user.matchPassword(password);
 
     if (!isMatch) {
       return res.status(400).json({ success: false, errors: [{ msg: 'Invalid credentials' }] });
@@ -108,7 +117,16 @@ exports.login = async (req, res) => {
       (err, token) => {
         if (err) throw err;
         // 4. Send the token back to the client
-        res.json({ success: true, token });
+        res.json({ 
+          success: true, 
+          token,
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role
+          }
+        });
       }
     );
 

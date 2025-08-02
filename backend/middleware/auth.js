@@ -27,51 +27,27 @@ exports.protect = async (req, res, next) => {
 
   try {
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'mockjwtsecret');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Extract user info from token
-    // For a real app, we would fetch the user from the database
-    // For this mock implementation, we'll use the token ID to determine the user
-    let userRole = 'dentist'; // Default role
-    let userName = 'User';
-    let userEmail = 'user@dentalcrm.com';
+    // Fetch the user from the database using the ID from the token
+    const user = await User.findById(decoded.user.id);
     
-    // Map user IDs to roles and names based on our demo credentials
-    switch(decoded.id) {
-      case '60d0fe4f5311236168a109ca':
-        userRole = 'admin';
-        userName = 'Admin User';
-        userEmail = 'admin@dentalcrm.com';
-        break;
-      case '60d0fe4f5311236168a109cb':
-        userRole = 'manager';
-        userName = 'Manager User';
-        userEmail = 'manager@dentalcrm.com';
-        break;
-      case '60d0fe4f5311236168a109cc':
-        userRole = 'dentist';
-        userName = 'Dentist User';
-        userEmail = 'dentist@dentalcrm.com';
-        break;
-      case '60d0fe4f5311236168a109cd':
-        userRole = 'receptionist';
-        userName = 'Receptionist User';
-        userEmail = 'receptionist@dentalcrm.com';
-        break;
-      case '60d0fe4f5311236168a109ce':
-        userRole = 'assistant';
-        userName = 'Assistant User';
-        userEmail = 'assistant@dentalcrm.com';
-        break;
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not found'
+      });
     }
     
+    // Add user to request object
     req.user = {
-      _id: decoded.id,
-      id: decoded.id,
-      name: userName,
-      email: userEmail,
-      role: userRole
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role
     };
+
+    // User is already added to req.user above
 
     next();
   } catch (err) {
