@@ -23,7 +23,7 @@ router.post(
     check('phone', 'Please include a valid 10-digit phone number').matches(/^[0-9]{10}$/),
     check('password', 'Please enter a password with 6 or more characters').isLength({ min: 6 }),
     check('role', 'Role is required').not().isEmpty(),
-    check('clinic', 'Clinic ID is required').not().isEmpty()
+    //check('clinic', 'Clinic ID is required').not().isEmpty()
   ],
   register
 );
