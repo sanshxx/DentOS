@@ -26,7 +26,6 @@ const PORT = process.env.PORT || 5000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 //app.use(cors());  replacing this line with the following
-const cors = require('cors');
 app.use(cors({
   origin: 'https://dent-os.vercel.app' // <-- PUT YOUR VERCEL URL HERE
 }));
