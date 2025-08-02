@@ -1,5 +1,5 @@
 const User = require('../models/User');
-const jwt = require('jsonwebtoken');
+const jwt =require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { validationResult } = require('express-validator');
@@ -8,191 +8,138 @@ const sendEmail = require('../utils/sendEmail');
 // @desc    Register user
 // @route   POST /api/auth/register
 // @access  Public
+// --- THIS FUNCTION HAS BEEN REPLACED WITH REAL DATABASE LOGIC ---
 exports.register = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ success: false, errors: errors.array() });
+  }
+
+  const { name, email, password, role, phone, clinic } = req.body;
+
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ success: false, errors: errors.array() });
+    // 1. Check if user already exists
+    let user = await User.findOne({ email });
+
+    if (user) {
+      return res.status(400).json({ errors: [{ msg: 'User already exists' }] });
     }
 
-    const { name, email, phone, password, role, clinic } = req.body;
-    
-    // Generate a unique ID for the new user
-    const userId = crypto.randomBytes(12).toString('hex');
-
-    // For testing purposes, create a mock user without database
-    const mockUser = {
-      _id: userId,
+    // 2. Create new user instance (password will be hashed by the User model pre-save hook)
+    user = new User({
       name,
       email,
       phone,
-      role: role || 'dentist', // Default to dentist if no role provided
-      clinic: clinic || '64f5b3e745e0c00f8b88c80a' // Default clinic
+      password,
+      role: role || 'dentist', // Default to dentist if not provided
+      clinic
+    });
+
+    // 3. Save the new user to the database
+    await user.save();
+
+    // 4. Create a real JSON Web Token (JWT)
+    const payload = {
+      user: {
+        id: user.id,
+        role: user.role
+      }
     };
 
-    // Create a mock token
-    const token = jwt.sign({ id: mockUser._id }, process.env.JWT_SECRET || 'mockjwtsecret', {
-      expiresIn: process.env.JWT_EXPIRE || '30d'
-    });
-
-    res.status(201).json({
-      success: true,
-      token,
-      user: {
-        id: mockUser._id,
-        name: mockUser.name,
-        email: mockUser.email,
-        role: mockUser.role,
-        clinic: mockUser.clinic
+    jwt.sign(
+      payload,
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRE || '30d' },
+      (err, token) => {
+        if (err) throw err;
+        // 5. Send the token back to the client
+        res.status(201).json({ success: true, token });
       }
-    });
+    );
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({
-      success: false,
-      message: 'Server Error'
-    });
+    console.error(err.message);
+    res.status(500).send('Server error');
   }
 };
+
 
 // @desc    Login user
 // @route   POST /api/auth/login
 // @access  Public
+// --- THIS FUNCTION HAS BEEN REPLACED WITH REAL DATABASE LOGIC ---
 exports.login = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  const { email, password } = req.body;
+
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ success: false, errors: errors.array() });
+    // 1. Find the user in the database by their email
+    // We use .select('+password') because the password field is hidden by default in the User model
+    let user = await User.findOne({ email }).select('+password');
+
+    if (!user) {
+      return res.status(400).json({ success: false, errors: [{ msg: 'Invalid credentials' }] });
     }
 
-    const { email, password } = req.body;
+    // 2. Compare the provided password with the hashed password in the database
+    // Your User model must have a "matchPassword" method for this to work
+    const isMatch = await bcrypt.compare(password, user.password);
 
-    // Check if password matches the demo password
-    if (password !== 'Demo@123') {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid credentials'
-      });
+    if (!isMatch) {
+      return res.status(400).json({ success: false, errors: [{ msg: 'Invalid credentials' }] });
     }
 
-    // For testing purposes, create a mock user based on email
-    let mockUser;
-    
-    switch(email) {
-      case 'admin@dentalcrm.com':
-        mockUser = {
-          _id: '60d0fe4f5311236168a109ca',
-          name: 'Admin User',
-          email: email,
-          role: 'admin',
-          clinic: '64f5b3e745e0c00f8b88c80a'
-        };
-        break;
-      case 'manager@dentalcrm.com':
-        mockUser = {
-          _id: '60d0fe4f5311236168a109cb',
-          name: 'Manager User',
-          email: email,
-          role: 'manager',
-          clinic: '64f5b3e745e0c00f8b88c80a'
-        };
-        break;
-      case 'dentist@dentalcrm.com':
-        mockUser = {
-          _id: '60d0fe4f5311236168a109cc',
-          name: 'Dentist User',
-          email: email,
-          role: 'dentist',
-          clinic: '64f5b3e745e0c00f8b88c80a'
-        };
-        break;
-      case 'receptionist@dentalcrm.com':
-        mockUser = {
-          _id: '60d0fe4f5311236168a109cd',
-          name: 'Receptionist User',
-          email: email,
-          role: 'receptionist',
-          clinic: '64f5b3e745e0c00f8b88c80a'
-        };
-        break;
-      case 'assistant@dentalcrm.com':
-        mockUser = {
-          _id: '60d0fe4f5311236168a109ce',
-          name: 'Assistant User',
-          email: email,
-          role: 'assistant',
-          clinic: '64f5b3e745e0c00f8b88c80a'
-        };
-        break;
-      default:
-        return res.status(401).json({
-          success: false,
-          message: 'Invalid credentials'
-        });
-    }
-
-    // Create a mock token
-    const token = jwt.sign({ id: mockUser._id }, process.env.JWT_SECRET || 'mockjwtsecret', {
-      expiresIn: process.env.JWT_EXPIRE || '30d'
-    });
-
-    res.status(200).json({
-      success: true,
-      token,
+    // 3. If credentials are correct, create a real token
+    const payload = {
       user: {
-        id: mockUser._id,
-        name: mockUser.name,
-        email: mockUser.email,
-        role: mockUser.role,
-        clinic: mockUser.clinic
+        id: user.id,
+        role: user.role
       }
-    });
+    };
+
+    jwt.sign(
+      payload,
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRE || '30d' },
+      (err, token) => {
+        if (err) throw err;
+        // 4. Send the token back to the client
+        res.json({ success: true, token });
+      }
+    );
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({
-      success: false,
-      message: 'Server Error'
-    });
+    console.error(err.message);
+    res.status(500).send('Server Error');
   }
 };
+
 
 // @desc    Get current logged in user
 // @route   GET /api/auth/me
 // @access  Private
+// --- THIS FUNCTION HAS BEEN UPDATED TO USE THE REAL DATABASE ---
 exports.getMe = async (req, res) => {
   try {
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({
-        success: false,
-        message: 'Not authorized'
-      });
+    // The auth middleware should have added req.user
+    // We find the user by the ID from the token, but exclude the password
+    const user = await User.findById(req.user.id).select('-password');
+    if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
     }
-    
-    // For testing purposes, create a mock user based on the authenticated user
-    const mockUser = {
-      _id: req.user.id,
-      name: req.user.name,
-      email: req.user.email,
-      role: req.user.role,
-      clinic: {
-        _id: '64f5b3e745e0c00f8b88c80a',
-        name: 'Main Clinic',
-        branchCode: 'MC001'
-      }
-    };
-
-    res.status(200).json({
-      success: true,
-      data: mockUser
-    });
+    res.status(200).json({ success: true, data: user });
   } catch (err) {
     console.error(err);
-    res.status(500).json({
-      success: false,
-      message: 'Server Error'
-    });
+    res.status(500).json({ success: false, message: 'Server Error' });
   }
 };
+
+
+// --- THE FOLLOWING FUNCTIONS FROM YOUR ORIGINAL FILE ARE KEPT AS THEY SEEM CORRECT ---
 
 // @desc    Forgot password
 // @route   POST /api/auth/forgotpassword
@@ -290,7 +237,9 @@ exports.resetPassword = async (req, res) => {
     await user.save();
 
     // Create token
-    const token = user.getSignedJwtToken();
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
+        expiresIn: process.env.JWT_EXPIRE || '30d',
+    });
 
     res.status(200).json({
       success: true,
@@ -326,7 +275,9 @@ exports.updatePassword = async (req, res) => {
     await user.save();
 
     // Create token
-    const token = user.getSignedJwtToken();
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
+        expiresIn: process.env.JWT_EXPIRE || '30d',
+    });
 
     res.status(200).json({
       success: true,
