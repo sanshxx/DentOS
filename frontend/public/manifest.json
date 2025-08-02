@@ -1,0 +1,9 @@
+{
+  "short_name": "Dental CRM",
+  "name": "Dental CRM for Indian clinic chains",
+  "icons": [],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff"
+}
