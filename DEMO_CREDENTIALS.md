@@ -1,12 +1,12 @@
-# Dental CRM - Demo Credentials
+# DentOS - Demo Credentials
 
 ## Introduction
 
-This document provides demo login credentials for each role in the Dental CRM system. These credentials can be used to explore the system's role-based access control (RBAC) features and understand how different user types interact with the application.
+This document provides demo login credentials for each role in the DentOS system. These credentials can be used to explore the system's role-based access control (RBAC) features and understand how different user types interact with the application.
 
 ## Available Roles
 
-The Dental CRM system implements the following roles with different permission levels:
+The DentOS system implements the following roles with different permission levels:
 
 1. **Admin**: Full access to all features and settings
 2. **Manager**: Access to most features except sensitive administrative functions
@@ -19,8 +19,8 @@ The Dental CRM system implements the following roles with different permission l
 ### Admin User
 
 ```
-Email: admin@dentalcrm.com
-Password: Demo@123
+Email: admin@smilecare.com
+Password: Demo@2025
 ```
 
 The Admin user has complete access to all system features, including:
@@ -34,8 +34,8 @@ The Admin user has complete access to all system features, including:
 ### Manager User
 
 ```
-Email: manager@dentalcrm.com
-Password: Demo@123
+Email: manager@smilecare.com
+Password: Demo@2025
 ```
 
 The Manager user can access:
@@ -49,8 +49,8 @@ The Manager user can access:
 ### Dentist User
 
 ```
-Email: dentist@dentalcrm.com
-Password: Demo@123
+Email: dentist@smilecare.com
+Password: Demo@2025
 ```
 
 The Dentist user can access:
@@ -63,8 +63,8 @@ The Dentist user can access:
 ### Receptionist User
 
 ```
-Email: receptionist@dentalcrm.com
-Password: Demo@123
+Email: receptionist@smilecare.com
+Password: Demo@2025
 ```
 
 The Receptionist user can access:
@@ -77,8 +77,8 @@ The Receptionist user can access:
 ### Assistant User
 
 ```
-Email: assistant@dentalcrm.com
-Password: Demo@123
+Email: assistant@smilecare.com
+Password: Demo@2025
 ```
 
 The Assistant user can access:
@@ -91,36 +91,50 @@ The Assistant user can access:
 
 The system is pre-populated with a comprehensive demo dataset that includes:
 
+### Organization
+- **Smile Care Dental Clinic**: Complete demo organization with 2 clinics
+- **Multi-clinic setup**: Main Branch and Andheri Branch
+- **Complete business configuration**: GST, PAN, working hours, etc.
+
 ### Patients
-- 50+ patient records with varied demographics
-- Complete medical histories
-- Treatment records spanning multiple years
-- Various document types (X-rays, consent forms, etc.)
-- Communication history
+- **8 patients** with varied demographics and medical histories
+- **Complete patient records** with contact information and medical history
+- **Document management** with uploaded PDFs and images
+- **Communication history** with SMS and email records
 
 ### Appointments
-- Past, current, and future appointments
-- Different appointment types (check-up, treatment, emergency)
-- Appointments with various dentists
+- **Multiple appointments** across different dates and clinics
+- **Various appointment types**: consultation, treatment, emergency
+- **Status tracking**: scheduled, completed, cancelled
+- **Dentist assignments** and patient scheduling
 
 ### Treatments
-- Comprehensive catalog of dental procedures
-- Treatment plans for multiple patients
-- Completed and pending treatments
+- **Treatment definitions** with pricing and procedures
+- **Treatment plans** for multiple patients
+- **Progress tracking** with completed and pending treatments
+- **Clinical notes** and procedure documentation
 
 ### Billing
-- Invoices in different states (draft, sent, paid, overdue)
-- Various payment methods recorded
-- Insurance claims processing examples
+- **Professional invoices** with GST compliance
+- **Payment tracking** with various payment methods
+- **Revenue analytics** and financial reporting
+- **Outstanding payments** and payment history
 
 ### Inventory
-- Dental supplies with stock levels
-- Equipment maintenance records
-- Order history
+- **Dental supplies** with stock levels and categories
+- **Equipment management** with maintenance records
+- **Low stock alerts** and reorder tracking
+- **Supplier information** and cost tracking
+
+### Staff
+- **Complete staff profiles** with qualifications and roles
+- **Multi-clinic assignments** and operating hours
+- **Role-based access** and permissions
+- **Professional credentials** and specializations
 
 ## How to Use
 
-1. Navigate to the login page of the Dental CRM application
+1. Navigate to the login page of the DentOS application
 2. Enter the email and password for the role you wish to explore
 3. Click the "Login" button
 4. Explore the features available to that role

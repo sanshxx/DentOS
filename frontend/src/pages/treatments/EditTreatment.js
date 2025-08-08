@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import {
   Container, Typography, Paper, Box, Grid, TextField, Button,
   FormControl, InputLabel, Select, MenuItem, FormHelperText,
@@ -15,6 +16,9 @@ import {
   AttachMoney as AttachMoneyIcon
 } from '@mui/icons-material';
 import { toast } from 'react-toastify';
+
+// Get API URL from environment variables
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const EditTreatment = () => {
   const navigate = useNavigate();
@@ -65,26 +69,21 @@ const EditTreatment = () => {
     setError(null);
     
     try {
-      // In a real app, we would fetch from the API
-      // For now, we'll simulate an API call
-      setTimeout(() => {
-        // Mock API response
-        const mockTreatment = {
-          _id: id,
-          name: 'Root Canal Treatment',
-          code: 'RCT-001',
-          category: 'Endodontic',
-          description: 'Procedure to remove infected pulp and seal the tooth',
-          price: 8000,
-          duration: 90,
-          isActive: true,
-          requiredEquipment: ['Endodontic Files', 'Apex Locator', 'Gutta Percha'],
-          notes: 'May require multiple sessions depending on the case'
-        };
-        
-        setFormData(mockTreatment);
-        setFetchLoading(false);
-      }, 1000);
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+      
+      // Fetch treatment data from API
+      const response = await axios.get(`${API_URL}/treatments/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      setFormData(response.data);
+      setFetchLoading(false);
     } catch (err) {
       console.error('Error fetching treatment data:', err);
       setError('Failed to load treatment data. Please try again.');
@@ -162,17 +161,27 @@ const EditTreatment = () => {
     setError(null);
     
     try {
-      // In a real app, we would call the API
-      // For now, we'll simulate an API call
-      setTimeout(() => {
-        // Mock successful API response
-        toast.success('Treatment updated successfully!');
-        setLoading(false);
-        navigate('/treatments');
-      }, 1000);
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+      
+      // Make API call to update treatment
+      await axios.put(`${API_URL}/treatments/${id}`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      toast.success('Treatment updated successfully!');
+      setLoading(false);
+      navigate('/treatments');
     } catch (err) {
       console.error('Error updating treatment:', err);
       setError('Failed to update treatment. Please try again.');
+      toast.error(err.response?.data?.message || 'Failed to update treatment');
       setLoading(false);
     }
   };

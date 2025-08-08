@@ -37,13 +37,22 @@ const UserSchema = new mongoose.Schema({
     minlength: [6, 'Password must be at least 6 characters'],
     select: false
   },
+  organization: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Organization',
+    required: true
+  },
   clinic: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Clinic',
-    required: false //We have changed this
+    required: false
   },
   resetPasswordToken: String,
   resetPasswordExpire: Date,
+  forcePasswordChange: {
+    type: Boolean,
+    default: false
+  },
   createdAt: {
     type: Date,
     default: Date.now

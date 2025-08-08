@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import {
@@ -26,38 +27,26 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { format, addMinutes, isAfter, parseISO, set } from 'date-fns';
 import { toast } from 'react-toastify';
 
-// Mock data for patients (replace with API call)
-const MOCK_PATIENTS = [
-  { id: '123456', name: 'Rahul Sharma', phone: '9876543210' },
-  { id: '123457', name: 'Priya Patel', phone: '9876543211' },
-  { id: '123458', name: 'Amit Singh', phone: '9876543212' },
-  { id: '123459', name: 'Neha Gupta', phone: '9876543213' },
-  { id: '123460', name: 'Vikram Malhotra', phone: '9876543214' },
-];
+// Get API URL from environment variables
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
-// Mock data for doctors (replace with API call)
-const MOCK_DOCTORS = [
-  { id: 'DOC001', name: 'Dr. Priya Patel', specialization: 'General Dentist' },
-  { id: 'DOC002', name: 'Dr. Amit Singh', specialization: 'Orthodontist' },
-  { id: 'DOC003', name: 'Dr. Neha Gupta', specialization: 'Periodontist' },
-  { id: 'DOC004', name: 'Dr. Rajesh Kumar', specialization: 'Oral Surgeon' },
-];
-
-// Mock data for clinics (replace with API call)
-const MOCK_CLINICS = [
-  { id: 1, name: 'Dental Care - Bandra' },
-  { id: 2, name: 'Dental Care - Andheri' },
-  { id: 3, name: 'Dental Care - Powai' },
-  { id: 4, name: 'Dental Care - Juhu' },
-];
+// Appointment types and durations are static data, not from API
 
 // Appointment types
 const APPOINTMENT_TYPES = [
-  { value: 'checkup', label: 'Regular Checkup' },
-  { value: 'cleaning', label: 'Teeth Cleaning' },
-  { value: 'consultation', label: 'Consultation' },
-  { value: 'treatment', label: 'Treatment' },
-  { value: 'emergency', label: 'Emergency' },
+  { value: 'New Consultation', label: 'New Consultation' },
+  { value: 'Follow-up', label: 'Follow-up' },
+  { value: 'Emergency', label: 'Emergency' },
+  { value: 'Cleaning', label: 'Cleaning' },
+  { value: 'Filling', label: 'Filling' },
+  { value: 'Root Canal', label: 'Root Canal' },
+  { value: 'Extraction', label: 'Extraction' },
+  { value: 'Crown/Bridge Work', label: 'Crown/Bridge Work' },
+  { value: 'Implant', label: 'Implant' },
+  { value: 'Orthodontic Adjustment', label: 'Orthodontic Adjustment' },
+  { value: 'Denture Fitting', label: 'Denture Fitting' },
+  { value: 'Surgical Procedure', label: 'Surgical Procedure' },
+  { value: 'Other', label: 'Other' },
 ];
 
 // Appointment durations (in minutes)
@@ -85,22 +74,35 @@ const AddAppointment = () => {
         setInitialLoading(true);
         setError(null);
 
-        // In a real app, these would be API calls
-        // const patientsResponse = await axios.get('/api/patients');
-        // const doctorsResponse = await axios.get('/api/doctors');
-        // const clinicsResponse = await axios.get('/api/clinics');
 
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Get token from localStorage
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('Authentication token not found');
+        }
+
+        // Make API calls to get necessary data
+        const patientsResponse = await axios.get(`${API_URL}/patients`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         
-        // Set mock data
-        setPatients(MOCK_PATIENTS);
-        setDoctors(MOCK_DOCTORS);
-        setClinics(MOCK_CLINICS);
+        const doctorsResponse = await axios.get(`${API_URL}/staff`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        const clinicsResponse = await axios.get(`${API_URL}/clinics`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        // Set data from API responses
+        setPatients(patientsResponse.data.data);
+        setDoctors(doctorsResponse.data.data.filter(staff => staff.role === 'dentist'));
+        setClinics(clinicsResponse.data.data);
       } catch (err) {
         console.error('Error fetching data:', err);
         setError('Failed to load necessary data. Please try again.');
-        toast.error('Failed to load data');
+        toast.error(err.response?.data?.message || 'Failed to load data');
       } finally {
         setInitialLoading(false);
       }
@@ -126,22 +128,50 @@ const AddAppointment = () => {
       endTime: null,
       type: '',
       status: 'scheduled',
+      reasonForVisit: '',
       notes: '',
     },
     validationSchema: Yup.object({
       patientId: Yup.string().required('Patient is required'),
       doctorId: Yup.string().required('Doctor is required'),
-      clinicId: Yup.number().required('Clinic is required'),
+      clinicId: Yup.string().required('Clinic is required'),
       date: Yup.date().required('Date is required').nullable(),
       startTime: Yup.date().required('Start time is required').nullable(),
       duration: Yup.number().required('Duration is required'),
       type: Yup.string().required('Appointment type is required'),
+      reasonForVisit: Yup.string().required('Reason for visit is required'),
       notes: Yup.string(),
     }),
-    onSubmit: async (values) => {
-      try {
-        setLoading(true);
-        setError(null);
+         onSubmit: async (values) => {
+       // Additional validation before submission
+       const errors = {};
+       if (!values.patientId) errors.patientId = 'Please select a patient';
+       if (!values.doctorId) errors.doctorId = 'Please select a doctor';
+       if (!values.clinicId) errors.clinicId = 'Please select a clinic';
+       if (!values.type) errors.type = 'Please select an appointment type';
+       if (!values.date) errors.date = 'Please select an appointment date';
+       if (!values.startTime) errors.startTime = 'Please select a start time';
+       if (!values.reasonForVisit) errors.reasonForVisit = 'Please provide a reason for visit';
+       
+       if (Object.keys(errors).length > 0) {
+         // Set all errors at once
+         Object.keys(errors).forEach(key => {
+           formik.setFieldError(key, errors[key]);
+           formik.setFieldTouched(key, true);
+         });
+         toast.error('Please fill in all required fields');
+         return;
+       }
+       
+       try {
+         setLoading(true);
+         setError(null);
+        
+        // Get token from localStorage
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('Authentication token not found');
+        }
         
         // Calculate end time
         const endTime = calculateEndTime(values.startTime, values.duration);
@@ -151,43 +181,36 @@ const AddAppointment = () => {
         const formattedStartTime = format(values.startTime, 'HH:mm');
         const formattedEndTime = format(endTime, 'HH:mm');
         
-        // Get patient, doctor, and clinic details
-        const patient = patients.find(p => p.id === values.patientId);
-        const doctor = doctors.find(d => d.id === values.doctorId);
-        const clinic = clinics.find(c => c.id === values.clinicId);
+        // Combine date and time into a single datetime
+        const appointmentDateTime = new Date(`${formattedDate}T${formattedStartTime}`);
         
         // Prepare appointment data
         const appointmentData = {
-          patientId: values.patientId,
-          patientName: patient.name,
-          patientPhone: patient.phone,
-          doctorId: values.doctorId,
-          doctorName: doctor.name,
-          clinicId: values.clinicId,
-          clinicName: clinic.name,
-          date: formattedDate,
-          startTime: formattedStartTime,
-          endTime: formattedEndTime,
+          patient: values.patientId,
+          clinic: values.clinicId,
+          dentist: values.doctorId,
+          appointmentDate: appointmentDateTime,
+          endTime: endTime,
           duration: values.duration,
-          type: values.type,
-          status: values.status,
-          notes: values.notes,
-          createdAt: new Date().toISOString(),
+          appointmentType: values.type,
+          reasonForVisit: values.reasonForVisit,
+          notes: values.notes || '',
+          status: 'scheduled'
         };
         
-        // API call to create appointment
-        // Replace with actual API endpoint
-        // const response = await axios.post('/api/appointments', appointmentData);
-        
-        // For demo purposes, simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Make API call to create appointment
+        const response = await axios.post(`${API_URL}/appointments`, appointmentData, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
         
         toast.success('Appointment scheduled successfully!');
         navigate('/appointments');
       } catch (err) {
         console.error('Error creating appointment:', err);
         setError(err.response?.data?.message || 'Failed to schedule appointment. Please try again.');
-        toast.error('Failed to schedule appointment');
+        toast.error(err.response?.data?.message || 'Failed to schedule appointment');
       } finally {
         setLoading(false);
       }
@@ -213,10 +236,13 @@ const AddAppointment = () => {
   return (
     <Container maxWidth="lg">
       <Paper elevation={3} sx={{ p: 4, mt: 4, mb: 4, borderRadius: 2 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          Schedule New Appointment
-        </Typography>
-        <Divider sx={{ mb: 4 }} />
+                 <Typography variant="h4" component="h1" gutterBottom>
+           Schedule New Appointment
+         </Typography>
+         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+           Fields marked with * are required
+         </Typography>
+         <Divider sx={{ mb: 4 }} />
 
         {error && (
           <Alert severity="error" sx={{ mb: 3 }}>
@@ -234,22 +260,23 @@ const AddAppointment = () => {
             </Grid>
 
             <Grid item xs={12}>
-              <Autocomplete
-                id="patientId"
-                options={patients}
-                getOptionLabel={(option) => `${option.name} (${option.phone})`}
-                value={patients.find(p => p.id === formik.values.patientId) || null}
-                onChange={(event, newValue) => {
-                  formik.setFieldValue('patientId', newValue ? newValue.id : '');
-                }}
+                             <Autocomplete
+                 id="patientId"
+                 options={patients}
+                 getOptionLabel={(option) => `${option.name} (${option.phone})`}
+                 value={patients.find(p => p._id === formik.values.patientId) || null}
+                 onChange={(event, newValue) => {
+                   formik.setFieldValue('patientId', newValue ? newValue._id : '');
+                 }}
                 renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Select Patient"
-                    error={formik.touched.patientId && Boolean(formik.errors.patientId)}
-                    helperText={formik.touched.patientId && formik.errors.patientId}
-                    disabled={loading}
-                  />
+                                     <TextField
+                     {...params}
+                     label="Select Patient *"
+                     error={formik.touched.patientId && Boolean(formik.errors.patientId)}
+                     helperText={formik.touched.patientId && formik.errors.patientId}
+                     disabled={loading}
+                     required
+                   />
                 )}
                 disabled={loading}
               />
@@ -264,7 +291,7 @@ const AddAppointment = () => {
 
             <Grid item xs={12} sm={6} md={4}>
               <FormControl fullWidth error={formik.touched.clinicId && Boolean(formik.errors.clinicId)}>
-                <InputLabel id="clinic-label">Clinic</InputLabel>
+                                 <InputLabel id="clinic-label">Clinic *</InputLabel>
                 <Select
                   labelId="clinic-label"
                   id="clinicId"
@@ -276,7 +303,7 @@ const AddAppointment = () => {
                   disabled={loading}
                 >
                   {clinics.map((clinic) => (
-                    <MenuItem key={clinic.id} value={clinic.id}>
+                    <MenuItem key={clinic._id} value={clinic._id}>
                       {clinic.name}
                     </MenuItem>
                   ))}
@@ -289,7 +316,7 @@ const AddAppointment = () => {
 
             <Grid item xs={12} sm={6} md={4}>
               <FormControl fullWidth error={formik.touched.doctorId && Boolean(formik.errors.doctorId)}>
-                <InputLabel id="doctor-label">Doctor</InputLabel>
+                                 <InputLabel id="doctor-label">Doctor *</InputLabel>
                 <Select
                   labelId="doctor-label"
                   id="doctorId"
@@ -301,8 +328,8 @@ const AddAppointment = () => {
                   disabled={loading}
                 >
                   {doctors.map((doctor) => (
-                    <MenuItem key={doctor.id} value={doctor.id}>
-                      {doctor.name} ({doctor.specialization})
+                    <MenuItem key={doctor._id} value={doctor._id}>
+                      {doctor.firstName} {doctor.lastName} ({doctor.specialization || 'General'})
                     </MenuItem>
                   ))}
                 </Select>
@@ -314,7 +341,7 @@ const AddAppointment = () => {
 
             <Grid item xs={12} sm={6} md={4}>
               <FormControl fullWidth error={formik.touched.type && Boolean(formik.errors.type)}>
-                <InputLabel id="type-label">Appointment Type</InputLabel>
+                                 <InputLabel id="type-label">Appointment Type *</InputLabel>
                 <Select
                   labelId="type-label"
                   id="type"
@@ -340,7 +367,7 @@ const AddAppointment = () => {
             <Grid item xs={12} sm={6} md={4}>
               <LocalizationProvider dateAdapter={AdapterDateFns}>
                 <DatePicker
-                  label="Appointment Date"
+                                     label="Appointment Date *"
                   value={formik.values.date}
                   onChange={(date) => {
                     formik.setFieldValue('date', date);
@@ -365,7 +392,7 @@ const AddAppointment = () => {
             <Grid item xs={12} sm={6} md={4}>
               <LocalizationProvider dateAdapter={AdapterDateFns}>
                 <TimePicker
-                  label="Start Time"
+                                     label="Start Time *"
                   value={formik.values.startTime}
                   onChange={(time) => {
                     formik.setFieldValue('startTime', time);
@@ -389,7 +416,7 @@ const AddAppointment = () => {
 
             <Grid item xs={12} sm={6} md={4}>
               <FormControl fullWidth error={formik.touched.duration && Boolean(formik.errors.duration)}>
-                <InputLabel id="duration-label">Duration</InputLabel>
+                                 <InputLabel id="duration-label">Duration *</InputLabel>
                 <Select
                   labelId="duration-label"
                   id="duration"
@@ -430,6 +457,24 @@ const AddAppointment = () => {
                   readOnly
                 />
               </LocalizationProvider>
+            </Grid>
+
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                id="reasonForVisit"
+                name="reasonForVisit"
+                label="Reason for Visit"
+                multiline
+                rows={2}
+                value={formik.values.reasonForVisit}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                error={formik.touched.reasonForVisit && Boolean(formik.errors.reasonForVisit)}
+                helperText={formik.touched.reasonForVisit && formik.errors.reasonForVisit}
+                disabled={loading}
+                required
+              />
             </Grid>
 
             <Grid item xs={12}>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import {
   Container, Typography, Paper, Box, Grid, TextField, Button, Avatar,
   Divider, Tab, Tabs, IconButton, Alert, Snackbar, Switch, FormControlLabel,
@@ -6,6 +7,7 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+
 import {
   Save as SaveIcon,
   Edit as EditIcon,
@@ -24,6 +26,9 @@ import {
   LocationOn as LocationOnIcon,
   Work as WorkIcon
 } from '@mui/icons-material';
+
+// Get API URL from environment variables
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -80,52 +85,60 @@ const Profile = () => {
     const fetchProfileData = async () => {
       setLoading(true);
       try {
-        // In a real app, we would call the API
-        // For now, we'll simulate an API call with mock data
-        setTimeout(() => {
-          // Mock data
-          const mockUser = {
-            personalInfo: {
-              firstName: 'Ananya',
-              lastName: 'Singh',
-              email: 'ananya.singh@dentalcrm.com',
-              phone: '+91 98765 43210',
-              address: '123 Healthcare Avenue',
-              city: 'Mumbai',
-              state: 'Maharashtra',
-              zipCode: '400001',
-              country: 'India',
-              role: 'Dental Administrator',
-              department: 'Administration',
-              bio: 'Experienced dental practice administrator with 8 years of experience managing multi-location dental clinics.'
+        // Get token from localStorage
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('Authentication token not found');
+        }
+
+        // Fetch user profile data from API
+        const response = await axios.get(`${API_URL}/auth/me`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        // Set profile data from API response
+        const userData = response.data.data;
+        setProfileData({
+          personalInfo: {
+            firstName: userData.name ? userData.name.split(' ')[0] : '',
+            lastName: userData.name ? userData.name.split(' ').slice(1).join(' ') : '',
+            email: userData.email || '',
+            phone: userData.phone || '',
+            address: '', // Not available in current User model
+            city: '', // Not available in current User model
+            state: '', // Not available in current User model
+            zipCode: '', // Not available in current User model
+            country: '', // Not available in current User model
+            role: userData.role || '',
+            department: '', // Not available in current User model
+            bio: '' // Not available in current User model
+          },
+          accountSettings: {
+            username: userData.email || '',
+            currentPassword: '',
+            newPassword: '',
+            confirmPassword: ''
+          },
+          preferences: {
+            language: 'English',
+            theme: 'Light',
+            notifications: {
+              email: true,
+              sms: true,
+              app: true
             },
-            accountSettings: {
-              username: 'ananya.singh',
-              currentPassword: '',
-              newPassword: '',
-              confirmPassword: ''
-            },
-            preferences: {
-              language: 'English',
-              theme: 'Light',
-              notifications: {
-                email: true,
-                sms: true,
-                app: true
-              },
-              timeFormat: '12h'
-            },
-            security: {
-              twoFactorAuth: true,
-              sessionTimeout: 30,
-              lastPasswordChange: '2023-10-15T14:30:00',
-              lastLogin: '2023-12-05T09:15:00'
-            }
-          };
-          
-          setProfileData(mockUser);
-          setLoading(false);
-        }, 1000);
+            timeFormat: '12h'
+          },
+          security: {
+            twoFactorAuth: false,
+            sessionTimeout: 30,
+            lastPasswordChange: userData.lastPasswordChange || '',
+            lastLogin: userData.lastLogin || ''
+          }
+        });
+        setLoading(false);
       } catch (error) {
         console.error('Error fetching profile data:', error);
         setNotification({
@@ -170,17 +183,33 @@ const Profile = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // In a real app, we would call the API to save the profile data
-      // For now, we'll simulate an API call
-      setTimeout(() => {
-        setNotification({
-          open: true,
-          message: 'Profile updated successfully',
-          severity: 'success'
-        });
-        setEditMode(false);
-        setSaving(false);
-      }, 1000);
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+      
+      // Prepare data for API (combine first and last name)
+      const updateData = {
+        name: `${profileData.personalInfo.firstName} ${profileData.personalInfo.lastName}`.trim(),
+        email: profileData.personalInfo.email,
+        phone: profileData.personalInfo.phone
+      };
+      
+      // Save profile data to API
+      await axios.put(`${API_URL}/auth/updatedetails`, updateData, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      setNotification({
+        open: true,
+        message: 'Profile updated successfully',
+        severity: 'success'
+      });
+      setEditMode(false);
+      setSaving(false);
     } catch (error) {
       console.error('Error saving profile data:', error);
       setNotification({

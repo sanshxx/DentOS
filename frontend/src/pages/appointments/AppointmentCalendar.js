@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import {
   Container,
   Paper,
@@ -35,173 +36,21 @@ import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
+// Get API URL from environment variables
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 // Setup the localizer for react-big-calendar
 const localizer = momentLocalizer(moment);
 
-// Mock appointment data (replace with API call)
-const MOCK_APPOINTMENTS = [
-  {
-    id: 'APT001',
-    title: 'Rahul Sharma - Checkup',
-    patientId: '123456',
-    patientName: 'Rahul Sharma',
-    doctorId: 'DOC001',
-    doctorName: 'Dr. Priya Patel',
-    clinicId: 1,
-    clinicName: 'Dental Care - Bandra',
-    start: new Date(2023, 5, 20, 10, 0), // June 20, 2023, 10:00 AM
-    end: new Date(2023, 5, 20, 10, 30),  // June 20, 2023, 10:30 AM
-    status: 'scheduled',
-    type: 'checkup',
-  },
-  {
-    id: 'APT002',
-    title: 'Priya Singh - Cleaning',
-    patientId: '123457',
-    patientName: 'Priya Singh',
-    doctorId: 'DOC002',
-    doctorName: 'Dr. Rajesh Kumar',
-    clinicId: 1,
-    clinicName: 'Dental Care - Bandra',
-    start: new Date(2023, 5, 20, 11, 0), // June 20, 2023, 11:00 AM
-    end: new Date(2023, 5, 20, 12, 0),   // June 20, 2023, 12:00 PM
-    status: 'confirmed',
-    type: 'cleaning',
-  },
-  {
-    id: 'APT003',
-    title: 'Amit Patel - Root Canal',
-    patientId: '123458',
-    patientName: 'Amit Patel',
-    doctorId: 'DOC003',
-    doctorName: 'Dr. Ananya Singh',
-    clinicId: 2,
-    clinicName: 'Dental Care - Andheri',
-    start: new Date(2023, 5, 21, 14, 0), // June 21, 2023, 2:00 PM
-    end: new Date(2023, 5, 21, 16, 0),   // June 21, 2023, 4:00 PM
-    status: 'scheduled',
-    type: 'rootcanal',
-  },
-  {
-    id: 'APT004',
-    title: 'Neha Gupta - Consultation',
-    patientId: '123459',
-    patientName: 'Neha Gupta',
-    doctorId: 'DOC004',
-    doctorName: 'Dr. Suresh Verma',
-    clinicId: 3,
-    clinicName: 'Dental Care - Powai',
-    start: new Date(2023, 5, 22, 9, 0),  // June 22, 2023, 9:00 AM
-    end: new Date(2023, 5, 22, 9, 30),   // June 22, 2023, 9:30 AM
-    status: 'completed',
-    type: 'consultation',
-  },
-  {
-    id: 'APT005',
-    title: 'Vikram Mehta - Braces Adjustment',
-    patientId: '123460',
-    patientName: 'Vikram Mehta',
-    doctorId: 'DOC002',
-    doctorName: 'Dr. Rajesh Kumar',
-    clinicId: 4,
-    clinicName: 'Dental Care - Juhu',
-    start: new Date(2023, 5, 23, 13, 0), // June 23, 2023, 1:00 PM
-    end: new Date(2023, 5, 23, 14, 0),   // June 23, 2023, 2:00 PM
-    status: 'confirmed',
-    type: 'braces',
-  },
-  {
-    id: 'APT006',
-    title: 'Rahul Sharma - Filling',
-    patientId: '123456',
-    patientName: 'Rahul Sharma',
-    doctorId: 'DOC001',
-    doctorName: 'Dr. Priya Patel',
-    clinicId: 1,
-    clinicName: 'Dental Care - Bandra',
-    start: new Date(2023, 5, 25, 15, 0), // June 25, 2023, 3:00 PM
-    end: new Date(2023, 5, 25, 16, 0),   // June 25, 2023, 4:00 PM
-    status: 'scheduled',
-    type: 'filling',
-  },
-  {
-    id: 'APT007',
-    title: 'Priya Singh - Checkup',
-    patientId: '123457',
-    patientName: 'Priya Singh',
-    doctorId: 'DOC005',
-    doctorName: 'Dr. Meera Reddy',
-    clinicId: 2,
-    clinicName: 'Dental Care - Andheri',
-    start: new Date(2023, 5, 26, 10, 30), // June 26, 2023, 10:30 AM
-    end: new Date(2023, 5, 26, 11, 0),    // June 26, 2023, 11:00 AM
-    status: 'scheduled',
-    type: 'checkup',
-  },
-  {
-    id: 'APT008',
-    title: 'Amit Patel - Crown Fitting',
-    patientId: '123458',
-    patientName: 'Amit Patel',
-    doctorId: 'DOC003',
-    doctorName: 'Dr. Ananya Singh',
-    clinicId: 3,
-    clinicName: 'Dental Care - Powai',
-    start: new Date(2023, 5, 27, 12, 0), // June 27, 2023, 12:00 PM
-    end: new Date(2023, 5, 27, 13, 30),  // June 27, 2023, 1:30 PM
-    status: 'confirmed',
-    type: 'crown',
-  },
-  {
-    id: 'APT009',
-    title: 'Neha Gupta - Extraction',
-    patientId: '123459',
-    patientName: 'Neha Gupta',
-    doctorId: 'DOC004',
-    doctorName: 'Dr. Suresh Verma',
-    clinicId: 4,
-    clinicName: 'Dental Care - Juhu',
-    start: new Date(2023, 5, 28, 16, 0), // June 28, 2023, 4:00 PM
-    end: new Date(2023, 5, 28, 17, 0),   // June 28, 2023, 5:00 PM
-    status: 'cancelled',
-    type: 'extraction',
-  },
-  {
-    id: 'APT010',
-    title: 'Vikram Mehta - Emergency',
-    patientId: '123460',
-    patientName: 'Vikram Mehta',
-    doctorId: 'DOC001',
-    doctorName: 'Dr. Priya Patel',
-    clinicId: 1,
-    clinicName: 'Dental Care - Bandra',
-    start: new Date(2023, 5, 29, 9, 0),  // June 29, 2023, 9:00 AM
-    end: new Date(2023, 5, 29, 10, 0),   // June 29, 2023, 10:00 AM
-    status: 'completed',
-    type: 'emergency',
-  },
-];
 
-// Mock clinics data
-const MOCK_CLINICS = [
-  { id: 1, name: 'Dental Care - Bandra' },
-  { id: 2, name: 'Dental Care - Andheri' },
-  { id: 3, name: 'Dental Care - Powai' },
-  { id: 4, name: 'Dental Care - Juhu' },
-];
 
-// Mock doctors data
-const MOCK_DOCTORS = [
-  { id: 'DOC001', name: 'Dr. Priya Patel' },
-  { id: 'DOC002', name: 'Dr. Rajesh Kumar' },
-  { id: 'DOC003', name: 'Dr. Ananya Singh' },
-  { id: 'DOC004', name: 'Dr. Suresh Verma' },
-  { id: 'DOC005', name: 'Dr. Meera Reddy' },
-];
+
 
 const AppointmentCalendar = () => {
   const navigate = useNavigate();
   const [appointments, setAppointments] = useState([]);
+  const [clinics, setClinics] = useState([]);
+  const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
@@ -226,6 +75,8 @@ const AppointmentCalendar = () => {
 
   useEffect(() => {
     fetchAppointments();
+    fetchClinics();
+    fetchDoctors();
   }, []);
 
   // Fetch appointments
@@ -234,15 +85,38 @@ const AppointmentCalendar = () => {
       setLoading(true);
       setError(null);
 
-      // In a real app, this would be an API call
-      // const response = await axios.get('/api/appointments');
-      // setAppointments(response.data);
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
 
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Real API call
+      const response = await axios.get(`${API_URL}/appointments`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       
-      // Set mock data
-      setAppointments(MOCK_APPOINTMENTS);
+      const data = response.data.data;
+      
+      // Format appointments for calendar
+      const formattedAppointments = data.map(appointment => ({
+        id: appointment._id,
+        title: `${appointment.patient?.name || 'Unknown'} - ${appointment.appointmentType || 'Consultation'}`,
+        patientId: appointment.patient?._id,
+        patientName: appointment.patient?.name || 'Unknown',
+        doctorId: appointment.dentist?._id,
+        doctorName: `${appointment.dentist?.firstName || ''} ${appointment.dentist?.lastName || ''}`.trim() || 'Unknown',
+        clinicId: appointment.clinic?._id,
+        clinicName: appointment.clinic?.name || 'Unknown',
+        start: new Date(appointment.appointmentDate),
+        end: new Date(new Date(appointment.appointmentDate).getTime() + (appointment.duration || 30) * 60000),
+        status: appointment.status,
+        type: appointment.appointmentType
+      }));
+      
+      setAppointments(formattedAppointments);
     } catch (err) {
       console.error('Error fetching appointments:', err);
       setError('Failed to load appointments. Please try again.');
@@ -298,12 +172,55 @@ const AppointmentCalendar = () => {
       [name]: value,
     }));
   };
+  
+  // Fetch clinics
+  const fetchClinics = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      const response = await axios.get(`${API_URL}/clinics`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      setClinics(response.data.data);
+    } catch (err) {
+      console.error('Error fetching clinics:', err);
+      toast.error('Failed to load clinics');
+    }
+  };
+  
+  // Fetch doctors
+  const fetchDoctors = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      const response = await axios.get(`${API_URL}/staff`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      // Filter to only show dentists
+      const dentists = response.data.data.filter(staff => staff.role === 'dentist');
+      setDoctors(dentists);
+    } catch (err) {
+      console.error('Error fetching doctors:', err);
+      toast.error('Failed to load doctors');
+    }
+  };
 
   // Apply filters
   const applyFilters = () => {
     handleFilterDialogClose();
-    // In a real app, this would trigger a new API call with filters
-    // For now, we'll just filter the mock data
+    // Trigger a new API call with filters
     fetchFilteredAppointments();
   };
 
@@ -322,35 +239,54 @@ const AppointmentCalendar = () => {
       setLoading(true);
       setError(null);
 
-      // In a real app, this would be an API call with filter parameters
-      // const response = await axios.get('/api/appointments', { params: filters });
-      // setAppointments(response.data);
-
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Filter mock data
-      let filteredAppointments = [...MOCK_APPOINTMENTS];
+      // Build query parameters for filtering
+      const queryParams = new URLSearchParams();
       
       if (filters.clinicId) {
-        filteredAppointments = filteredAppointments.filter(
-          appointment => appointment.clinicId === parseInt(filters.clinicId, 10)
-        );
+        queryParams.append('clinic', filters.clinicId);
       }
       
       if (filters.doctorId) {
-        filteredAppointments = filteredAppointments.filter(
-          appointment => appointment.doctorId === filters.doctorId
-        );
+        queryParams.append('dentist', filters.doctorId);
       }
       
       if (filters.status) {
-        filteredAppointments = filteredAppointments.filter(
-          appointment => appointment.status === filters.status
-        );
+        queryParams.append('status', filters.status);
       }
       
-      setAppointments(filteredAppointments);
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      // Make API call with filter parameters
+      const url = `${API_URL}/appointments${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const response = await axios.get(url, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      const data = response.data.data;
+      
+      // Format appointments for calendar
+      const formattedAppointments = data.map(appointment => ({
+        id: appointment._id,
+        title: `${appointment.patient?.name || 'Unknown'} - ${appointment.appointmentType || 'Consultation'}`,
+        patientId: appointment.patient?._id,
+        patientName: appointment.patient?.name || 'Unknown',
+        doctorId: appointment.dentist?._id,
+        doctorName: `${appointment.dentist?.firstName || ''} ${appointment.dentist?.lastName || ''}`.trim() || 'Unknown',
+        clinicId: appointment.clinic?._id,
+        clinicName: appointment.clinic?.name || 'Unknown',
+        start: new Date(appointment.appointmentDate),
+        end: new Date(new Date(appointment.appointmentDate).getTime() + (appointment.duration || 30) * 60000),
+        status: appointment.status,
+        type: appointment.appointmentType
+      }));
+      
+      setAppointments(formattedAppointments);
       
       // Show toast if filters are applied
       if (filters.clinicId || filters.doctorId || filters.status) {
@@ -681,8 +617,8 @@ const AppointmentCalendar = () => {
                   label="Clinic"
                 >
                   <MenuItem value="">All Clinics</MenuItem>
-                  {MOCK_CLINICS.map((clinic) => (
-                    <MenuItem key={clinic.id} value={clinic.id}>
+                  {clinics.map((clinic) => (
+                    <MenuItem key={clinic._id} value={clinic._id}>
                       {clinic.name}
                     </MenuItem>
                   ))}
@@ -701,9 +637,9 @@ const AppointmentCalendar = () => {
                   label="Doctor"
                 >
                   <MenuItem value="">All Doctors</MenuItem>
-                  {MOCK_DOCTORS.map((doctor) => (
-                    <MenuItem key={doctor.id} value={doctor.id}>
-                      {doctor.name}
+                  {doctors.map((doctor) => (
+                    <MenuItem key={doctor._id} value={doctor._id}>
+                      {`${doctor.firstName} ${doctor.lastName}`}
                     </MenuItem>
                   ))}
                 </Select>

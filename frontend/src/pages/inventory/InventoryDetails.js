@@ -19,6 +19,10 @@ import {
   LocalOffer as LocalOfferIcon
 } from '@mui/icons-material';
 import { toast } from 'react-toastify';
+import axios from 'axios';
+
+// Get API URL from environment variables
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const InventoryDetails = () => {
   const navigate = useNavigate();
@@ -46,78 +50,39 @@ const InventoryDetails = () => {
     setError(null);
     
     try {
-      // In a real app, we would fetch from the API
-      // For now, we'll simulate an API call
-      setTimeout(() => {
-        // Mock API response
-        const mockItem = {
-          _id: id,
-          itemName: 'Dental Composite Resin',
-          itemCode: 'DCR-001',
-          category: 'Restorative Materials',
-          description: 'High-quality light-cured composite resin for dental restorations',
-          unit: 'Syringe',
-          currentStock: 45,
-          minStockLevel: 10,
-          price: 1200,
-          supplier: 'Dental Supplies Inc.',
-          location: 'Cabinet A, Shelf 2',
-          expiryDate: '2024-12-31',
-          lastRestocked: '2023-06-15',
-          isActive: true
-        };
-        
-        setItem(mockItem);
-        setLoading(false);
-      }, 1000);
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      
+      // Fetch inventory item from API
+      const response = await axios.get(`${API_URL}/inventory/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      setItem(response.data.data);
     } catch (err) {
       console.error('Error fetching inventory item:', err);
       setError('Failed to load inventory item. Please try again.');
+      toast.error('Failed to load inventory item');
+    } finally {
       setLoading(false);
     }
   };
   
   const fetchStockHistory = async () => {
     try {
-      // In a real app, we would fetch from the API
-      // For now, we'll simulate an API call
-      setTimeout(() => {
-        // Mock API response
-        const mockHistory = [
-          {
-            _id: 'hist1',
-            date: '2023-06-15',
-            type: 'add',
-            quantity: 20,
-            previousStock: 25,
-            newStock: 45,
-            note: 'Regular restock',
-            updatedBy: 'Dr. Sarah Johnson'
-          },
-          {
-            _id: 'hist2',
-            date: '2023-05-20',
-            type: 'remove',
-            quantity: 5,
-            previousStock: 30,
-            newStock: 25,
-            note: 'Used for patient treatments',
-            updatedBy: 'Dr. Michael Chen'
-          },
-          {
-            _id: 'hist3',
-            date: '2023-04-10',
-            type: 'add',
-            quantity: 30,
-            previousStock: 0,
-            newStock: 30,
-            note: 'Initial stock',
-            updatedBy: 'Admin'
-          }
-        ];
-        
-        setStockHistory(mockHistory);
-      }, 1200);
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      
+      // Fetch stock history from API
+      const response = await axios.get(`${API_URL}/inventory/${id}/history`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      setStockHistory(response.data.data);
     } catch (err) {
       console.error('Error fetching stock history:', err);
       // We don't set the main error state here to still show the item details
@@ -127,16 +92,24 @@ const InventoryDetails = () => {
   
   const handleDelete = async () => {
     try {
-      // In a real app, we would call the API
-      // For now, we'll simulate an API call
-      setTimeout(() => {
-        // Mock successful API response
-        toast.success('Inventory item deleted successfully!');
-        navigate('/inventory');
-      }, 1000);
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+      
+      // Call API to delete the inventory item
+      await axios.delete(`${API_URL}/inventory/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      toast.success('Inventory item deleted successfully!');
+      navigate('/inventory');
     } catch (err) {
       console.error('Error deleting inventory item:', err);
-      toast.error('Failed to delete inventory item. Please try again.');
+      toast.error(err.response?.data?.message || 'Failed to delete inventory item. Please try again.');
     } finally {
       setOpenDeleteDialog(false);
     }
@@ -151,56 +124,52 @@ const InventoryDetails = () => {
     setStockUpdateLoading(true);
     
     try {
-      // In a real app, we would call the API
-      // For now, we'll simulate an API call
-      setTimeout(() => {
-        // Calculate new stock
-        const quantity = Number(stockQuantity);
-        const previousStock = item.currentStock;
-        let newStock;
-        
-        if (stockAction === 'add') {
-          newStock = previousStock + quantity;
-          toast.success(`Added ${quantity} ${item.unit}(s) to inventory`);
-        } else {
-          if (quantity > previousStock) {
-            toast.error(`Cannot remove more than current stock (${previousStock})`);
-            setStockUpdateLoading(false);
-            return;
-          }
-          newStock = previousStock - quantity;
-          toast.success(`Removed ${quantity} ${item.unit}(s) from inventory`);
-        }
-        
-        // Update local state
-        setItem({
-          ...item,
-          currentStock: newStock
-        });
-        
-        // Add to history
-        const newHistoryEntry = {
-          _id: `hist${Date.now()}`,
-          date: new Date().toISOString().split('T')[0],
-          type: stockAction,
-          quantity,
-          previousStock,
-          newStock,
-          note: stockNote,
-          updatedBy: 'Current User' // In a real app, this would be the logged-in user
-        };
-        
-        setStockHistory([newHistoryEntry, ...stockHistory]);
-        
-        // Reset form
-        setStockQuantity('');
-        setStockNote('');
-        setOpenStockDialog(false);
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      
+      // Prepare data for API call
+      const quantity = Number(stockQuantity);
+      const updateData = {
+        action: stockAction,
+        quantity,
+        note: stockNote
+      };
+      
+      // Check if removing more than current stock
+      if (stockAction === 'remove' && quantity > item.currentStock) {
+        toast.error(`Cannot remove more than current stock (${item.currentStock})`);
         setStockUpdateLoading(false);
-      }, 1000);
+        return;
+      }
+      
+      // Call API to update stock
+      const response = await axios.patch(`/api/inventory/${id}/stock`, updateData, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      // Update local state with response data
+      setItem(response.data.data);
+      
+      // Refresh stock history
+      fetchStockHistory();
+      
+      // Show success message
+      if (stockAction === 'add') {
+        toast.success(`Added ${quantity} ${item.unit}(s) to inventory`);
+      } else {
+        toast.success(`Removed ${quantity} ${item.unit}(s) from inventory`);
+      }
+      
+      // Reset form
+      setStockQuantity('');
+      setStockNote('');
+      setOpenStockDialog(false);
     } catch (err) {
       console.error('Error updating stock:', err);
       toast.error('Failed to update stock. Please try again.');
+    } finally {
       setStockUpdateLoading(false);
     }
   };

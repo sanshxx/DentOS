@@ -40,8 +40,13 @@ import {
   Female as FemaleIcon
 } from '@mui/icons-material';
 import { toast } from 'react-toastify';
+import { useTheme } from '@mui/material/styles';
+
+// Get API URL from environment variables
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const Patients = () => {
+  const theme = useTheme();
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -58,93 +63,103 @@ const Patients = () => {
     ageGroup: '',
     clinic: ''
   });
+  const [clinics, setClinics] = useState([]);
   
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchPatients();
+    fetchClinics();
   }, [page, rowsPerPage, filters]);
+
+  const fetchClinics = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_URL}/clinics`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setClinics(response.data.data || []);
+    } catch (err) {
+      console.error('Error fetching clinics:', err);
+    }
+  };
 
   const fetchPatients = async () => {
     try {
       setLoading(true);
-      // In a real application, you would fetch this data from your API
-      // For now, we'll use mock data
+      console.log('🔍 Fetching patients...');
       
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Build query parameters for filtering and pagination
+      const queryParams = new URLSearchParams();
+      queryParams.append('page', page);
+      queryParams.append('limit', rowsPerPage);
       
-      // Mock data
-      const mockPatients = [
-        { id: 1, name: 'Rahul Sharma', phone: '9876543210', email: 'rahul.sharma@example.com', gender: 'Male', age: 35, address: 'Mumbai, Maharashtra', clinic: 'Mumbai Central', registrationDate: '2023-01-15' },
-        { id: 2, name: 'Priya Patel', phone: '9876543211', email: 'priya.patel@example.com', gender: 'Female', age: 28, address: 'Delhi, Delhi', clinic: 'Delhi Heights', registrationDate: '2023-02-20' },
-        { id: 3, name: 'Amit Singh', phone: '9876543212', email: 'amit.singh@example.com', gender: 'Male', age: 42, address: 'Bangalore, Karnataka', clinic: 'Bangalore Central', registrationDate: '2023-03-05' },
-        { id: 4, name: 'Neha Gupta', phone: '9876543213', email: 'neha.gupta@example.com', gender: 'Female', age: 31, address: 'Chennai, Tamil Nadu', clinic: 'Chennai Heights', registrationDate: '2023-03-18' },
-        { id: 5, name: 'Vikram Mehta', phone: '9876543214', email: 'vikram.mehta@example.com', gender: 'Male', age: 45, address: 'Hyderabad, Telangana', clinic: 'Hyderabad Central', registrationDate: '2023-04-02' },
-        { id: 6, name: 'Sneha Verma', phone: '9876543215', email: 'sneha.verma@example.com', gender: 'Female', age: 29, address: 'Pune, Maharashtra', clinic: 'Pune Heights', registrationDate: '2023-04-15' },
-        { id: 7, name: 'Rajesh Kumar', phone: '9876543216', email: 'rajesh.kumar@example.com', gender: 'Male', age: 38, address: 'Kolkata, West Bengal', clinic: 'Kolkata Central', registrationDate: '2023-05-01' },
-        { id: 8, name: 'Ananya Desai', phone: '9876543217', email: 'ananya.desai@example.com', gender: 'Female', age: 26, address: 'Ahmedabad, Gujarat', clinic: 'Ahmedabad Heights', registrationDate: '2023-05-12' },
-        { id: 9, name: 'Suresh Reddy', phone: '9876543218', email: 'suresh.reddy@example.com', gender: 'Male', age: 50, address: 'Jaipur, Rajasthan', clinic: 'Jaipur Central', registrationDate: '2023-06-03' },
-        { id: 10, name: 'Pooja Sharma', phone: '9876543219', email: 'pooja.sharma@example.com', gender: 'Female', age: 33, address: 'Lucknow, Uttar Pradesh', clinic: 'Lucknow Heights', registrationDate: '2023-06-20' },
-        { id: 11, name: 'Kiran Joshi', phone: '9876543220', email: 'kiran.joshi@example.com', gender: 'Male', age: 41, address: 'Chandigarh, Punjab', clinic: 'Chandigarh Central', registrationDate: '2023-07-05' },
-        { id: 12, name: 'Meera Iyer', phone: '9876543221', email: 'meera.iyer@example.com', gender: 'Female', age: 27, address: 'Bhopal, Madhya Pradesh', clinic: 'Bhopal Heights', registrationDate: '2023-07-10' }
-      ];
-      
-      // Apply filters
-      let filteredPatients = [...mockPatients];
+      if (searchTerm) {
+        queryParams.append('search', searchTerm);
+      }
       
       if (filters.gender) {
-        filteredPatients = filteredPatients.filter(patient => patient.gender === filters.gender);
+        queryParams.append('gender', filters.gender);
       }
       
       if (filters.ageGroup) {
-        switch (filters.ageGroup) {
-          case 'below18':
-            filteredPatients = filteredPatients.filter(patient => patient.age < 18);
-            break;
-          case '18to30':
-            filteredPatients = filteredPatients.filter(patient => patient.age >= 18 && patient.age <= 30);
-            break;
-          case '31to45':
-            filteredPatients = filteredPatients.filter(patient => patient.age >= 31 && patient.age <= 45);
-            break;
-          case '46to60':
-            filteredPatients = filteredPatients.filter(patient => patient.age >= 46 && patient.age <= 60);
-            break;
-          case 'above60':
-            filteredPatients = filteredPatients.filter(patient => patient.age > 60);
-            break;
-          default:
-            break;
-        }
+        queryParams.append('ageGroup', filters.ageGroup);
       }
       
       if (filters.clinic) {
-        filteredPatients = filteredPatients.filter(patient => patient.clinic === filters.clinic);
+        queryParams.append('clinic', filters.clinic);
       }
       
-      // Apply search
+      // Fetch patients from API
+      const token = localStorage.getItem('token');
+      console.log('API URL:', `${API_URL}/patients?${queryParams.toString()}`);
+      console.log('Token exists:', !!token);
+      
+      const response = await axios.get(`${API_URL}/patients?${queryParams.toString()}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      // Format the response data
+      const formattedPatients = response.data.data.map(patient => ({
+        id: patient._id,
+        name: patient.name,
+        phone: patient.phone,
+        email: patient.email,
+        gender: patient.gender,
+        age: patient.age,
+        address: patient.address,
+        registeredClinic: patient.registeredClinic,
+        registrationDate: new Date(patient.createdAt).toISOString().split('T')[0],
+        // Preserve original data for edit form
+        originalData: patient
+      }));
+      
+      setPatients(formattedPatients);
+      setTotalPatients(response.data.total);
+      setTotalPages(Math.ceil(response.data.total / rowsPerPage));
+      setError(null);
+      
+      // Apply search filter if needed (backend handles other filters)
+      let finalPatients = formattedPatients;
+      
       if (searchTerm) {
-        filteredPatients = filteredPatients.filter(patient => 
+        finalPatients = formattedPatients.filter(patient => 
           patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           patient.phone.includes(searchTerm) ||
           patient.email.toLowerCase().includes(searchTerm.toLowerCase())
         );
       }
       
-      // Calculate pagination
-      setTotalPatients(filteredPatients.length);
-      setTotalPages(Math.ceil(filteredPatients.length / rowsPerPage));
-      
-      // Slice for current page
-      const startIndex = (page - 1) * rowsPerPage;
-      const paginatedPatients = filteredPatients.slice(startIndex, startIndex + rowsPerPage);
-      
-      setPatients(paginatedPatients);
+      setPatients(finalPatients);
       setError(null);
+      console.log('✅ Patients loaded successfully:', finalPatients.length);
     } catch (err) {
-      console.error('Error fetching patients:', err);
-      setError('Failed to load patients. Please try again.');
+      console.error('❌ Error fetching patients:', err);
+      console.error('Error response:', err.response?.data);
+      console.error('Error status:', err.response?.status);
+      setError(`Failed to load patients: ${err.response?.data?.message || err.message}`);
     } finally {
       setLoading(false);
     }
@@ -204,11 +219,30 @@ const Patients = () => {
     handleActionClose();
   };
 
-  const handleDeletePatient = () => {
-    // In a real application, you would call your API to delete the patient
-    toast.success(`Patient ${selectedPatient.name} deleted successfully`);
-    handleActionClose();
-    fetchPatients();
+  const handleDeletePatient = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error('Authentication token not found');
+        return;
+      }
+
+      const response = await axios.delete(`${API_URL}/patients/${selectedPatient.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.data.success) {
+        toast.success(`Patient ${selectedPatient.name} deleted successfully`);
+        handleActionClose();
+        fetchPatients(); // Refresh the list
+      } else {
+        toast.error('Failed to delete patient');
+      }
+    } catch (error) {
+      console.error('Error deleting patient:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to delete patient';
+      toast.error(errorMessage);
+    }
   };
 
   const handleAddAppointment = () => {
@@ -222,7 +256,7 @@ const Patients = () => {
   };
 
   const handleCreateInvoice = () => {
-    navigate('/invoices/create', { state: { patientId: selectedPatient.id } });
+    navigate('/billing/create', { state: { patientId: selectedPatient.id } });
     handleActionClose();
   };
 
@@ -246,7 +280,14 @@ const Patients = () => {
     { field: 'phone', headerName: 'Phone', width: 150 },
     { field: 'email', headerName: 'Email', width: 220 },
     { field: 'age', headerName: 'Age', width: 80 },
-    { field: 'clinic', headerName: 'Clinic', width: 180 },
+    { 
+      field: 'clinic', 
+      headerName: 'Clinic', 
+      width: 180,
+      valueGetter: (params) => {
+        return params.row.registeredClinic?.name || 'Not Assigned';
+      },
+    },
     {
       field: 'registrationDate',
       headerName: 'Registration Date',
@@ -285,8 +326,9 @@ const Patients = () => {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 120px)', overflow: 'hidden' }}>
+      {/* Header Section */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexShrink: 0 }}>
         <Typography variant="h4">Patients</Typography>
         <Button
           variant="contained"
@@ -304,7 +346,14 @@ const Patients = () => {
         </Alert>
       )}
 
-      <Card sx={{ mb: 3, borderRadius: 2 }}>
+      {/* Search and Filter Section */}
+      <Card sx={{ 
+        mb: 3, 
+        borderRadius: 2, 
+        flexShrink: 0,
+        backgroundColor: theme.palette.background.paper,
+        border: `1px solid ${theme.palette.divider}`
+      }}>
         <CardContent>
           <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} md={6}>
@@ -363,9 +412,15 @@ const Patients = () => {
                       filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.1))',
                       mt: 1.5,
                       width: 300,
+                      backgroundColor: theme.palette.background.paper,
+                      border: `1px solid ${theme.palette.divider}`,
                       '& .MuiMenuItem-root': {
                         px: 2,
                         py: 1,
+                        color: theme.palette.text.primary,
+                        '&:hover': {
+                          backgroundColor: theme.palette.action.hover,
+                        },
                       },
                     },
                   }}
@@ -413,14 +468,11 @@ const Patients = () => {
                         label="Clinic"
                       >
                         <MenuItem value="">All</MenuItem>
-                        <MenuItem value="Mumbai Central">Mumbai Central</MenuItem>
-                        <MenuItem value="Delhi Heights">Delhi Heights</MenuItem>
-                        <MenuItem value="Bangalore Central">Bangalore Central</MenuItem>
-                        <MenuItem value="Chennai Heights">Chennai Heights</MenuItem>
-                        <MenuItem value="Hyderabad Central">Hyderabad Central</MenuItem>
-                        <MenuItem value="Pune Heights">Pune Heights</MenuItem>
-                        <MenuItem value="Kolkata Central">Kolkata Central</MenuItem>
-                        <MenuItem value="Ahmedabad Heights">Ahmedabad Heights</MenuItem>
+                        {clinics.map((clinic) => (
+                          <MenuItem key={clinic._id} value={clinic.name}>
+                            {clinic.name}
+                          </MenuItem>
+                        ))}
                       </Select>
                     </FormControl>
                     
@@ -452,7 +504,17 @@ const Patients = () => {
         </CardContent>
       </Card>
 
-      <Card sx={{ height: 600, borderRadius: 2 }}>
+      {/* Table Section */}
+      <Card sx={{ 
+        flex: 1, 
+        borderRadius: 2, 
+        display: 'flex', 
+        flexDirection: 'column', 
+        minHeight: 0, 
+        overflow: 'hidden',
+        backgroundColor: theme.palette.background.paper,
+        border: `1px solid ${theme.palette.divider}`
+      }}>
         <DataGrid
           rows={patients}
           columns={columns}
@@ -460,35 +522,98 @@ const Patients = () => {
           rowsPerPageOptions={[5, 10, 25]}
           disableSelectionOnClick
           loading={loading}
-          components={{
-            Pagination: () => (
-              <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="body2" color="text.secondary">
-                  Showing {patients.length} of {totalPatients} patients
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <FormControl variant="outlined" size="small">
-                    <Select
-                      value={rowsPerPage}
-                      onChange={handleRowsPerPageChange}
-                      displayEmpty
-                    >
-                      <MenuItem value={5}>5 per page</MenuItem>
-                      <MenuItem value={10}>10 per page</MenuItem>
-                      <MenuItem value={25}>25 per page</MenuItem>
-                    </Select>
-                  </FormControl>
-                  <Pagination
-                    count={totalPages}
-                    page={page}
-                    onChange={handlePageChange}
-                    color="primary"
-                    shape="rounded"
-                  />
-                </Box>
-              </Box>
-            ),
+          sx={{
+            flex: 1,
+            minHeight: 0,
+            border: 'none',
+            '& .MuiDataGrid-root': {
+              border: 'none',
+            },
+            '& .MuiDataGrid-cell': {
+              borderBottom: `1px solid ${theme.palette.divider}`,
+              color: theme.palette.text.primary,
+              backgroundColor: theme.palette.background.paper,
+            },
+            '& .MuiDataGrid-row': {
+              backgroundColor: theme.palette.background.paper,
+              '&:hover': {
+                backgroundColor: theme.palette.action.hover,
+              },
+            },
+            '& .MuiDataGrid-columnHeaders': {
+              backgroundColor: theme.palette.background.default,
+              borderBottom: `2px solid ${theme.palette.divider}`,
+              color: theme.palette.text.primary,
+            },
+            '& .MuiDataGrid-virtualScroller': {
+              backgroundColor: theme.palette.background.paper,
+            },
+            '& .MuiDataGrid-main': {
+              overflow: 'hidden',
+            },
+            '& .MuiDataGrid-footerContainer': {
+              backgroundColor: theme.palette.background.default,
+              borderTop: `1px solid ${theme.palette.divider}`,
+            },
+            '& .MuiDataGrid-toolbarContainer': {
+              backgroundColor: theme.palette.background.default,
+              borderBottom: `1px solid ${theme.palette.divider}`,
+            },
           }}
+                      components={{
+              Pagination: () => (
+                <Box sx={{ 
+                  p: 2, 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  backgroundColor: theme.palette.background.default,
+                  borderTop: `1px solid ${theme.palette.divider}`
+                }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Showing {patients.length} of {totalPatients} patients
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <FormControl variant="outlined" size="small">
+                      <Select
+                        value={rowsPerPage}
+                        onChange={handleRowsPerPageChange}
+                        displayEmpty
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            backgroundColor: theme.palette.background.paper,
+                            color: theme.palette.text.primary,
+                          },
+                          '& .MuiSelect-icon': {
+                            color: theme.palette.text.primary,
+                          }
+                        }}
+                      >
+                        <MenuItem value={5}>5 per page</MenuItem>
+                        <MenuItem value={10}>10 per page</MenuItem>
+                        <MenuItem value={25}>25 per page</MenuItem>
+                      </Select>
+                    </FormControl>
+                    <Pagination
+                      count={totalPages}
+                      page={page}
+                      onChange={handlePageChange}
+                      color="primary"
+                      shape="rounded"
+                      sx={{
+                        '& .MuiPaginationItem-root': {
+                          color: theme.palette.text.primary,
+                          '&.Mui-selected': {
+                            backgroundColor: theme.palette.primary.main,
+                            color: theme.palette.primary.contrastText,
+                          },
+                        },
+                      }}
+                    />
+                  </Box>
+                </Box>
+              ),
+            }}
         />
       </Card>
 
@@ -503,9 +628,15 @@ const Patients = () => {
             overflow: 'visible',
             filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.1))',
             mt: 1.5,
+            backgroundColor: theme.palette.background.paper,
+            border: `1px solid ${theme.palette.divider}`,
             '& .MuiMenuItem-root': {
               px: 2,
               py: 1,
+              color: theme.palette.text.primary,
+              '&:hover': {
+                backgroundColor: theme.palette.action.hover,
+              },
             },
           },
         }}

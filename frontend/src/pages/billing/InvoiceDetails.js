@@ -7,6 +7,7 @@ import {
   TextField, MenuItem, Select, FormControl, InputLabel, Alert, Snackbar
 } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
+import axios from 'axios';
 import {
   Print as PrintIcon,
   Edit as EditIcon,
@@ -24,6 +25,11 @@ import {
   Person as PersonIcon,
   MedicalServices as MedicalServicesIcon
 } from '@mui/icons-material';
+import { formatAddress } from '../../utils/addressFormatter';
+import { toast } from 'react-toastify';
+
+// Get API URL from environment variables
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const InvoiceDetails = () => {
   const navigate = useNavigate();
@@ -37,93 +43,33 @@ const InvoiceDetails = () => {
   const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', message: '', action: null });
 
   useEffect(() => {
-    // In a real app, we would fetch the invoice data from an API
-    // For now, we'll simulate a delay and use mock data
-    const timer = setTimeout(() => {
-      setInvoice({
-        id: id,
-        invoiceNumber: 'INV-2023-' + id,
-        date: '2023-11-15',
-        dueDate: '2023-12-15',
-        status: 'pending',
-        patient: {
-          id: '123',
-          name: 'Rahul Sharma',
-          email: 'rahul.sharma@example.com',
-          phone: '+91 98765 43210',
-          address: '42 Park Street, Mumbai, Maharashtra 400001'
-        },
-        doctor: {
-          id: '456',
-          name: 'Dr. Priya Patel',
-          specialization: 'Orthodontist'
-        },
-        clinic: {
-          id: '789',
-          name: 'Smile Dental Care - Mumbai Central',
-          address: '123 Healthcare Avenue, Mumbai, Maharashtra 400001',
-          phone: '+91 22 2345 6789',
-          email: 'mumbai@smiledentalcare.com',
-          gstNumber: 'GST1234567890'
-        },
-        items: [
-          {
-            id: '1',
-            description: 'Dental Consultation',
-            quantity: 1,
-            unitPrice: 500,
-            discount: 0,
-            tax: 18,
-            total: 590
-          },
-          {
-            id: '2',
-            description: 'Dental X-Ray (Full Mouth)',
-            quantity: 1,
-            unitPrice: 1200,
-            discount: 0,
-            tax: 18,
-            total: 1416
-          },
-          {
-            id: '3',
-            description: 'Root Canal Treatment',
-            quantity: 1,
-            unitPrice: 8000,
-            discount: 500,
-            tax: 18,
-            total: 8850
-          }
-        ],
-        subtotal: 9700,
-        discount: 500,
-        tax: 1656,
-        total: 10856,
-        amountPaid: 2000,
-        balanceDue: 8856,
-        paymentHistory: [
-          {
-            id: 'p1',
-            date: '2023-11-15',
-            amount: 2000,
-            method: 'Card',
-            reference: 'CARD-1234'
-          }
-        ],
-        notes: 'Please pay within 30 days. Late payments will incur a 2% interest charge.',
-        terms: 'All services are non-refundable. Rescheduling requires 24 hours notice.',
-        treatmentDetails: {
-          treatmentId: 't123',
-          treatmentName: 'Root Canal and Crown',
-          startDate: '2023-11-10',
-          endDate: '2023-11-15',
-          sessions: 2
+    const fetchInvoiceDetails = async () => {
+      try {
+        // Get token from localStorage
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('Authentication token not found');
         }
-      });
-      setLoading(false);
-    }, 1000);
-
-    return () => clearTimeout(timer);
+        
+        // Make API call to get invoice details
+        const response = await axios.get(`${API_URL}/billing/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        setInvoice(response.data.data);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching invoice details:', err);
+        toast.error(err.response?.data?.message || 'Failed to load invoice details');
+        setLoading(false);
+      }
+    };
+    
+    fetchInvoiceDetails();
+    
+    // No cleanup needed for API call
   }, [id]);
 
   const handlePrint = () => {
@@ -167,7 +113,7 @@ const InvoiceDetails = () => {
   };
 
   const handleEdit = () => {
-    navigate(`/invoices/edit/${id}`);
+    navigate(`/billing/invoice/${id}/edit`);
   };
 
   const handleDelete = () => {
@@ -175,15 +121,35 @@ const InvoiceDetails = () => {
       open: true,
       title: 'Delete Invoice',
       message: 'Are you sure you want to delete this invoice? This action cannot be undone.',
-      action: () => {
-        // In a real app, we would call the API to delete the invoice
-        // For now, we'll just show a notification and navigate back
-        setNotification({
-          open: true,
-          message: 'Invoice deleted successfully',
-          severity: 'success'
-        });
-        navigate('/invoices');
+      action: async () => {
+        try {
+          // Get token from localStorage
+          const token = localStorage.getItem('token');
+          if (!token) {
+            throw new Error('Authentication token not found');
+          }
+
+          // Call API to delete the invoice
+          await axios.delete(`${API_URL}/billing/${id}`, {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
+
+          setNotification({
+            open: true,
+            message: 'Invoice deleted successfully',
+            severity: 'success'
+          });
+          navigate('/billing');
+        } catch (err) {
+          console.error('Error deleting invoice:', err);
+          setNotification({
+            open: true,
+            message: err.response?.data?.message || 'Error deleting invoice. Please try again.',
+            severity: 'error'
+          });
+        }
       }
     });
   };
@@ -325,7 +291,9 @@ const InvoiceDetails = () => {
                 From
               </Typography>
               <Typography variant="body1">{invoice.clinic.name}</Typography>
-              <Typography variant="body2">{invoice.clinic.address}</Typography>
+              <Typography variant="body2">
+                {formatAddress(invoice.clinic.address)}
+              </Typography>
               <Typography variant="body2">Phone: {invoice.clinic.phone}</Typography>
               <Typography variant="body2">Email: {invoice.clinic.email}</Typography>
               <Typography variant="body2">GST: {invoice.clinic.gstNumber}</Typography>
@@ -335,7 +303,9 @@ const InvoiceDetails = () => {
                 To
               </Typography>
               <Typography variant="body1">{invoice.patient.name}</Typography>
-              <Typography variant="body2">{invoice.patient.address}</Typography>
+              <Typography variant="body2">
+                {formatAddress(invoice.patient.address)}
+              </Typography>
               <Typography variant="body2">Phone: {invoice.patient.phone}</Typography>
               <Typography variant="body2">Email: {invoice.patient.email}</Typography>
             </Grid>

@@ -8,6 +8,10 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import axios from 'axios';
+
+// Get API URL from environment variables
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const RecordPayment = () => {
   const navigate = useNavigate();
@@ -27,61 +31,43 @@ const RecordPayment = () => {
   });
   
   useEffect(() => {
-    // In a real app, we would fetch from the API
-    // For now, we'll simulate an API call with mock data
-    setLoading(true);
-    setError(null);
-    
-    setTimeout(() => {
-      // Mock invoice data
-      const mockInvoice = {
-        _id: id,
-        invoiceNumber: 'INV-2023-002',
-        patient: {
-          _id: '60d21b4667d0d8992e610c02',
-          name: 'Jane Smith',
-          email: 'jane@example.com',
-          phone: '9876543211'
-        },
-        clinic: {
-          _id: '60d21b4667d0d8992e610c10',
-          name: 'Main Clinic'
-        },
-        invoiceDate: new Date('2023-07-10'),
-        dueDate: new Date('2023-08-10'),
-        items: [
-          {
-            description: 'Root Canal Treatment',
-            quantity: 1,
-            unitPrice: 8000,
-            discount: 5,
-            tax: 18,
-            amount: 8968
-          }
-        ],
-        subtotal: 8000,
-        discountAmount: 400,
-        taxAmount: 1368,
-        totalAmount: 8968,
-        paymentStatus: 'Partial',
-        paymentHistory: [
-          {
-            date: new Date('2023-07-10'),
-            amount: 4000,
-            method: 'Credit Card',
-            reference: 'TXREF789012'
-          }
-        ],
-        balanceDue: 4968
-      };
+    const fetchInvoice = async () => {
+      setLoading(true);
+      setError(null);
       
-      setInvoice(mockInvoice);
-      setPaymentData(prev => ({
-        ...prev,
-        amount: mockInvoice.balanceDue
-      }));
-      setLoading(false);
-    }, 1000);
+      try {
+        // Get token from localStorage
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('Authentication token not found');
+        }
+
+        const response = await axios.get(`${API_URL}/billing/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        const invoice = response.data.data;
+        
+        // Calculate balance due if not provided directly from API
+        const balanceDue = invoice.totalAmount - (invoice.amountPaid || 0);
+        invoice.balanceDue = balanceDue;
+        
+        setInvoice(invoice);
+        setPaymentData(prev => ({
+          ...prev,
+          amount: balanceDue
+        }));
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching invoice:', err);
+        setError('Error fetching invoice. Please try again.');
+        setLoading(false);
+      }
+    };
+    
+    fetchInvoice();
   }, [id]);
   
   // Format currency
@@ -115,7 +101,7 @@ const RecordPayment = () => {
     }));
   };
   
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
@@ -133,18 +119,39 @@ const RecordPayment = () => {
       return;
     }
     
-    // In a real app, we would submit to the API
-    // For now, we'll simulate an API call
-    setTimeout(() => {
-      console.log('Submitting payment:', paymentData);
+    try {
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      const response = await axios.post(`${API_URL}/billing/${id}/payment`, {
+        amount: paymentData.amount,
+        paymentDate: paymentData.date,
+        paymentMethod: paymentData.method,
+        reference: paymentData.reference,
+        notes: paymentData.notes
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
       setSuccess(true);
-      setSubmitting(false);
       
       // Redirect to invoice view after a delay
       setTimeout(() => {
         navigate(`/billing/invoice/${id}`);
       }, 2000);
-    }, 1500);
+    } catch (err) {
+      console.error('Error recording payment:', err);
+      const errorMessage = err.response?.data?.message || 'Error recording payment. Please try again.';
+      setError(errorMessage);
+    } finally {
+      setSubmitting(false);
+    }
   };
   
   if (loading) {

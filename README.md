@@ -1,91 +1,223 @@
-# Dental CRM for Indian Clinic Chains
+# DentOS - Multi-Tenant Dental Practice Management System
 
-A comprehensive Customer Relationship Management system designed specifically for dental clinic chains in India. This application helps manage patients, appointments, treatments, staff, inventory, and analytics across multiple clinic locations.
+A comprehensive, multi-tenant dental practice management system designed for Indian dental practitioners and clinic chains. DentOS provides complete data isolation between organizations while offering powerful collaboration features within each organization.
 
-## Features
+## 🏢 Multi-Tenant Architecture
 
-- **Patient Management**: Store and manage patient records, medical history, and treatment plans
-- **Document Management**: Upload, categorize, and manage patient documents and images
-- **Patient Communication**: Send and track communications via SMS, WhatsApp, and email
-- **Appointment Scheduling**: Book, reschedule, and cancel appointments with calendar integration
-- **Treatment Tracking**: Track ongoing treatments, procedures, and follow-ups
-- **Staff Management**: Manage dentists, assistants, and administrative staff across clinics
-- **Inventory Management**: Track dental supplies and equipment
-- **Billing & Payments**: Generate invoices and track payments
-- **Analytics & Reporting**: Get insights on clinic performance, patient demographics, and revenue
-- **Multi-Clinic Support**: Centralized management for multiple clinic locations
-- **SMS/Email Notifications**: Automated reminders for appointments
+**Complete Data Isolation**: Each dental practice/organization has completely isolated data
+- **Organization-Level Security**: Patients, appointments, treatments, and all data are organization-specific
+- **User Collaboration**: Users within the same organization share data with role-based access control
+- **Scalable Design**: Support for unlimited organizations on a single platform
 
-## Technology Stack
+## 🔐 Role-Based Access Control (RBAC)
 
-- **Frontend**: React.js with Material-UI
-- **Backend**: Node.js with Express
-- **Database**: MongoDB
-- **Authentication**: JWT-based authentication
-- **Notifications**: Twilio for SMS, Nodemailer for emails
+Five distinct user roles with varying access levels:
+- **👑 Admin**: Full system access including financial data and user management
+- **👨‍💼 Manager**: Business operations access including revenue and reports
+- **🦷 Dentist**: Clinical data access (patients, treatments, appointments)
+- **📞 Receptionist**: Front desk operations (appointments, patient check-in)
+- **🤝 Assistant**: Limited clinical support access
 
-## Getting Started
+## ✨ Core Features
 
-### Prerequisites
+### 👥 **Patient Management**
+- Comprehensive patient records with medical history
+- Organization-specific patient data with unique IDs
+- Emergency contact management and treatment tracking
 
-- Node.js (v14 or higher)
+### 📅 **Appointment System**
+- Advanced scheduling with dentist assignment
+- Multiple appointment types (consultation, treatment, emergency)
+- Status tracking and automated reminders
+
+### 🦷 **Treatment Management**
+- Treatment definition library with pricing
+- Multi-step treatment plans with progress tracking
+- Procedure documentation and notes
+
+### 👨‍⚕️ **Staff & Clinic Management**
+- Multi-clinic support with staff assignments
+- Comprehensive staff profiles with qualifications
+- Operating hours and facility management
+
+### 📦 **Inventory Control**
+- Multi-clinic inventory with stock levels
+- Automated low-stock alerts
+- Supplier management and expiry tracking
+
+### 💰 **Billing & Financial Management** *(Admin/Manager Only)*
+- Professional invoice generation with GST compliance
+- Payment tracking and outstanding management
+- Revenue analytics and financial reporting
+
+### 📊 **Analytics & Reporting**
+- Role-based dashboard visibility
+- Clinic performance metrics
+- Patient demographics and treatment analytics
+
+## 🛠️ Technology Stack
+
+- **Frontend**: React 18, Material-UI (MUI), Axios, React Router v6
+- **Backend**: Node.js, Express.js, Mongoose, JWT Authentication
+- **Database**: MongoDB Atlas (Cloud) with organization-based data partitioning
+- **Charts**: Chart.js with React integration
+- **PDF Generation**: jsPDF with HTML-to-PDF conversion
+- **Notifications**: Real-time notification system with role-based alerts
+- **Theme System**: Light/Dark mode with theme-aware components
+- **Document Management**: File upload/download with Multer
+- **Security**: bcrypt password hashing, JWT tokens, RBAC authorization
+
+## 🚀 Quick Start
+
+### 🎯 Demo Access (Ready to Use!)
+
+**Try DentOS instantly with our pre-loaded demo organization:**
+
+| Role | Email | Password | Access Level |
+|------|-------|----------|--------------|
+| **Admin** | admin@smilecare.com | Demo@2025 | Full Access + Revenue |
+| **Manager** | manager@smilecare.com | Demo@2025 | Business + Revenue |
+| **Dentist** | dentist@smilecare.com | Demo@2025 | Clinical Data |
+| **Receptionist** | receptionist@smilecare.com | Demo@2025 | Front Desk |
+| **Assistant** | assistant@smilecare.com | Demo@2025 | Limited Clinical |
+
+**Demo Data Includes:**
+- ✅ **Complete Organization**: Smile Care Dental Clinic with 2 branches
+- ✅ **8 Patients** with complete medical histories and documents
+- ✅ **Multiple Appointments** across different dates and clinics
+- ✅ **Treatment Plans** with progress tracking and clinical notes
+- ✅ **Inventory Management** with stock levels and alerts
+- ✅ **Professional Invoices** with GST compliance and payment tracking
+- ✅ **Staff Profiles** with qualifications and role-based access
+- ✅ **Document Management** with file uploads and downloads
+- ✅ **Communication System** with SMS and email tracking
+
+### 💻 Local Development Setup
+
+#### Prerequisites
+- Node.js (v16 or higher)
 - npm or yarn
-- MongoDB
+- MongoDB Atlas account (or local MongoDB)
 
-### Installation
-
-1. Clone the repository
-2. Install backend dependencies:
+#### Installation
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd DentOS
    ```
+
+2. **Backend Setup**
+   ```bash
    cd backend
    npm install
+   cp .env.example .env
+   # Configure your MongoDB URI and other settings
+   npm run dev
    ```
-3. Install frontend dependencies:
-   ```
+
+3. **Frontend Setup**
+   ```bash
    cd frontend
    npm install
+   cp .env.example .env
+   # Configure REACT_APP_API_URL
+   npm start
    ```
-4. Set up environment variables (see `.env.example` files in both directories)
-5. Start the development servers:
-   - Backend: `npm run dev` in the backend directory
-   - Frontend: `npm start` in the frontend directory
 
-## Project Structure
+4. **Create Demo Data** (Optional)
+   ```bash
+   cd backend
+   node create-demo-organization.js
+   ```
+
+## 📁 Project Structure
 
 ```
-├── backend/             # Node.js Express backend
-│   ├── config/          # Configuration files
-│   ├── controllers/     # Request handlers
-│   ├── models/          # Database models
-│   ├── routes/          # API routes
-│   ├── middleware/      # Custom middleware
-│   ├── utils/           # Utility functions
-│   └── server.js        # Entry point
+DentOS/
+├── backend/                    # Node.js Express API Server
+│   ├── controllers/           # Business logic & API handlers
+│   │   ├── auth.js           # Authentication & user management
+│   │   ├── organizations.js  # Multi-tenant organization logic
+│   │   ├── patients.js       # Patient management
+│   │   ├── appointments.js   # Appointment scheduling
+│   │   ├── treatments.js     # Treatment definitions & plans
+│   │   ├── billing.js        # Invoice & payment management
+│   │   ├── inventory.js      # Stock & supply management
+│   │   ├── staff.js          # Staff & clinic management
+│   │   └── dashboard.js      # Analytics & reporting
+│   ├── models/               # MongoDB Mongoose schemas
+│   │   ├── Organization.js   # Multi-tenant organization model
+│   │   ├── User.js          # User accounts with RBAC
+│   │   ├── Patient.js       # Patient records
+│   │   ├── Appointment.js   # Appointment scheduling
+│   │   ├── Treatment.js     # Treatment plans
+│   │   ├── Invoice.js       # Billing & invoices
+│   │   ├── Inventory.js     # Inventory management
+│   │   ├── Staff.js         # Staff profiles
+│   │   └── Clinic.js        # Clinic locations
+│   ├── routes/              # API route definitions
+│   ├── middleware/          # Authentication & validation
+│   ├── utils/              # Helper functions & utilities
+│   └── server.js           # Express server entry point
 │
-├── frontend/            # React.js frontend
-│   ├── public/          # Static files
-│   └── src/             # Source files
-│       ├── components/  # Reusable components
-│       ├── pages/       # Page components
-│       ├── services/    # API services
-│       ├── context/     # React context
-│       ├── utils/       # Utility functions
-│       └── App.js       # Main component
+├── frontend/                   # React.js Client Application
+│   ├── src/
+│   │   ├── components/        # Reusable UI components
+│   │   │   ├── layout/       # Layout components (Sidebar, Header)
+│   │   │   └── routing/      # Route protection & organization checks
+│   │   ├── pages/            # Main application pages
+│   │   │   ├── auth/         # Login, Register, Organization setup
+│   │   │   ├── dashboard/    # Role-based dashboard
+│   │   │   ├── patients/     # Patient management
+│   │   │   ├── appointments/ # Appointment scheduling
+│   │   │   ├── treatments/   # Treatment management
+│   │   │   ├── billing/      # Invoice & payment management
+│   │   │   ├── inventory/    # Stock management
+│   │   │   ├── staff/        # Staff management
+│   │   │   ├── team/         # User & organization management
+│   │   │   └── reports/      # Analytics & reporting
+│   │   ├── context/          # React Context (Authentication)
+│   │   ├── utils/           # Helper functions (PDF generation, etc.)
+│   │   └── App.js           # Main application component
+│   └── public/              # Static assets
+│
+└── Documentation/             # Comprehensive documentation
+    ├── DEVELOPMENT_LOG.md    # Development progress & fixes
+    ├── ORGANIZATION_SETUP_GUIDE.md # Multi-tenant setup guide
+    ├── TECHNICAL_DOCUMENTATION.md  # Technical architecture
+    └── USER_GUIDE.md        # End-user documentation
 ```
 
-## Documentation
+## 📚 Documentation
 
-For detailed documentation, please refer to:
+### For Developers
+- **[Development Log](./DEVELOPMENT_LOG.md)** - Complete development history and fixes
+- **[Technical Documentation](./TECHNICAL_DOCUMENTATION.md)** - Architecture and implementation details
+- **[Organization Setup Guide](./ORGANIZATION_SETUP_GUIDE.md)** - Multi-tenant system guide
 
-- [Technical Documentation](./TECHNICAL_DOCUMENTATION.md) - For experienced developers
-- [Beginner's Guide](./BEGINNER_GUIDE.md) - For coding beginners
+### For Users
+- **[User Guide](./USER_GUIDE.md)** - Complete user manual for all features
+- **[Deployment Guide](./DEPLOYMENT_GUIDE.md)** - Production deployment instructions
 
-## License
+## 🏆 Key Achievements
+
+✅ **Complete Multi-Tenancy** - Full data isolation between organizations  
+✅ **Advanced RBAC** - Five-tier role-based access control  
+✅ **Professional PDF Generation** - Clean, GST-compliant invoices  
+✅ **Real-time Dashboard** - Role-based analytics and insights  
+✅ **Theme System** - Light/Dark mode with theme-aware components  
+✅ **Document Management** - File upload/download with robust error handling  
+✅ **Notification System** - Real-time alerts with role-based filtering  
+✅ **Comprehensive Demo** - Ready-to-use demo organization with complete data  
+✅ **Production Ready** - Deployment-ready with proper security and error handling  
+
+## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Acknowledgments
+## 🙏 Acknowledgments
 
-- Designed specifically for the Indian dental healthcare context
-- Incorporates best practices from dental clinic management
-- Optimized for multi-location clinic chains
+- **Indian Healthcare Context**: Designed specifically for Indian dental practices
+- **GST Compliance**: Built-in GST calculations and invoice formatting
+- **Multi-Clinic Operations**: Optimized for clinic chains and multi-location practices
+- **Modern Architecture**: Following current best practices for scalable web applications

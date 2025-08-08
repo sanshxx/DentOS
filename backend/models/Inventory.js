@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 
 const InventorySchema = new mongoose.Schema({
+  organization: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Organization',
+    required: true
+  },
   itemName: {
     type: String,
     required: [true, 'Please add item name'],
@@ -9,7 +14,6 @@ const InventorySchema = new mongoose.Schema({
   itemCode: {
     type: String,
     required: [true, 'Please add item code'],
-    unique: true,
     trim: true
   },
   category: {
@@ -100,7 +104,7 @@ const InventorySchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['active', 'discontinued', 'out of stock'],
+    enum: ['active', 'discontinued', 'out of stock', 'low stock'],
     default: 'active'
   },
   image: {
@@ -140,9 +144,10 @@ InventorySchema.pre('findOneAndUpdate', function() {
 });
 
 // Create indexes for faster queries
-InventorySchema.index({ itemCode: 1 });
 InventorySchema.index({ category: 1 });
 InventorySchema.index({ 'clinics.clinic': 1 });
 InventorySchema.index({ status: 1 });
+// Create compound index for unique itemCode per organization
+InventorySchema.index({ itemCode: 1, organization: 1 }, { unique: true });
 
 module.exports = mongoose.model('Inventory', InventorySchema);

@@ -39,130 +39,12 @@ import {
   Sort as SortIcon,
 } from '@mui/icons-material';
 import { toast } from 'react-toastify';
+import axios from 'axios';
 
-// Mock data for patients (replace with API call)
-const MOCK_PATIENTS = [
-  {
-    id: '123456',
-    firstName: 'Rahul',
-    lastName: 'Sharma',
-    phone: '9876543210',
-    email: 'rahul.sharma@example.com',
-    age: 38,
-    gender: 'male',
-    lastVisit: '2023-05-15',
-    nextAppointment: '2023-06-20',
-    clinicName: 'Dental Care - Bandra',
-  },
-  {
-    id: '123457',
-    firstName: 'Priya',
-    lastName: 'Patel',
-    phone: '9876543211',
-    email: 'priya.patel@example.com',
-    age: 29,
-    gender: 'female',
-    lastVisit: '2023-05-10',
-    nextAppointment: null,
-    clinicName: 'Dental Care - Andheri',
-  },
-  {
-    id: '123458',
-    firstName: 'Amit',
-    lastName: 'Singh',
-    phone: '9876543212',
-    email: 'amit.singh@example.com',
-    age: 45,
-    gender: 'male',
-    lastVisit: '2023-04-22',
-    nextAppointment: '2023-06-15',
-    clinicName: 'Dental Care - Powai',
-  },
-  {
-    id: '123459',
-    firstName: 'Neha',
-    lastName: 'Gupta',
-    phone: '9876543213',
-    email: 'neha.gupta@example.com',
-    age: 32,
-    gender: 'female',
-    lastVisit: '2023-05-18',
-    nextAppointment: '2023-06-25',
-    clinicName: 'Dental Care - Bandra',
-  },
-  {
-    id: '123460',
-    firstName: 'Vikram',
-    lastName: 'Malhotra',
-    phone: '9876543214',
-    email: 'vikram.malhotra@example.com',
-    age: 50,
-    gender: 'male',
-    lastVisit: '2023-05-05',
-    nextAppointment: '2023-06-10',
-    clinicName: 'Dental Care - Juhu',
-  },
-  {
-    id: '123461',
-    firstName: 'Ananya',
-    lastName: 'Desai',
-    phone: '9876543215',
-    email: 'ananya.desai@example.com',
-    age: 27,
-    gender: 'female',
-    lastVisit: '2023-05-12',
-    nextAppointment: null,
-    clinicName: 'Dental Care - Andheri',
-  },
-  {
-    id: '123462',
-    firstName: 'Rajesh',
-    lastName: 'Kumar',
-    phone: '9876543216',
-    email: 'rajesh.kumar@example.com',
-    age: 42,
-    gender: 'male',
-    lastVisit: '2023-04-30',
-    nextAppointment: '2023-06-18',
-    clinicName: 'Dental Care - Powai',
-  },
-  {
-    id: '123463',
-    firstName: 'Meera',
-    lastName: 'Reddy',
-    phone: '9876543217',
-    email: 'meera.reddy@example.com',
-    age: 35,
-    gender: 'female',
-    lastVisit: '2023-05-20',
-    nextAppointment: '2023-06-22',
-    clinicName: 'Dental Care - Bandra',
-  },
-  {
-    id: '123464',
-    firstName: 'Sanjay',
-    lastName: 'Joshi',
-    phone: '9876543218',
-    email: 'sanjay.joshi@example.com',
-    age: 48,
-    gender: 'male',
-    lastVisit: '2023-05-08',
-    nextAppointment: '2023-06-12',
-    clinicName: 'Dental Care - Juhu',
-  },
-  {
-    id: '123465',
-    firstName: 'Kavita',
-    lastName: 'Sharma',
-    phone: '9876543219',
-    email: 'kavita.sharma@example.com',
-    age: 30,
-    gender: 'female',
-    lastVisit: '2023-05-14',
-    nextAppointment: null,
-    clinicName: 'Dental Care - Andheri',
-  },
-];
+// Get API URL from environment variables
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+// Patient list will be fetched from the API
 
 const PatientList = () => {
   const navigate = useNavigate();
@@ -183,19 +65,14 @@ const PatientList = () => {
         setLoading(true);
         setError(null);
 
-        // In a real app, this would be an API call
-        // const response = await axios.get('/api/patients');
-        // setPatients(response.data);
-
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Make API call to get patients
+        const response = await axios.get(`${API_URL}/patients`);
         
-        // Set mock data
-        setPatients(MOCK_PATIENTS);
+        setPatients(response.data.data);
       } catch (err) {
         console.error('Error fetching patients:', err);
         setError('Failed to load patients. Please try again.');
-        toast.error('Failed to load patients');
+        toast.error(err.response?.data?.message || 'Failed to load patients');
       } finally {
         setLoading(false);
       }
@@ -243,18 +120,25 @@ const PatientList = () => {
     try {
       setDeletingPatient(true);
 
-      // In a real app, this would be an API call
-      // await axios.delete(`/api/patients/${selectedPatient.id}`);
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
 
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Make API call to delete patient
+      await axios.delete(`/api/patients/${selectedPatient.id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
 
       // Update local state
       setPatients(patients.filter(patient => patient.id !== selectedPatient.id));
       toast.success('Patient deleted successfully');
     } catch (err) {
       console.error('Error deleting patient:', err);
-      toast.error('Failed to delete patient');
+      toast.error(err.response?.data?.message || 'Failed to delete patient');
     } finally {
       setDeletingPatient(false);
       handleDeleteDialogClose();

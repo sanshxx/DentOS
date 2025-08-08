@@ -1,0 +1,858 @@
+Server running on port 5000
+MongoDB connected successfully
+[0mPOST /api/auth/login [32m200[0m 8539.572 ms - 431[0m
+🔍 Organization Search Debug:
+   Search query: Ansh
+   User organization: new ObjectId("68927a077ce580e7f9847985")
+   Search regex: /Ansh/i
+   Total organizations in DB: 5
+   All organizations: [
+  {
+    name: 'DentOS Default Organization',
+    slug: 'dentos-default',
+    type: 'dental_clinic'
+  },
+  {
+    name: 'Test Dental Clinic',
+    slug: 'test-dental-clinic',
+    type: 'dental_clinic'
+  },
+  {
+    name: 'Test Dental Clinic',
+    slug: 'test-dental-clinic-flow',
+    type: 'dental_clinic'
+  },
+  {
+    name: 'Test Dental Clinic',
+    slug: 'test-dental-clinic-flow-2',
+    type: 'dental_clinic'
+  },
+  {
+    name: "Ansh's Dental Clinic",
+    slug: 'ansh-dental',
+    type: 'dental_clinic'
+  }
+]
+   Search results: 1
+   Results: [ { name: "Ansh's Dental Clinic", slug: 'ansh-dental' } ]
+[0mGET /api/organizations/search?q=Ansh [32m200[0m 194.078 ms - 331[0m
+[0mPOST /api/auth/login [32m200[0m 62.727 ms - 431[0m
+🔍 Organization Search Debug:
+   Search query: test
+   User organization: new ObjectId("68927a077ce580e7f9847985")
+   Search regex: /test/i
+   Total organizations in DB: 5
+   All organizations: [
+  {
+    name: 'DentOS Default Organization',
+    slug: 'dentos-default',
+    type: 'dental_clinic'
+  },
+  {
+    name: 'Test Dental Clinic',
+    slug: 'test-dental-clinic',
+    type: 'dental_clinic'
+  },
+  {
+    name: 'Test Dental Clinic',
+    slug: 'test-dental-clinic-flow',
+    type: 'dental_clinic'
+  },
+  {
+    name: 'Test Dental Clinic',
+    slug: 'test-dental-clinic-flow-2',
+    type: 'dental_clinic'
+  },
+  {
+    name: "Ansh's Dental Clinic",
+    slug: 'ansh-dental',
+    type: 'dental_clinic'
+  }
+]
+   Search results: 3
+   Results: [
+  { name: 'Test Dental Clinic', slug: 'test-dental-clinic' },
+  { name: 'Test Dental Clinic', slug: 'test-dental-clinic-flow' },
+  { name: 'Test Dental Clinic', slug: 'test-dental-clinic-flow-2' }
+]
+[0mGET /api/organizations/search?q=test [32m200[0m 41.689 ms - 1036[0m
+🔍 Organization Search Debug:
+   Search query: Ansh's Dental Clinic
+   User organization: new ObjectId("68927a077ce580e7f9847985")
+   Search regex: /Ansh's Dental Clinic/i
+   Total organizations in DB: 5
+   All organizations: [
+  {
+    name: 'DentOS Default Organization',
+    slug: 'dentos-default',
+    type: 'dental_clinic'
+  },
+  {
+    name: 'Test Dental Clinic',
+    slug: 'test-dental-clinic',
+    type: 'dental_clinic'
+  },
+  {
+    name: 'Test Dental Clinic',
+    slug: 'test-dental-clinic-flow',
+    type: 'dental_clinic'
+  },
+  {
+    name: 'Test Dental Clinic',
+    slug: 'test-dental-clinic-flow-2',
+    type: 'dental_clinic'
+  },
+  {
+    name: "Ansh's Dental Clinic",
+    slug: 'ansh-dental',
+    type: 'dental_clinic'
+  }
+]
+   Search results: 1
+   Results: [ { name: "Ansh's Dental Clinic", slug: 'ansh-dental' } ]
+[0mGET /api/organizations/search?q=Ansh%27s%20Dental%20Clinic [32m200[0m 47.417 ms - 331[0m
+🔍 Organization Search Debug:
+   Search query: Ansh
+   User organization: new ObjectId("68927a077ce580e7f9847985")
+   Search regex: /Ansh/i
+   Total organizations in DB: 5
+   All organizations: [
+  {
+    name: 'DentOS Default Organization',
+    slug: 'dentos-default',
+    type: 'dental_clinic'
+  },
+  {
+    name: 'Test Dental Clinic',
+    slug: 'test-dental-clinic',
+    type: 'dental_clinic'
+  },
+  {
+    name: 'Test Dental Clinic',
+    slug: 'test-dental-clinic-flow',
+    type: 'dental_clinic'
+  },
+  {
+    name: 'Test Dental Clinic',
+    slug: 'test-dental-clinic-flow-2',
+    type: 'dental_clinic'
+  },
+  {
+    name: "Ansh's Dental Clinic",
+    slug: 'ansh-dental',
+    type: 'dental_clinic'
+  }
+]
+   Search results: 1
+   Results: [ { name: "Ansh's Dental Clinic", slug: 'ansh-dental' } ]
+[0mGET /api/organizations/search?q=Ansh [32m200[0m 68.503 ms - 331[0m
+🔍 Organization Search Debug:
+   Search query: Ansh
+   User organization: new ObjectId("68927a077ce580e7f9847985")
+   Search regex: /Ansh/i
+   Total organizations in DB: 5
+   All organizations: [
+  {
+    name: 'DentOS Default Organization',
+    slug: 'dentos-default',
+    type: 'dental_clinic'
+  },
+  {
+    name: 'Test Dental Clinic',
+    slug: 'test-dental-clinic',
+    type: 'dental_clinic'
+  },
+  {
+    name: 'Test Dental Clinic',
+    slug: 'test-dental-clinic-flow',
+    type: 'dental_clinic'
+  },
+  {
+    name: 'Test Dental Clinic',
+    slug: 'test-dental-clinic-flow-2',
+    type: 'dental_clinic'
+  },
+  {
+    name: "Ansh's Dental Clinic",
+    slug: 'ansh-dental',
+    type: 'dental_clinic'
+  }
+]
+   Search results: 1
+   Results: [ { name: "Ansh's Dental Clinic", slug: 'ansh-dental' } ]
+[0mGET /api/organizations/search?q=Ansh [36m304[0m 104.184 ms - -[0m
+[0mPOST /api/organizations/6893219e68a4af3917f36afa/join-request [32m201[0m 58.889 ms - 295[0m
+[0mGET /api/auth/me [36m304[0m 25.832 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 21.190 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 21.901 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 20.300 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 20.560 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 19.944 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 22.289 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 20.011 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 25.457 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 21.418 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 22.642 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 20.817 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 22.121 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 28.326 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 33.641 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 19.489 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 22.110 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 20.251 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 19.847 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 20.592 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 20.519 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 20.717 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 19.098 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 20.581 ms - -[0m
+🔍 Organization Search Debug:
+   Search query: Ansh
+   User organization: new ObjectId("68927a077ce580e7f9847985")
+   Search regex: /Ansh/i
+   Total organizations in DB: 5
+   All organizations: [
+  {
+    name: 'DentOS Default Organization',
+    slug: 'dentos-default',
+    type: 'dental_clinic'
+  },
+  {
+    name: 'Test Dental Clinic',
+    slug: 'test-dental-clinic',
+    type: 'dental_clinic'
+  },
+  {
+    name: 'Test Dental Clinic',
+    slug: 'test-dental-clinic-flow',
+    type: 'dental_clinic'
+  },
+  {
+    name: 'Test Dental Clinic',
+    slug: 'test-dental-clinic-flow-2',
+    type: 'dental_clinic'
+  },
+  {
+    name: "Ansh's Dental Clinic",
+    slug: 'ansh-dental',
+    type: 'dental_clinic'
+  }
+]
+   Search results: 1
+   Results: [ { name: "Ansh's Dental Clinic", slug: 'ansh-dental' } ]
+[0mGET /api/organizations/search?q=Ansh [36m304[0m 45.250 ms - -[0m
+[0mPOST /api/organizations/6893219e68a4af3917f36afa/join-request [33m400[0m 42.256 ms - 90[0m
+🔍 Organization Search Debug:
+   Search query: test
+   User organization: new ObjectId("68927a077ce580e7f9847985")
+   Search regex: /test/i
+   Total organizations in DB: 5
+   All organizations: [
+  {
+    name: 'DentOS Default Organization',
+    slug: 'dentos-default',
+    type: 'dental_clinic'
+  },
+  {
+    name: 'Test Dental Clinic',
+    slug: 'test-dental-clinic',
+    type: 'dental_clinic'
+  },
+  {
+    name: 'Test Dental Clinic',
+    slug: 'test-dental-clinic-flow',
+    type: 'dental_clinic'
+  },
+  {
+    name: 'Test Dental Clinic',
+    slug: 'test-dental-clinic-flow-2',
+    type: 'dental_clinic'
+  },
+  {
+    name: "Ansh's Dental Clinic",
+    slug: 'ansh-dental',
+    type: 'dental_clinic'
+  }
+]
+   Search results: 3
+   Results: [
+  { name: 'Test Dental Clinic', slug: 'test-dental-clinic' },
+  { name: 'Test Dental Clinic', slug: 'test-dental-clinic-flow' },
+  { name: 'Test Dental Clinic', slug: 'test-dental-clinic-flow-2' }
+]
+[0mGET /api/organizations/search?q=test [32m200[0m 60.084 ms - 1036[0m
+[0mGET /api/auth/me [36m304[0m 26.180 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 33.522 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 30.426 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 23.879 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 26.001 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 22.146 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 22.420 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 23.929 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 26.867 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 24.652 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 24.329 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 24.533 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 22.740 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 24.359 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 24.020 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 23.901 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 23.841 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 20.608 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 21.897 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 20.721 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 20.645 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 21.117 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 25.555 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 24.087 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 22.635 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 20.538 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 22.170 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 21.134 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 23.475 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 21.928 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 22.997 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 20.546 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 21.539 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 21.011 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 20.575 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 21.156 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 20.831 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 20.709 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 20.999 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 20.634 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 20.271 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 20.382 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 24.558 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 27.241 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 19.990 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 22.056 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 20.590 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 21.363 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 23.212 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 20.049 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 23.322 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 22.509 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 26.889 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 26.728 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 29.341 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 28.228 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 64.418 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 83.447 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 48.139 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 20.836 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 22.141 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 22.565 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 20.179 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 23.463 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 20.743 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 19.700 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 20.626 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 24.940 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 26.319 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 22.649 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 25.106 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 22.721 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 23.986 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 29.285 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 22.080 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 25.460 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 22.884 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 21.275 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 23.930 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 23.876 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 27.239 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 26.431 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 23.338 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 24.051 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 24.417 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 21.945 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 26.892 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 22.738 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 24.070 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 21.200 ms - -[0m
+[0mPOST /api/auth/login [32m200[0m 101.703 ms - 431[0m
+[0mGET /api/auth/me [36m304[0m 21.404 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 21.379 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 23.955 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 22.488 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 21.339 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 20.172 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 21.764 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 20.936 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 27.879 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 24.077 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 30.503 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 23.773 ms - -[0m
+[0mPOST /api/auth/login [32m200[0m 96.978 ms - 430[0m
+[0mGET /api/auth/me [32m200[0m 23.389 ms - 271[0m
+[0mGET /api/auth/me [36m304[0m 21.236 ms - -[0m
+[0mGET /api/organizations/my [32m200[0m 19.954 ms - 793[0m
+[0mGET /api/auth/me [36m304[0m 19.494 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 20.324 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 21.525 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 22.528 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 19.382 ms - -[0m
+[0mGET /api/dashboard [36m304[0m 198.015 ms - -[0m
+[0mGET /api/dashboard [36m304[0m 217.784 ms - -[0m
+[0mPOST /api/auth/login [32m200[0m 101.462 ms - 434[0m
+[0mGET /api/auth/me [32m200[0m 24.035 ms - 261[0m
+[0mGET /api/auth/me [36m304[0m 21.020 ms - -[0m
+[0mGET /api/organizations/my [32m200[0m 22.301 ms - 748[0m
+[0mGET /api/auth/me [36m304[0m 21.173 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 19.362 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 19.734 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 20.646 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 20.853 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 26.863 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 29.590 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 24.904 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 20.878 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 48.132 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 21.995 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 31.258 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 24.396 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 24.126 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 21.012 ms - -[0m
+[0mPOST /api/auth/login [32m200[0m 99.487 ms - 430[0m
+[0mGET /api/auth/me [32m200[0m 22.410 ms - 271[0m
+[0mGET /api/auth/me [36m304[0m 26.761 ms - -[0m
+[0mGET /api/organizations/my [32m200[0m 21.066 ms - 793[0m
+[0mGET /api/auth/me [36m304[0m 22.126 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 23.418 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 20.471 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 23.566 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 21.553 ms - -[0m
+[0mGET /api/dashboard [36m304[0m 193.160 ms - -[0m
+[0mGET /api/dashboard [36m304[0m 199.145 ms - -[0m
+[0mPOST /api/auth/login [32m200[0m 97.549 ms - 430[0m
+[0mGET /api/auth/me [36m304[0m 21.744 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 22.092 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 21.750 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 21.376 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 24.866 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 19.388 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 22.327 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 20.626 ms - -[0m
+[0mGET /api/dashboard [36m304[0m 198.050 ms - -[0m
+[0mGET /api/dashboard [36m304[0m 211.663 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 29.863 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 28.705 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 21.312 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 20.203 ms - -[0m
+[0mGET /api/dashboard [36m304[0m 202.623 ms - -[0m
+[0mGET /api/dashboard [36m304[0m 197.748 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 23.919 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 23.776 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 20.768 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 22.980 ms - -[0m
+[0mGET /api/dashboard [36m304[0m 201.676 ms - -[0m
+[0mGET /api/dashboard [36m304[0m 201.027 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 28.224 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 27.012 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 25.578 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 27.031 ms - -[0m
+[0mGET /api/dashboard [36m304[0m 192.319 ms - -[0m
+[0mGET /api/dashboard [36m304[0m 204.160 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 26.513 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 32.636 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 20.498 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 20.834 ms - -[0m
+[0mGET /api/dashboard [36m304[0m 198.750 ms - -[0m
+[0mGET /api/dashboard [36m304[0m 200.509 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 24.279 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 23.663 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 23.547 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 22.802 ms - -[0m
+[0mGET /api/dashboard [36m304[0m 203.332 ms - -[0m
+[0mGET /api/dashboard [36m304[0m 201.629 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 29.395 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 28.320 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 23.859 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 26.693 ms - -[0m
+[0mGET /api/dashboard [36m304[0m 189.527 ms - -[0m
+[0mGET /api/dashboard [36m304[0m 194.426 ms - -[0m
+[0mGET /api/patients?page=1&limit=10 [32m200[0m 30.438 ms - 62[0m
+[0mGET /api/clinics [32m200[0m 30.624 ms - 62[0m
+[0mGET /api/patients?page=1&limit=10 [36m304[0m 30.633 ms - -[0m
+[0mGET /api/clinics [36m304[0m 30.246 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 25.397 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 24.808 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 21.405 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 23.206 ms - -[0m
+[0mGET /api/dashboard [36m304[0m 197.873 ms - -[0m
+[0mGET /api/dashboard [36m304[0m 195.997 ms - -[0m
+[0mGET /api/patients?page=1&limit=10 [36m304[0m 30.942 ms - -[0m
+[0mGET /api/clinics [36m304[0m 30.140 ms - -[0m
+[0mGET /api/patients?page=1&limit=10 [36m304[0m 31.025 ms - -[0m
+[0mGET /api/clinics [36m304[0m 33.117 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 25.241 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 31.168 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 24.026 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 29.521 ms - -[0m
+[0mGET /api/dashboard [36m304[0m 192.321 ms - -[0m
+[0mGET /api/dashboard [36m304[0m 219.329 ms - -[0m
+[0mGET /api/patients?page=1&limit=10 [36m304[0m 38.278 ms - -[0m
+[0mGET /api/clinics [36m304[0m 37.391 ms - -[0m
+[0mGET /api/patients?page=1&limit=10 [36m304[0m 32.282 ms - -[0m
+[0mGET /api/clinics [36m304[0m 31.335 ms - -[0m
+[0mGET /api/inventory?page=1&limit=10 [32m200[0m 28.714 ms - 36[0m
+[0mGET /api/inventory?page=1&limit=10 [36m304[0m 24.424 ms - -[0m
+[0mGET /api/inventory?page=1&limit=10 [36m304[0m 23.411 ms - -[0m
+[0mGET /api/inventory?page=1&limit=10 [36m304[0m 21.461 ms - -[0m
+[0mGET /api/clinics?sort=-createdAt [32m200[0m 42.232 ms - 62[0m
+[0mGET /api/clinics?sort=-createdAt [36m304[0m 35.208 ms - -[0m
+[0mGET /api/staff?page=1&limit=10 [32m200[0m 39.559 ms - 62[0m
+[0mGET /api/staff?page=1&limit=10 [36m304[0m 36.350 ms - -[0m
+[0mGET /api/patients?page=1&limit=10 [36m304[0m 42.400 ms - -[0m
+[0mGET /api/clinics [36m304[0m 40.770 ms - -[0m
+[0mGET /api/clinics [36m304[0m 32.291 ms - -[0m
+[0mGET /api/patients?page=1&limit=10 [36m304[0m 34.808 ms - -[0m
+[0mGET /api/clinics?sort=-createdAt [36m304[0m 36.636 ms - -[0m
+[0mGET /api/clinics?sort=-createdAt [36m304[0m 35.602 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 4591.022 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 120.714 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 81.051 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 106.101 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 77.954 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 774.901 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 84.619 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 74.880 ms - -[0m
+[0mGET /api/clinics?sort=-createdAt [36m304[0m 136.278 ms - -[0m
+[0mGET /api/clinics?sort=-createdAt [36m304[0m 112.741 ms - -[0m
+[0mGET /api/dashboard [36m304[0m 812.785 ms - -[0m
+[0mGET /api/dashboard [36m304[0m 834.330 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 205.549 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 84.997 ms - -[0m
+[0mGET /api/clinics [36m304[0m 335.141 ms - -[0m
+[0mGET /api/clinics [36m304[0m 204.572 ms - -[0m
+[0mGET /api/patients?page=1&limit=10 [36m304[0m 952.861 ms - -[0m
+[0mGET /api/patients?page=1&limit=10 [36m304[0m 384.532 ms - -[0m
+[0mGET /api/clinics?sort=-createdAt [36m304[0m 151.331 ms - -[0m
+[0mGET /api/clinics?sort=-createdAt [36m304[0m 120.724 ms - -[0m
+[0mPOST /api/clinics [32m201[0m 607.487 ms - 921[0m
+[0mPOST /api/clinics [32m201[0m 745.926 ms - 915[0m
+[0mPOST /api/clinics [32m201[0m 173.481 ms - 925[0m
+[0mGET /api/patients?page=1&limit=10 [36m304[0m 166.776 ms - -[0m
+[0mGET /api/patients?page=1&limit=10 [36m304[0m 288.151 ms - -[0m
+[0mGET /api/clinics [32m200[0m 570.482 ms - 2753[0m
+[0mGET /api/clinics [36m304[0m 522.124 ms - -[0m
+[0mGET /api/clinics [36m304[0m 442.443 ms - -[0m
+[0mGET /api/clinics [36m304[0m 150.153 ms - -[0m
+[0mPOST /api/patients [32m201[0m 179.313 ms - 720[0m
+[0mGET /api/patients?page=1&limit=10 [32m200[0m 225.061 ms - 813[0m
+[0mGET /api/patients?page=1&limit=10 [36m304[0m 152.130 ms - -[0m
+[0mGET /api/clinics [36m304[0m 545.688 ms - -[0m
+[0mGET /api/clinics [36m304[0m 114.578 ms - -[0m
+[0mGET /api/clinics [36m304[0m 144.852 ms - -[0m
+[0mGET /api/clinics [36m304[0m 160.835 ms - -[0m
+[0mPOST /api/patients [32m201[0m 161.384 ms - 729[0m
+[0mGET /api/clinics [36m304[0m 111.476 ms - -[0m
+[0mGET /api/clinics [36m304[0m 103.616 ms - -[0m
+[0mGET /api/patients?page=1&limit=10 [32m200[0m 539.877 ms - 1575[0m
+[0mGET /api/patients?page=1&limit=10 [36m304[0m 174.968 ms - -[0m
+[0mGET /api/clinics [36m304[0m 388.588 ms - -[0m
+[0mGET /api/clinics [36m304[0m 133.570 ms - -[0m
+[0mPOST /api/patients [32m201[0m 284.013 ms - 721[0m
+[0mGET /api/clinics [36m304[0m 135.493 ms - -[0m
+[0mGET /api/clinics [36m304[0m 184.835 ms - -[0m
+[0mGET /api/patients?page=1&limit=10 [32m200[0m 604.600 ms - 2326[0m
+[0mGET /api/patients?page=1&limit=10 [36m304[0m 197.800 ms - -[0m
+[0mGET /api/clinics?sort=-createdAt [32m200[0m 190.594 ms - 2753[0m
+[0mGET /api/clinics?sort=-createdAt [36m304[0m 194.957 ms - -[0m
+[0mGET /api/staff?page=1&limit=10 [36m304[0m 422.631 ms - -[0m
+[0mGET /api/staff?page=1&limit=10 [36m304[0m 155.418 ms - -[0m
+Error details: MongoServerError: E11000 duplicate key error collection: test.staffs index: email_1 dup key: { email: "bhavya@gmail.com" }
+    at /Users/ansh/Documents/Trae/DentOS/backend/node_modules/mongodb/lib/operations/insert.js:50:33
+    at /Users/ansh/Documents/Trae/DentOS/backend/node_modules/mongodb/lib/operations/command.js:84:64
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  index: 0,
+  code: 11000,
+  keyPattern: { email: 1 },
+  keyValue: { email: 'bhavya@gmail.com' },
+  [Symbol(errorLabels)]: Set(0) {}
+}
+Error stack: MongoServerError: E11000 duplicate key error collection: test.staffs index: email_1 dup key: { email: "bhavya@gmail.com" }
+    at /Users/ansh/Documents/Trae/DentOS/backend/node_modules/mongodb/lib/operations/insert.js:50:33
+    at /Users/ansh/Documents/Trae/DentOS/backend/node_modules/mongodb/lib/operations/command.js:84:64
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+[0mPOST /api/staff [33m400[0m 258.319 ms - 61[0m
+[0mPOST /api/staff [32m201[0m 228.126 ms - 778[0m
+[0mGET /api/staff?page=1&limit=10 [32m200[0m 155.072 ms - 742[0m
+[0mPOST /api/staff [32m201[0m 205.256 ms - 783[0m
+[0mGET /api/staff?page=1&limit=10 [32m200[0m 377.223 ms - 1428[0m
+[0mGET /api/organizations/my [36m304[0m 527.389 ms - -[0m
+[0mGET /api/users [32m200[0m 293.151 ms - 273[0m
+[0mGET /api/organizations/my [36m304[0m 496.336 ms - -[0m
+[0mGET /api/users [36m304[0m 488.801 ms - -[0m
+[0mGET /api/organizations/6893219e68a4af3917f36afa/join-requests [32m200[0m 1505.289 ms - 326[0m
+[0mGET /api/organizations/6893219e68a4af3917f36afa/join-requests [36m304[0m 160.807 ms - -[0m
+[0mPUT /api/organizations/6893219e68a4af3917f36afa/join-requests/689324a7e4a6dda36282fcf6 [32m200[0m 221.520 ms - 401[0m
+[0mGET /api/organizations/my [36m304[0m 67.228 ms - -[0m
+[0mGET /api/users [32m200[0m 67.058 ms - 520[0m
+[0mGET /api/organizations/6893219e68a4af3917f36afa/join-requests [32m200[0m 647.207 ms - 26[0m
+[0mGET /api/reports?startDate=2025-02-01&endDate=2025-08-31 [32m200[0m 495.917 ms - 2006[0m
+[0mGET /api/clinics [36m304[0m 617.927 ms - -[0m
+[0mGET /api/reports?startDate=2025-02-01&endDate=2025-08-31 [36m304[0m 393.104 ms - -[0m
+[0mGET /api/clinics [36m304[0m 810.913 ms - -[0m
+[0mGET /api/patients?page=1&limit=10 [36m304[0m 189.450 ms - -[0m
+[0mGET /api/patients?page=1&limit=10 [36m304[0m 154.714 ms - -[0m
+[0mGET /api/clinics [36m304[0m 595.565 ms - -[0m
+[0mGET /api/clinics [36m304[0m 383.635 ms - -[0m
+[0mGET /api/clinics?sort=-createdAt [36m304[0m 145.062 ms - -[0m
+[0mGET /api/clinics?sort=-createdAt [36m304[0m 159.370 ms - -[0m
+[0mGET /api/staff?page=1&limit=10 [36m304[0m 397.560 ms - -[0m
+[0mGET /api/staff?page=1&limit=10 [36m304[0m 133.309 ms - -[0m
+[0mGET /api/inventory?page=1&limit=10 [36m304[0m 78.325 ms - -[0m
+[0mGET /api/inventory?page=1&limit=10 [36m304[0m 85.568 ms - -[0m
+[0mGET /api/inventory?page=1&limit=10 [36m304[0m 94.280 ms - -[0m
+[0mGET /api/inventory?page=1&limit=10 [36m304[0m 87.405 ms - -[0m
+[0mPOST /api/inventory [32m201[0m 165.134 ms - 642[0m
+[0mGET /api/inventory?page=1&limit=10 [32m200[0m 149.178 ms - 654[0m
+[0mPOST /api/inventory [32m201[0m 171.584 ms - 640[0m
+[0mGET /api/inventory?page=1&limit=10 [32m200[0m 115.306 ms - 1271[0m
+[0mPUT /api/inventory/6893a561e4a6dda362830199/stock [32m200[0m 154.970 ms - 689[0m
+[0mGET /api/inventory?page=1&limit=10 [32m200[0m 77.884 ms - 1271[0m
+[0mPUT /api/inventory/6893a561e4a6dda362830199/stock [32m200[0m 423.501 ms - 689[0m
+[0mGET /api/inventory?page=1&limit=10 [32m200[0m 116.084 ms - 1271[0m
+[0mPUT /api/inventory/6893a561e4a6dda362830199/stock [32m200[0m 163.032 ms - 691[0m
+[0mGET /api/inventory?page=1&limit=10 [32m200[0m 99.021 ms - 1273[0m
+[0mPUT /api/inventory/6893a561e4a6dda362830199/stock [32m200[0m 230.223 ms - 694[0m
+[0mGET /api/inventory?page=1&limit=10 [32m200[0m 144.592 ms - 1276[0m
+[0mPUT /api/inventory/6893a561e4a6dda362830199/stock [32m200[0m 256.720 ms - 689[0m
+[0mGET /api/inventory?page=1&limit=10 [32m200[0m 112.085 ms - 1271[0m
+[0mPUT /api/inventory/6893a561e4a6dda362830199/stock [32m200[0m 255.484 ms - 691[0m
+[0mGET /api/inventory?page=1&limit=10 [32m200[0m 111.232 ms - 1273[0m
+[0mGET /api/treatments?page=1&limit=5 [36m304[0m 126.112 ms - -[0m
+[0mGET /api/treatments?page=1&limit=5 [36m304[0m 121.296 ms - -[0m
+[0mGET /api/billing [32m200[0m 152.067 ms - 62[0m
+[0mGET /api/billing [36m304[0m 119.328 ms - -[0m
+[0mGET /api/patients [32m200[0m 211.009 ms - 2326[0m
+[0mGET /api/clinics [36m304[0m 161.388 ms - -[0m
+[0mGET /api/treatments [36m304[0m 113.701 ms - -[0m
+[0mGET /api/patients [36m304[0m 638.473 ms - -[0m
+[0mGET /api/clinics [36m304[0m 167.060 ms - -[0m
+[0mGET /api/treatments [36m304[0m 141.403 ms - -[0m
+[0mGET /api/billing [36m304[0m 127.931 ms - -[0m
+[0mGET /api/billing [36m304[0m 109.219 ms - -[0m
+[0mGET /api/treatments?page=1&limit=5 [36m304[0m 418.038 ms - -[0m
+[0mGET /api/treatments?page=1&limit=5 [36m304[0m 284.401 ms - -[0m
+[0mGET /api/billing [36m304[0m 386.069 ms - -[0m
+[0mGET /api/billing [36m304[0m 245.247 ms - -[0m
+[0mGET /api/patients [36m304[0m 237.576 ms - -[0m
+[0mGET /api/clinics [36m304[0m 268.897 ms - -[0m
+[0mGET /api/treatments [36m304[0m 223.119 ms - -[0m
+[0mGET /api/patients [36m304[0m 802.491 ms - -[0m
+[0mGET /api/clinics [36m304[0m 193.816 ms - -[0m
+[0mGET /api/treatments [36m304[0m 172.025 ms - -[0m
+[0mGET /api/appointments?page=1&limit=10 [32m200[0m 522.250 ms - 62[0m
+[0mGET /api/appointments?page=1&limit=10 [36m304[0m 213.546 ms - -[0m
+[0mGET /api/patients [36m304[0m 326.174 ms - -[0m
+[0mGET /api/staff [32m200[0m 158.623 ms - 1428[0m
+[0mGET /api/clinics [36m304[0m 243.989 ms - -[0m
+[0mGET /api/patients [36m304[0m 596.117 ms - -[0m
+[0mGET /api/staff [36m304[0m 151.134 ms - -[0m
+[0mGET /api/clinics [36m304[0m 327.716 ms - -[0m
+SMS notification failed: Error: accountSid must start with AC
+    at new Client (/Users/ansh/Documents/Trae/DentOS/backend/node_modules/twilio/lib/base/BaseTwilio.js:71:23)
+    at new Twilio (/Users/ansh/Documents/Trae/DentOS/backend/node_modules/twilio/lib/rest/Twilio.js:33:9)
+    at TwilioSDK (/Users/ansh/Documents/Trae/DentOS/backend/node_modules/twilio/lib/index.js:40:12)
+    at sendSMS (/Users/ansh/Documents/Trae/DentOS/backend/utils/sendSMS.js:11:18)
+    at exports.createAppointment (/Users/ansh/Documents/Trae/DentOS/backend/controllers/appointments.js:241:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+Email notification failed: Error: Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to
+535 5.7.8  https://support.google.com/mail/?p=BadCredentials d9443c01a7336-241afb7037asm167134265ad.0 - gsmtp
+    at SMTPConnection._formatError (/Users/ansh/Documents/Trae/DentOS/backend/node_modules/nodemailer/lib/smtp-connection/index.js:809:19)
+    at SMTPConnection._actionAUTHComplete (/Users/ansh/Documents/Trae/DentOS/backend/node_modules/nodemailer/lib/smtp-connection/index.js:1588:34)
+    at SMTPConnection.<anonymous> (/Users/ansh/Documents/Trae/DentOS/backend/node_modules/nodemailer/lib/smtp-connection/index.js:556:26)
+    at SMTPConnection._processResponse (/Users/ansh/Documents/Trae/DentOS/backend/node_modules/nodemailer/lib/smtp-connection/index.js:993:20)
+    at SMTPConnection._onData (/Users/ansh/Documents/Trae/DentOS/backend/node_modules/nodemailer/lib/smtp-connection/index.js:774:14)
+    at SMTPConnection._onSocketData (/Users/ansh/Documents/Trae/DentOS/backend/node_modules/nodemailer/lib/smtp-connection/index.js:195:44)
+    at TLSSocket.emit (node:events:518:28)
+    at addChunk (node:internal/streams/readable:561:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+    at Readable.push (node:internal/streams/readable:392:5) {
+  code: 'EAUTH',
+  response: '535-5.7.8 Username and Password not accepted. For more information, go to\n' +
+    '535 5.7.8  https://support.google.com/mail/?p=BadCredentials d9443c01a7336-241afb7037asm167134265ad.0 - gsmtp',
+  responseCode: 535,
+  command: 'AUTH PLAIN'
+}
+[0mPOST /api/appointments [32m201[0m 2815.678 ms - 793[0m
+[0mGET /api/appointments?page=1&limit=10 [32m200[0m 372.529 ms - 830[0m
+[0mGET /api/appointments?page=1&limit=10 [36m304[0m 195.155 ms - -[0m
+[0mGET /api/appointments/6893a639e4a6dda36283023e [32m200[0m 1531.875 ms - 960[0m
+[0mGET /api/appointments/6893a639e4a6dda36283023e [36m304[0m 355.828 ms - -[0m
+[0mGET /api/appointments?page=1&limit=10 [36m304[0m 214.818 ms - -[0m
+[0mGET /api/appointments?page=1&limit=10 [36m304[0m 474.376 ms - -[0m
+[0mGET /api/patients [36m304[0m 333.263 ms - -[0m
+[0mGET /api/staff [36m304[0m 171.389 ms - -[0m
+[0mGET /api/clinics [36m304[0m 119.867 ms - -[0m
+[0mGET /api/patients [36m304[0m 728.870 ms - -[0m
+[0mGET /api/staff [36m304[0m 251.778 ms - -[0m
+[0mGET /api/clinics [36m304[0m 180.333 ms - -[0m
+SMS notification failed: Error: accountSid must start with AC
+    at new Client (/Users/ansh/Documents/Trae/DentOS/backend/node_modules/twilio/lib/base/BaseTwilio.js:71:23)
+    at new Twilio (/Users/ansh/Documents/Trae/DentOS/backend/node_modules/twilio/lib/rest/Twilio.js:33:9)
+    at TwilioSDK (/Users/ansh/Documents/Trae/DentOS/backend/node_modules/twilio/lib/index.js:40:12)
+    at sendSMS (/Users/ansh/Documents/Trae/DentOS/backend/utils/sendSMS.js:11:18)
+    at exports.createAppointment (/Users/ansh/Documents/Trae/DentOS/backend/controllers/appointments.js:241:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+Email notification failed: Error: Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to
+535 5.7.8  https://support.google.com/mail/?p=BadCredentials d9443c01a7336-241d1f13a31sm163907455ad.64 - gsmtp
+    at SMTPConnection._formatError (/Users/ansh/Documents/Trae/DentOS/backend/node_modules/nodemailer/lib/smtp-connection/index.js:809:19)
+    at SMTPConnection._actionAUTHComplete (/Users/ansh/Documents/Trae/DentOS/backend/node_modules/nodemailer/lib/smtp-connection/index.js:1588:34)
+    at SMTPConnection.<anonymous> (/Users/ansh/Documents/Trae/DentOS/backend/node_modules/nodemailer/lib/smtp-connection/index.js:556:26)
+    at SMTPConnection._processResponse (/Users/ansh/Documents/Trae/DentOS/backend/node_modules/nodemailer/lib/smtp-connection/index.js:993:20)
+    at SMTPConnection._onData (/Users/ansh/Documents/Trae/DentOS/backend/node_modules/nodemailer/lib/smtp-connection/index.js:774:14)
+    at SMTPConnection._onSocketData (/Users/ansh/Documents/Trae/DentOS/backend/node_modules/nodemailer/lib/smtp-connection/index.js:195:44)
+    at TLSSocket.emit (node:events:518:28)
+    at addChunk (node:internal/streams/readable:561:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+    at Readable.push (node:internal/streams/readable:392:5) {
+  code: 'EAUTH',
+  response: '535-5.7.8 Username and Password not accepted. For more information, go to\n' +
+    '535 5.7.8  https://support.google.com/mail/?p=BadCredentials d9443c01a7336-241d1f13a31sm163907455ad.64 - gsmtp',
+  responseCode: 535,
+  command: 'AUTH PLAIN'
+}
+[0mPOST /api/appointments [32m201[0m 2393.191 ms - 771[0m
+[0mGET /api/appointments?page=1&limit=10 [32m200[0m 494.895 ms - 1580[0m
+[0mGET /api/appointments?page=1&limit=10 [36m304[0m 657.978 ms - -[0m
+[0mGET /api/staff [36m304[0m 142.606 ms - -[0m
+[0mGET /api/clinics [36m304[0m 146.802 ms - -[0m
+[0mGET /api/clinics [36m304[0m 137.404 ms - -[0m
+[0mGET /api/staff [36m304[0m 142.239 ms - -[0m
+[0mGET /api/appointments [32m200[0m 734.576 ms - 1580[0m
+[0mGET /api/appointments [36m304[0m 285.186 ms - -[0m
+[0mGET /api/billing [36m304[0m 162.748 ms - -[0m
+[0mGET /api/billing [36m304[0m 149.231 ms - -[0m
+[0mGET /api/patients [36m304[0m 218.896 ms - -[0m
+[0mGET /api/clinics [36m304[0m 172.622 ms - -[0m
+[0mGET /api/treatments [36m304[0m 281.020 ms - -[0m
+[0mGET /api/patients [36m304[0m 869.084 ms - -[0m
+[0mGET /api/clinics [36m304[0m 651.591 ms - -[0m
+[0mGET /api/treatments [36m304[0m 262.724 ms - -[0m
+Error: Invoice validation failed: organization: Path `organization` is required.
+    at ValidationError.inspect (/Users/ansh/Documents/Trae/DentOS/backend/node_modules/mongoose/lib/error/validation.js:50:26)
+    at formatValue (node:internal/util/inspect:877:19)
+    at inspect (node:internal/util/inspect:404:10)
+    at formatWithOptionsInternal (node:internal/util/inspect:2407:40)
+    at formatWithOptions (node:internal/util/inspect:2269:10)
+    at console.value (node:internal/console/constructor:345:14)
+    at console.error (node:internal/console/constructor:412:61)
+    at /Users/ansh/Documents/Trae/DentOS/backend/controllers/billing.js:184:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  errors: {
+    organization: ValidatorError: Path `organization` is required.
+        at validate (/Users/ansh/Documents/Trae/DentOS/backend/node_modules/mongoose/lib/schematype.js:1365:13)
+        at SchemaType.doValidate (/Users/ansh/Documents/Trae/DentOS/backend/node_modules/mongoose/lib/schematype.js:1349:7)
+        at /Users/ansh/Documents/Trae/DentOS/backend/node_modules/mongoose/lib/document.js:3004:18
+        at process.processTicksAndRejections (node:internal/process/task_queues:85:11) {
+      properties: [Object],
+      kind: 'required',
+      path: 'organization',
+      value: undefined,
+      reason: undefined,
+      [Symbol(mongoose:validatorError)]: true
+    }
+  },
+  _message: 'Invoice validation failed'
+}
+[0mPOST /api/billing [33m400[0m 68.830 ms - 62[0m
+[0mGET /api/treatments?page=1&limit=5 [36m304[0m 249.640 ms - -[0m
+[0mGET /api/treatments?page=1&limit=5 [36m304[0m 154.049 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 1096.395 ms - -[0m
+[0mGET /api/users [36m304[0m 2775.957 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 2783.328 ms - -[0m
+[0mGET /api/organizations/6893219e68a4af3917f36afa/join-requests [36m304[0m 3219.428 ms - -[0m
+[0mGET /api/users [36m304[0m 723.052 ms - -[0m
+[0mGET /api/organizations/6893219e68a4af3917f36afa/join-requests [36m304[0m 467.675 ms - -[0m
+Create user error: Error: User validation failed: phone: Please add a valid 10-digit phone number
+    at ValidationError.inspect (/Users/ansh/Documents/Trae/DentOS/backend/node_modules/mongoose/lib/error/validation.js:50:26)
+    at formatValue (node:internal/util/inspect:877:19)
+    at inspect (node:internal/util/inspect:404:10)
+    at formatWithOptionsInternal (node:internal/util/inspect:2407:40)
+    at formatWithOptions (node:internal/util/inspect:2269:10)
+    at console.value (node:internal/console/constructor:345:14)
+    at console.error (node:internal/console/constructor:412:61)
+    at exports.createUser (/Users/ansh/Documents/Trae/DentOS/backend/controllers/organizations.js:612:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  errors: {
+    phone: ValidatorError: Please add a valid 10-digit phone number
+        at validate (/Users/ansh/Documents/Trae/DentOS/backend/node_modules/mongoose/lib/schematype.js:1365:13)
+        at SchemaType.doValidate (/Users/ansh/Documents/Trae/DentOS/backend/node_modules/mongoose/lib/schematype.js:1349:7)
+        at /Users/ansh/Documents/Trae/DentOS/backend/node_modules/mongoose/lib/document.js:3004:18
+        at process.processTicksAndRejections (node:internal/process/task_queues:85:11) {
+      properties: [Object],
+      kind: 'regexp',
+      path: 'phone',
+      value: '758883444',
+      reason: undefined,
+      [Symbol(mongoose:validatorError)]: true
+    }
+  },
+  _message: 'User validation failed'
+}
+[0mPOST /api/organizations/6893219e68a4af3917f36afa/users [31m500[0m 189.767 ms - 56[0m
+Create user error: Error: User validation failed: phone: Please add a valid 10-digit phone number
+    at ValidationError.inspect (/Users/ansh/Documents/Trae/DentOS/backend/node_modules/mongoose/lib/error/validation.js:50:26)
+    at formatValue (node:internal/util/inspect:877:19)
+    at inspect (node:internal/util/inspect:404:10)
+    at formatWithOptionsInternal (node:internal/util/inspect:2407:40)
+    at formatWithOptions (node:internal/util/inspect:2269:10)
+    at console.value (node:internal/console/constructor:345:14)
+    at console.error (node:internal/console/constructor:412:61)
+    at exports.createUser (/Users/ansh/Documents/Trae/DentOS/backend/controllers/organizations.js:612:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  errors: {
+    phone: ValidatorError: Please add a valid 10-digit phone number
+        at validate (/Users/ansh/Documents/Trae/DentOS/backend/node_modules/mongoose/lib/schematype.js:1365:13)
+        at SchemaType.doValidate (/Users/ansh/Documents/Trae/DentOS/backend/node_modules/mongoose/lib/schematype.js:1349:7)
+        at /Users/ansh/Documents/Trae/DentOS/backend/node_modules/mongoose/lib/document.js:3004:18
+        at process.processTicksAndRejections (node:internal/process/task_queues:85:11) {
+      properties: [Object],
+      kind: 'regexp',
+      path: 'phone',
+      value: '758883444',
+      reason: undefined,
+      [Symbol(mongoose:validatorError)]: true
+    }
+  },
+  _message: 'User validation failed'
+}
+[0mPOST /api/organizations/6893219e68a4af3917f36afa/users [31m500[0m 1648.374 ms - 56[0m
+[0mGET /api/treatments?page=1&limit=5 [36m304[0m 341.275 ms - -[0m
+[0mGET /api/treatments?page=1&limit=5 [36m304[0m 190.057 ms - -[0m
+[0mGET /api/billing [36m304[0m 1562.038 ms - -[0m
+[0mGET /api/billing [36m304[0m 114.870 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 290.178 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 102.790 ms - -[0m
+[0mGET /api/organizations/6893219e68a4af3917f36afa/join-requests [36m304[0m 314.029 ms - -[0m
+[0mGET /api/organizations/6893219e68a4af3917f36afa/join-requests [36m304[0m 108.752 ms - -[0m
+[0mGET /api/users [36m304[0m 481.246 ms - -[0m
+[0mGET /api/users [36m304[0m 278.555 ms - -[0m
+[0mPOST /api/auth/login [32m200[0m 212.971 ms - 430[0m
+[0mPOST /api/organizations/6893219e68a4af3917f36afa/users [33m400[0m 118.170 ms - 65[0m
+[0mPOST /api/organizations/6893219e68a4af3917f36afa/users [32m201[0m 362.493 ms - 192[0m
+[0mGET /api/organizations/my [36m304[0m 104.661 ms - -[0m
+[0mGET /api/organizations/6893219e68a4af3917f36afa/join-requests [36m304[0m 144.047 ms - -[0m
+[0mGET /api/users [32m200[0m 348.001 ms - 762[0m
+[0mGET /api/organizations/my [36m304[0m 84.634 ms - -[0m
+[0mGET /api/users [36m304[0m 85.997 ms - -[0m
+[0mGET /api/organizations/6893219e68a4af3917f36afa/join-requests [36m304[0m 158.908 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 306.222 ms - -[0m
+[0mGET /api/organizations/6893219e68a4af3917f36afa/join-requests [36m304[0m 109.928 ms - -[0m
+[0mGET /api/users [36m304[0m 486.165 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 351.099 ms - -[0m
+[0mGET /api/organizations/6893219e68a4af3917f36afa/join-requests [36m304[0m 123.201 ms - -[0m
+[0mGET /api/users [36m304[0m 281.146 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 338.099 ms - -[0m
+[0mGET /api/organizations/6893219e68a4af3917f36afa/join-requests [36m304[0m 112.022 ms - -[0m
+[0mGET /api/users [36m304[0m 361.875 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 103.897 ms - -[0m
+[0mGET /api/organizations/6893219e68a4af3917f36afa/join-requests [36m304[0m 123.342 ms - -[0m
+[0mGET /api/users [36m304[0m 289.234 ms - -[0m
+[0mGET /api/organizations/my [36m304[0m 81.563 ms - -[0m
+[0mGET /api/organizations/6893219e68a4af3917f36afa/join-requests [36m304[0m 97.563 ms - -[0m
+[0mGET /api/users [36m304[0m 282.064 ms - -[0m

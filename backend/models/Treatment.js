@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 
 const TreatmentSchema = new mongoose.Schema({
+  organization: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Organization',
+    required: true
+  },
   patient: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Patient',
@@ -12,8 +17,7 @@ const TreatmentSchema = new mongoose.Schema({
     required: true
   },
   treatmentPlanId: {
-    type: String,
-    unique: true
+    type: String
   },
   diagnosis: {
     type: String,
@@ -180,6 +184,7 @@ TreatmentSchema.pre('findOneAndUpdate', function() {
 TreatmentSchema.index({ patient: 1 });
 TreatmentSchema.index({ clinic: 1 });
 TreatmentSchema.index({ status: 1 });
-TreatmentSchema.index({ treatmentPlanId: 1 });
+// Create compound index for unique treatmentPlanId per organization
+TreatmentSchema.index({ treatmentPlanId: 1, organization: 1 }, { unique: true, sparse: true });
 
 module.exports = mongoose.model('Treatment', TreatmentSchema);

@@ -3,6 +3,14 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import jwt_decode from 'jwt-decode';
 
+  // Get API URL from environment variables or use default
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+// Debug API URL
+console.log('🔍 API URL Debug:');
+console.log('   REACT_APP_API_URL env var:', process.env.REACT_APP_API_URL);
+console.log('   Final API_URL:', API_URL);
+
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
@@ -15,7 +23,9 @@ export const AuthProvider = ({ children }) => {
   // Set auth token
   useEffect(() => {
     if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      // Format token with Bearer prefix for API requests
+      const formattedToken = `Bearer ${token}`;
+      axios.defaults.headers.common['Authorization'] = formattedToken;
       loadUser();
     } else {
       delete axios.defaults.headers.common['Authorization'];
@@ -25,19 +35,32 @@ export const AuthProvider = ({ children }) => {
     }
   }, [token]);
 
-  // Check token expiration
+  // Check token expiration and validity
   useEffect(() => {
     if (token) {
       try {
         const decoded = jwt_decode(token);
         const currentTime = Date.now() / 1000;
         
+        // Check if token is expired
         if (decoded.exp < currentTime) {
           logout();
           toast.error('Your session has expired. Please login again.');
+          return;
         }
+        
+        // Check if token has the correct structure
+        if (!decoded.id) {
+          console.warn('Token has invalid structure, logging out');
+          logout();
+          toast.error('Invalid session. Please login again.');
+          return;
+        }
+        
       } catch (err) {
+        console.error('Token validation failed:', err);
         logout();
+        toast.error('Session invalid. Please login again.');
       }
     }
   }, [token]);
@@ -46,11 +69,14 @@ export const AuthProvider = ({ children }) => {
   const loadUser = async () => {
     try {
       setLoading(true);
-      const res = await axios.get('/api/auth/me');
+      
+      // Use API_URL variable instead of hardcoded URL
+      const res = await axios.get(`${API_URL}/auth/me`);
       setUser(res.data.data);
       setIsAuthenticated(true);
       setError(null);
     } catch (err) {
+      console.error('Load user error:', err);
       setError(err.response?.data?.message || 'Error loading user');
       setToken(null);
       localStorage.removeItem('token');
@@ -61,17 +87,49 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Clear all auth data and restart
+  const clearAuthData = () => {
+    setToken(null);
+    setUser(null);
+    setIsAuthenticated(false);
+    setError(null);
+    localStorage.removeItem('token');
+    sessionStorage.clear();
+    delete axios.defaults.headers.common['Authorization'];
+  };
+
   // Register user
   const register = async (userData) => {
     try {
       setLoading(true);
-      const res = await axios.post('/api/auth/register', userData);
-      setToken(res.data.token);
-      localStorage.setItem('token', res.data.token);
+      console.log('🔍 Register Debug:');
+      console.log('   API_URL:', API_URL);
+      console.log('   Making request to:', `${API_URL}/auth/register`);
+      console.log('   User data:', userData);
+      
+      const res = await axios.post(`${API_URL}/auth/register`, userData);
+      // Store the raw token (without Bearer prefix)
+      const rawToken = res.data.token;
+      
+      // Set token in localStorage and state
+      setToken(rawToken);
+      localStorage.setItem('token', rawToken);
+      
+      // Set axios header immediately
+      const formattedToken = `Bearer ${rawToken}`;
+      axios.defaults.headers.common['Authorization'] = formattedToken;
+      
+      // Now load user with proper headers
       await loadUser();
       toast.success('Registration successful!');
       return res.data;
     } catch (err) {
+      console.error('🔍 Register Error Debug:');
+      console.error('   Error:', err);
+      console.error('   Error response:', err.response?.data);
+      console.error('   Error status:', err.response?.status);
+      console.error('   Error message:', err.message);
+      
       setError(err.response?.data?.message || 'Registration failed');
       toast.error(err.response?.data?.message || 'Registration failed');
       throw err;
@@ -84,15 +142,31 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       setLoading(true);
-      const res = await axios.post('/api/auth/login', { email, password });
-      setToken(res.data.token);
-      localStorage.setItem('token', res.data.token);
+      setError(null); // Clear any previous errors
+      
+      // Use API_URL variable instead of hardcoded URL
+      const res = await axios.post(`${API_URL}/auth/login`, { email, password });
+      
+      // Store the raw token (without Bearer prefix)
+      const rawToken = res.data.token;
+      
+      // Set token in localStorage and state
+      setToken(rawToken);
+      localStorage.setItem('token', rawToken);
+      
+      // Set axios header immediately
+      const formattedToken = `Bearer ${rawToken}`;
+      axios.defaults.headers.common['Authorization'] = formattedToken;
+      
+      // Now load user with proper headers
       await loadUser();
       toast.success('Login successful!');
       return res.data;
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed');
-      toast.error(err.response?.data?.message || 'Login failed');
+      console.error('Login error:', err);
+      const errorMessage = err.response?.data?.message || 'Login failed';
+      setError(errorMessage);
+      toast.error(errorMessage);
       throw err;
     } finally {
       setLoading(false);
@@ -114,7 +188,7 @@ export const AuthProvider = ({ children }) => {
   const updateProfile = async (userData) => {
     try {
       setLoading(true);
-      const res = await axios.put('/api/auth/updatedetails', userData);
+      const res = await axios.put(`${API_URL}/auth/updatedetails`, userData);
       setUser(res.data.data);
       toast.success('Profile updated successfully!');
       return res.data;
@@ -131,7 +205,7 @@ export const AuthProvider = ({ children }) => {
   const updatePassword = async (passwordData) => {
     try {
       setLoading(true);
-      const res = await axios.put('/api/auth/updatepassword', passwordData);
+      const res = await axios.put(`${API_URL}/auth/updatepassword`, passwordData);
       toast.success('Password updated successfully!');
       return res.data;
     } catch (err) {
@@ -147,7 +221,7 @@ export const AuthProvider = ({ children }) => {
   const forgotPassword = async (email) => {
     try {
       setLoading(true);
-      const res = await axios.post('/api/auth/forgotpassword', { email });
+      const res = await axios.post(`${API_URL}/auth/forgotpassword`, { email });
       toast.success('Password reset email sent!');
       return res.data;
     } catch (err) {
@@ -163,7 +237,7 @@ export const AuthProvider = ({ children }) => {
   const resetPassword = async (password, resetToken) => {
     try {
       setLoading(true);
-      const res = await axios.put(`/api/auth/resetpassword/${resetToken}`, { password });
+      const res = await axios.put(`${API_URL}/auth/resetpassword/${resetToken}`, { password });
       toast.success('Password has been reset!');
       return res.data;
     } catch (err) {
@@ -190,7 +264,8 @@ export const AuthProvider = ({ children }) => {
         updateProfile,
         updatePassword,
         forgotPassword,
-        resetPassword
+        resetPassword,
+        clearAuthData
       }}
     >
       {children}

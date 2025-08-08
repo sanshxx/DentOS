@@ -1,8 +1,8 @@
-# Dental CRM - Technical Documentation
+# DentOS - Technical Documentation
 
 ## Overview
 
-Dental CRM is a comprehensive web application designed to streamline dental practice management. It provides an integrated solution for managing patients, appointments, treatments, billing, inventory, staff, and reporting in dental clinics. The application aims to improve operational efficiency, enhance patient care, and provide valuable insights through data analytics.
+DentOS is a comprehensive web application designed to streamline dental practice management. It provides an integrated solution for managing patients, appointments, treatments, billing, inventory, staff, and reporting in dental clinics. The application aims to improve operational efficiency, enhance patient care, and provide valuable insights through data analytics.
 
 ## Technical Architecture
 
@@ -10,10 +10,13 @@ Dental CRM is a comprehensive web application designed to streamline dental prac
 
 - **Framework**: React.js with functional components and hooks
 - **UI Library**: Material UI (MUI) for consistent, responsive design
-- **State Management**: Context API for global state (AuthContext)
+- **State Management**: Context API for global state (AuthContext, ThemeContext)
 - **Routing**: React Router v6 for navigation
 - **Date Handling**: date-fns with MUI Date Pickers
 - **Data Visualization**: Recharts for reports and analytics
+- **Theme System**: Light/Dark mode with theme-aware components
+- **File Management**: Document upload/download with blob handling
+- **Notifications**: Real-time notification system with role-based filtering
 
 ### Backend
 
@@ -23,6 +26,9 @@ Dental CRM is a comprehensive web application designed to streamline dental prac
 - **Database**: MongoDB with Mongoose ODM
 - **API Structure**: RESTful API endpoints
 - **Middleware**: Custom authentication middleware
+- **File Upload**: Multer for document management
+- **Notifications**: Real-time notification system with TTL indexes
+- **Error Handling**: Comprehensive error handling with custom responses
 
 ### Database Schema
 
@@ -63,6 +69,18 @@ Dental CRM is a comprehensive web application designed to streamline dental prac
 #### Clinic Model
 - Multiple location support
 - Clinic details and operating hours
+
+#### Notification Model
+- Real-time notifications
+- Role-based filtering
+- TTL indexes for auto-cleanup
+- User-specific notifications
+
+#### PatientDocument Model
+- Document storage and management
+- File metadata and access tracking
+- Secure file paths and permissions
+- Download and upload logging
 
 ## Component Structure
 
@@ -263,6 +281,33 @@ The frontend sidebar menu dynamically adjusts based on the user's role, showing 
 - Backend uses middleware for error handling and consistent responses
 - HTTP status codes for different error types
 - Validation errors returned with descriptive messages
+- Comprehensive error handling for file uploads and downloads
+- Token validation and automatic session refresh
+- DOM context error handling for browser compatibility
+
+## Recent Feature Implementations
+
+### Theme System
+- **ThemeContext**: React Context for global theme state management
+- **ThemeProvider**: Custom provider with Material-UI theme integration
+- **Theme-Aware Components**: All UI components adapt to light/dark themes
+- **Persistent Storage**: Theme preference saved in localStorage
+- **Automatic Adaptation**: Tables, cards, menus, and forms follow theme
+
+### Notification System
+- **Real-time Notifications**: MongoDB-based notification system with TTL indexes
+- **Role-based Filtering**: Notifications filtered by user role and permissions
+- **Notification Bell**: UI component for viewing recent notifications
+- **Auto-cleanup**: Expired notifications automatically removed
+- **Multiple Types**: Appointment reminders, patient updates, inventory alerts
+
+### Document Management
+- **File Upload**: Multer middleware for secure file handling
+- **Multiple Formats**: Support for PDF, images, DICOM, and other formats
+- **Access Control**: Role-based document access and download tracking
+- **Secure Storage**: Files stored with proper permissions and metadata
+- **Download System**: Blob-based file download with error handling
+- **DOM Context Fixes**: Browser compatibility for file operations
 
 ## Future Roadmap
 
@@ -355,4 +400,4 @@ The frontend sidebar menu dynamically adjusts based on the user's role, showing 
 
 ## Conclusion
 
-The Dental CRM application provides a comprehensive solution for dental practice management with a modern, scalable architecture. This technical documentation serves as a guide for developers working on maintaining and extending the application's capabilities.
+The DentOS application provides a comprehensive solution for dental practice management with a modern, scalable architecture. This technical documentation serves as a guide for developers working on maintaining and extending the application's capabilities.

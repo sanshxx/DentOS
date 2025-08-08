@@ -18,7 +18,6 @@ import {
 } from '@mui/material';
 import {
   Menu as MenuIcon,
-  Notifications as NotificationsIcon,
   AccountCircle,
   Settings as SettingsIcon,
   Logout as LogoutIcon,
@@ -26,6 +25,7 @@ import {
 } from '@mui/icons-material';
 import Sidebar from './Sidebar';
 import AuthContext from '../../context/AuthContext';
+import NotificationBell from '../notifications/NotificationBell';
 
 const drawerWidth = 280;
 
@@ -81,7 +81,6 @@ const DrawerHeader = styled('div')(({ theme }) => ({
 const Layout = () => {
   const [open, setOpen] = useState(true);
   const [anchorEl, setAnchorEl] = useState(null);
-  const [notificationAnchorEl, setNotificationAnchorEl] = useState(null);
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
 
@@ -99,14 +98,6 @@ const Layout = () => {
 
   const handleClose = () => {
     setAnchorEl(null);
-  };
-
-  const handleNotificationMenu = (event) => {
-    setNotificationAnchorEl(event.currentTarget);
-  };
-
-  const handleNotificationClose = () => {
-    setNotificationAnchorEl(null);
   };
 
   const handleLogout = () => {
@@ -139,67 +130,13 @@ const Layout = () => {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            Dental CRM
+            DentOS
           </Typography>
 
           {/* Notifications */}
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Tooltip title="Notifications">
-              <IconButton
-                size="large"
-                color="inherit"
-                onClick={handleNotificationMenu}
-              >
-                <Badge badgeContent={3} color="error">
-                  <NotificationsIcon />
-                </Badge>
-              </IconButton>
-            </Tooltip>
-            <Menu
-              anchorEl={notificationAnchorEl}
-              anchorOrigin={{
-                vertical: 'bottom',
-                horizontal: 'right',
-              }}
-              keepMounted
-              transformOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-              }}
-              open={Boolean(notificationAnchorEl)}
-              onClose={handleNotificationClose}
-              PaperProps={{
-                elevation: 0,
-                sx: {
-                  overflow: 'visible',
-                  filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.1))',
-                  mt: 1.5,
-                  width: 360,
-                  '& .MuiAvatar-root': {
-                    width: 32,
-                    height: 32,
-                    ml: -0.5,
-                    mr: 1,
-                  },
-                },
-              }}
-            >
-              <MenuItem onClick={handleNotificationClose}>
-                <Typography variant="subtitle2">Appointment reminder: Rahul Sharma at 10:00 AM</Typography>
-              </MenuItem>
-              <Divider />
-              <MenuItem onClick={handleNotificationClose}>
-                <Typography variant="subtitle2">New patient registration: Priya Patel</Typography>
-              </MenuItem>
-              <Divider />
-              <MenuItem onClick={handleNotificationClose}>
-                <Typography variant="subtitle2">Inventory alert: Dental Cement running low</Typography>
-              </MenuItem>
-              <Divider />
-              <MenuItem onClick={() => { navigate('/appointments'); handleNotificationClose(); }}>
-                <Typography variant="subtitle2" color="primary">View all notifications</Typography>
-              </MenuItem>
-            </Menu>
+            {/* Notification Bell */}
+            <NotificationBell />
 
             {/* User Menu */}
             <Tooltip title="Account settings">

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import {
   Container,
   Paper,
@@ -41,29 +42,10 @@ import {
 import { toast } from 'react-toastify';
 import { format } from 'date-fns';
 
-// Mock appointment data (replace with API call)
-const MOCK_APPOINTMENT = {
-  id: 'APT001',
-  patientId: '123456',
-  patientName: 'Rahul Sharma',
-  patientPhone: '9876543210',
-  patientEmail: 'rahul.sharma@example.com',
-  doctorId: 'DOC001',
-  doctorName: 'Dr. Priya Patel',
-  doctorSpecialization: 'General Dentist',
-  clinicId: 1,
-  clinicName: 'Dental Care - Bandra',
-  clinicAddress: '123 Hill Road, Bandra West, Mumbai 400050',
-  date: '2023-06-20',
-  startTime: '10:00',
-  endTime: '10:30',
-  duration: 30,
-  status: 'scheduled',
-  type: 'checkup',
-  notes: 'Regular dental checkup',
-  createdAt: '2023-05-15T10:30:00Z',
-  updatedAt: '2023-05-15T10:30:00Z',
-};
+// Get API URL from environment variables
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+// Static appointment status options
 
 // Appointment statuses
 const APPOINTMENT_STATUSES = [
@@ -92,16 +74,61 @@ const AppointmentDetails = () => {
         setLoading(true);
         setError(null);
 
-        // In a real app, this would be an API call
-        // const response = await axios.get(`/api/appointments/${id}`);
-        // setAppointment(response.data);
-
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Get token from localStorage
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('Authentication token not found');
+        }
         
-        // Set mock data
-        setAppointment(MOCK_APPOINTMENT);
-        setNewStatus(MOCK_APPOINTMENT.status);
+        // Make API call
+        const response = await axios.get(`${API_URL}/appointments/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        const appointmentData = response.data.data;
+        // Format the appointment data to match the expected structure
+        const formattedAppointment = {
+          id: appointmentData._id,
+          patientId: appointmentData.patient?._id || '',
+          patientName: appointmentData.patient?.name || 'Unknown Patient',
+          patientPhone: appointmentData.patient?.phone || '',
+          patientEmail: appointmentData.patient?.email || 'No email available',
+          doctorId: appointmentData.dentist?._id || '',
+          doctorName: appointmentData.dentist ? `${appointmentData.dentist.firstName} ${appointmentData.dentist.lastName}` : 'Unknown Doctor',
+          doctorSpecialization: appointmentData.dentist?.specialization || 'General Dentistry',
+          clinicId: appointmentData.clinic?._id || '',
+          clinicName: appointmentData.clinic?.name || 'Unknown Clinic',
+          clinicAddress: (() => {
+            if (!appointmentData.clinic?.address) return '';
+            if (typeof appointmentData.clinic.address === 'string') {
+              return appointmentData.clinic.address;
+            }
+            if (typeof appointmentData.clinic.address === 'object') {
+              const addressParts = [
+                appointmentData.clinic.address.street,
+                appointmentData.clinic.address.city,
+                appointmentData.clinic.address.state,
+                appointmentData.clinic.address.pincode
+              ].filter(part => part && part.trim());
+              return addressParts.join(', ');
+            }
+            return '';
+          })(),
+          date: appointmentData.appointmentDate ? new Date(appointmentData.appointmentDate).toISOString().split('T')[0] : '',
+          startTime: appointmentData.appointmentDate ? new Date(appointmentData.appointmentDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : '',
+          endTime: appointmentData.endTime ? new Date(appointmentData.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : '',
+          duration: appointmentData.duration || 30,
+          status: appointmentData.status || 'scheduled',
+          type: appointmentData.appointmentType || 'checkup',
+          notes: appointmentData.notes || '',
+          reasonForVisit: appointmentData.reasonForVisit || '',
+          createdAt: appointmentData.createdAt || new Date().toISOString(),
+          updatedAt: appointmentData.updatedAt || new Date().toISOString()
+        };
+        setAppointment(formattedAppointment);
+        setNewStatus(formattedAppointment.status);
       } catch (err) {
         console.error('Error fetching appointment:', err);
         setError('Failed to load appointment details. Please try again.');
@@ -129,17 +156,24 @@ const AppointmentDetails = () => {
     try {
       setDeletingAppointment(true);
 
-      // In a real app, this would be an API call
-      // await axios.delete(`/api/appointments/${id}`);
-
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+      
+      // Make API call
+      await axios.delete(`${API_URL}/appointments/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
 
       toast.success('Appointment deleted successfully');
       navigate('/appointments');
     } catch (err) {
       console.error('Error deleting appointment:', err);
-      toast.error('Failed to delete appointment');
+      toast.error(err.response?.data?.message || 'Failed to delete appointment');
       setDeletingAppointment(false);
       handleDeleteDialogClose();
     }
@@ -160,11 +194,18 @@ const AppointmentDetails = () => {
     try {
       setUpdatingStatus(true);
 
-      // In a real app, this would be an API call
-      // await axios.patch(`/api/appointments/${id}`, { status: newStatus });
-
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+      
+      // Make API call
+      await axios.patch(`/api/appointments/${id}`, { status: newStatus }, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
 
       // Update local state
       setAppointment({ ...appointment, status: newStatus });
@@ -172,7 +213,7 @@ const AppointmentDetails = () => {
       toast.success('Appointment status updated successfully');
     } catch (err) {
       console.error('Error updating appointment status:', err);
-      toast.error('Failed to update appointment status');
+      toast.error(err.response?.data?.message || 'Failed to update appointment status');
     } finally {
       setUpdatingStatus(false);
     }
@@ -295,7 +336,7 @@ const AppointmentDetails = () => {
               variant="outlined"
               color="primary"
               startIcon={<EditIcon />}
-              onClick={() => navigate(`/appointments/edit/${id}`)}
+              onClick={() => navigate(`/appointments/${id}/edit`)}
               sx={{ mr: 2 }}
             >
               Edit

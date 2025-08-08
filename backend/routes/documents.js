@@ -50,17 +50,26 @@ const fileFilter = (req, file, cb) => {
   const allowedFileTypes = [
     'image/jpeg',
     'image/png',
+    'image/gif',
+    'image/bmp',
+    'image/tiff',
     'application/pdf',
     'application/msword',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     'application/vnd.ms-excel',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/dicom',
+    'application/octet-stream' // For DICOM files that might not have proper MIME type
   ];
   
-  if (allowedFileTypes.includes(file.mimetype)) {
+  // Check file extension for additional validation
+  const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.dcm'];
+  const fileExtension = path.extname(file.originalname).toLowerCase();
+  
+  if (allowedFileTypes.includes(file.mimetype) || allowedExtensions.includes(fileExtension)) {
     cb(null, true);
   } else {
-    cb(new Error('Invalid file type. Only JPEG, PNG, PDF, DOC, DOCX, XLS, and XLSX files are allowed.'), false);
+    cb(new Error('Invalid file type. Only JPEG, PNG, GIF, BMP, TIFF, PDF, DOC, DOCX, XLS, XLSX, and DICOM files are allowed.'), false);
   }
 };
 
@@ -86,6 +95,26 @@ router.post('/',
     check('category', 'Category is required').not().isEmpty(),
     check('description', 'Description cannot exceed 500 characters').optional().isLength({ max: 500 })
   ],
+  (err, req, res, next) => {
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({
+          success: false,
+          message: 'File size exceeds 10MB limit'
+        });
+      }
+      return res.status(400).json({
+        success: false,
+        message: err.message
+      });
+    } else if (err) {
+      return res.status(400).json({
+        success: false,
+        message: err.message
+      });
+    }
+    next();
+  },
   uploadDocument
 );
 

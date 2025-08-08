@@ -1,8 +1,8 @@
-# Dental CRM - Deployment Guide
+# DentOS - Deployment Guide
 
 ## Introduction
 
-This guide provides step-by-step instructions for deploying the Dental CRM application in a production environment. It covers setting up the backend server, frontend application, database, and creating a demonstration account for testing purposes.
+This guide provides step-by-step instructions for deploying the DentOS application in a production environment. It covers setting up the backend server, frontend application, database, and creating a demonstration account for testing purposes.
 
 ## Prerequisites
 
@@ -70,7 +70,7 @@ Before deploying, ensure you have the following:
      ```
    - Start the server with PM2:
      ```
-     pm2 start server.js --name dental-crm-backend
+     pm2 start server.js --name dentos-backend
      ```
    - Set up PM2 to start on system boot:
      ```
@@ -82,7 +82,7 @@ Before deploying, ensure you have the following:
    - Install Heroku CLI
    - Create a new Heroku app:
      ```
-     heroku create dental-crm-backend
+     heroku create dentos-backend
      ```
    - Add a Procfile in the backend directory with:
      ```
@@ -148,13 +148,13 @@ Before deploying, ensure you have the following:
    ```
    curl -X POST https://your-backend-url/api/auth/register \
    -H "Content-Type: application/json" \
-   -d '{"name":"Admin User","email":"admin@dentalcrm.com","password":"Demo@123","role":"admin"}'
+   -d '{"name":"Admin User","email":"admin@dentos.com","password":"Demo@123","role":"admin"}'
    ```
 
 3. Document the demo credentials in a secure location:
    ```
    Demo Admin Account
-   Email: admin@dentalcrm.com
+   Email: admin@dentos.com
    Password: Demo@123
    ```
 
@@ -164,14 +164,14 @@ Before deploying, ensure you have the following:
    ```
    curl -X POST https://your-backend-url/api/auth/register \
    -H "Content-Type: application/json" \
-   -d '{"name":"Dr. Sharma","email":"dentist@dentalcrm.com","password":"Demo@123","role":"dentist"}'
+   -d '{"name":"Dr. Sharma","email":"dentist@dentos.com","password":"Demo@123","role":"dentist"}'
    ```
 
 2. Create a receptionist account:
    ```
    curl -X POST https://your-backend-url/api/auth/register \
    -H "Content-Type: application/json" \
-   -d '{"name":"Receptionist","email":"reception@dentalcrm.com","password":"Demo@123","role":"receptionist"}'
+   -d '{"name":"Receptionist","email":"reception@dentos.com","password":"Demo@123","role":"receptionist"}'
    ```
 
 ## Enabling Self-Registration for Dental Practitioners
@@ -300,6 +300,6 @@ If you want to require admin approval for new registrations:
 
 ## Conclusion
 
-Following this deployment guide should result in a fully functional Dental CRM system in a production environment. Remember to regularly back up your data and keep the system updated with security patches.
+Following this deployment guide should result in a fully functional DentOS system in a production environment. Remember to regularly back up your data and keep the system updated with security patches.
 
 For additional support or questions, refer to the technical documentation or contact the development team.

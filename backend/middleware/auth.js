@@ -30,7 +30,7 @@ exports.protect = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // Fetch the user from the database using the ID from the token
-    const user = await User.findById(decoded.user.id);
+    const user = await User.findById(decoded.id);
     
     if (!user) {
       return res.status(401).json({
@@ -44,7 +44,8 @@ exports.protect = async (req, res, next) => {
       id: user._id,
       name: user.name,
       email: user.email,
-      role: user.role
+      role: user.role,
+      organization: user.organization
     };
 
     // User is already added to req.user above

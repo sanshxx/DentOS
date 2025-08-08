@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import {
   Container, Typography, Paper, Box, Grid, Button, Chip, Divider,
   Card, CardContent, CardHeader, Avatar, List, ListItem, ListItemText,
@@ -22,6 +23,9 @@ import {
   Star as StarIcon
 } from '@mui/icons-material';
 
+// Get API URL from environment variables
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const ClinicDetails = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -36,59 +40,67 @@ const ClinicDetails = () => {
       setError(null);
       
       try {
-        // In a real app, we would call the API
-        // For now, we'll simulate an API call with mock data
-        setTimeout(() => {
-          // Mock data for the clinic
-          const mockClinic = {
-            id: id,
-            name: 'Smile Dental Care Center',
-            address: '123 Healthcare Avenue, Medical District, Mumbai 400001',
-            phone: '+91 22 1234 5678',
-            email: 'info@smiledentalcare.com',
-            operatingHours: [
-              { day: 'Monday', hours: '9:00 AM - 6:00 PM' },
-              { day: 'Tuesday', hours: '9:00 AM - 6:00 PM' },
-              { day: 'Wednesday', hours: '9:00 AM - 6:00 PM' },
-              { day: 'Thursday', hours: '9:00 AM - 6:00 PM' },
-              { day: 'Friday', hours: '9:00 AM - 6:00 PM' },
-              { day: 'Saturday', hours: '10:00 AM - 4:00 PM' },
-              { day: 'Sunday', hours: 'Closed' }
-            ],
-            specialties: ['General Dentistry', 'Orthodontics', 'Periodontics', 'Endodontics', 'Pediatric Dentistry'],
-            established: '2010',
-            staff: [
-              { id: '1', name: 'Dr. Rajesh Sharma', role: 'Senior Dentist', avatar: '' },
-              { id: '2', name: 'Dr. Priya Patel', role: 'Orthodontist', avatar: '' },
-              { id: '3', name: 'Anita Singh', role: 'Dental Hygienist', avatar: '' },
-              { id: '4', name: 'Vikram Mehta', role: 'Receptionist', avatar: '' }
-            ],
-            equipment: [
-              { name: 'Digital X-Ray Machine', count: 2, lastMaintenance: '2023-10-15' },
-              { name: 'Dental Chair', count: 5, lastMaintenance: '2023-11-20' },
-              { name: 'Autoclave Sterilizer', count: 3, lastMaintenance: '2023-12-05' },
-              { name: 'Intraoral Camera', count: 4, lastMaintenance: '2023-09-30' }
-            ],
-            stats: {
-              patientsServed: 12500,
-              appointmentsThisMonth: 345,
-              averageRating: 4.8,
-              reviewCount: 320
-            },
-            description: 'Smile Dental Care Center is a state-of-the-art dental facility providing comprehensive dental services with a focus on patient comfort and advanced treatment options. Our team of experienced professionals is dedicated to delivering the highest quality of dental care in a friendly and welcoming environment.',
-            images: [
-              { url: 'https://example.com/clinic1.jpg', caption: 'Reception Area' },
-              { url: 'https://example.com/clinic2.jpg', caption: 'Treatment Room' },
-              { url: 'https://example.com/clinic3.jpg', caption: 'Waiting Area' }
-            ]
-          };
-          
-          setClinic(mockClinic);
-          setLoading(false);
-        }, 1000);
+        // Get token from localStorage
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('Authentication token not found');
+        }
+        
+        // Call the API to get clinic details
+        const response = await axios.get(`${API_URL}/clinics/${id}`, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        // Format the clinic data for display
+        const clinicData = response.data.data;
+        
+        // Transform the data to match the expected format in the UI
+        const formattedClinic = {
+          id: clinicData._id,
+          name: clinicData.name,
+          address: clinicData.address?.street ? 
+            `${clinicData.address.street}, ${clinicData.address.city}, ${clinicData.address.state} ${clinicData.address.pincode}` : 
+            'Address not available',
+          phone: clinicData.contactNumbers?.[0] || 'Phone not available',
+          email: clinicData.email || 'Email not available',
+          operatingHours: [
+            { day: 'Monday', hours: clinicData.operatingHours?.monday?.isOpen ? 
+              `${clinicData.operatingHours.monday.openTime} - ${clinicData.operatingHours.monday.closeTime}` : 'Closed' },
+            { day: 'Tuesday', hours: clinicData.operatingHours?.tuesday?.isOpen ? 
+              `${clinicData.operatingHours.tuesday.openTime} - ${clinicData.operatingHours.tuesday.closeTime}` : 'Closed' },
+            { day: 'Wednesday', hours: clinicData.operatingHours?.wednesday?.isOpen ? 
+              `${clinicData.operatingHours.wednesday.openTime} - ${clinicData.operatingHours.wednesday.closeTime}` : 'Closed' },
+            { day: 'Thursday', hours: clinicData.operatingHours?.thursday?.isOpen ? 
+              `${clinicData.operatingHours.thursday.openTime} - ${clinicData.operatingHours.thursday.closeTime}` : 'Closed' },
+            { day: 'Friday', hours: clinicData.operatingHours?.friday?.isOpen ? 
+              `${clinicData.operatingHours.friday.openTime} - ${clinicData.operatingHours.friday.closeTime}` : 'Closed' },
+            { day: 'Saturday', hours: clinicData.operatingHours?.saturday?.isOpen ? 
+              `${clinicData.operatingHours.saturday.openTime} - ${clinicData.operatingHours.saturday.closeTime}` : 'Closed' },
+            { day: 'Sunday', hours: clinicData.operatingHours?.sunday?.isOpen ? 
+              `${clinicData.operatingHours.sunday.openTime} - ${clinicData.operatingHours.sunday.closeTime}` : 'Closed' }
+          ],
+          specialties: clinicData.specialties || clinicData.facilities || [],
+          established: clinicData.establishedDate ? new Date(clinicData.establishedDate).getFullYear().toString() : 'N/A',
+          staff: [], // This would need to be fetched separately
+          equipment: [], // This would need to be fetched separately
+          stats: {
+            patientsServed: 0, // These would need to be fetched from analytics
+            appointmentsThisMonth: 0,
+            averageRating: 0,
+            reviewCount: 0
+          },
+          description: clinicData.description || 'No description available',
+          images: clinicData.images?.map(img => ({ url: img.url, caption: img.caption })) || []
+        };
+        
+        setClinic(formattedClinic);
+        setLoading(false);
       } catch (err) {
         console.error('Error fetching clinic details:', err);
-        setError('Failed to load clinic details. Please try again.');
+        setError(err.response?.data?.message || 'Failed to load clinic details. Please try again.');
         setLoading(false);
       }
     };
@@ -104,10 +116,30 @@ const ClinicDetails = () => {
     navigate(`/clinics/edit/${id}`);
   };
 
-  const handleDelete = () => {
-    // In a real app, we would call the API to delete the clinic
-    // For now, we'll just navigate back to the clinics list
-    navigate('/clinics');
+  const handleDelete = async () => {
+    if (window.confirm('Are you sure you want to delete this clinic?')) {
+      try {
+        // Get token from localStorage
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('Authentication token not found');
+        }
+        
+        // Call the API to delete the clinic
+        await axios.delete(`${API_URL}/clinics/${id}`, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        // Navigate back to clinics list after successful deletion
+        navigate('/clinics');
+      } catch (err) {
+        console.error('Error deleting clinic:', err);
+        setError(err.response?.data?.message || 'Failed to delete clinic');
+      }
+    }
   };
 
   if (loading) {
@@ -188,7 +220,13 @@ const ClinicDetails = () => {
               
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                 <LocationOnIcon color="primary" sx={{ mr: 1 }} />
-                <Typography variant="body1">{clinic.address}</Typography>
+                <Typography variant="body1">
+                  {clinic.address ? 
+                    (typeof clinic.address === 'string' ? clinic.address :
+                     `${clinic.address.street || ''}, ${clinic.address.city || ''}, ${clinic.address.state || ''} ${clinic.address.pincode || ''}`) :
+                    'Address not available'
+                  }
+                </Typography>
               </Box>
               
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>

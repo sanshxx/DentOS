@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 
 const ClinicSchema = new mongoose.Schema({
+  organization: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Organization',
+    required: true
+  },
   name: {
     type: String,
     required: [true, 'Please add clinic name'],
@@ -10,7 +15,6 @@ const ClinicSchema = new mongoose.Schema({
   branchCode: {
     type: String,
     required: [true, 'Please add a branch code'],
-    unique: true,
     trim: true,
     maxlength: [10, 'Branch code cannot be more than 10 characters']
   },
@@ -144,7 +148,8 @@ const ClinicSchema = new mongoose.Schema({
 });
 
 // Create index for faster queries
-ClinicSchema.index({ branchCode: 1 });
 ClinicSchema.index({ 'address.city': 1, 'address.state': 1 });
+// Create compound index for unique branchCode per organization
+ClinicSchema.index({ branchCode: 1, organization: 1 }, { unique: true });
 
 module.exports = mongoose.model('Clinic', ClinicSchema);

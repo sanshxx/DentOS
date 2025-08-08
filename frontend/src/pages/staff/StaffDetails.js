@@ -7,6 +7,8 @@ import {
   Rating
 } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
+import axios from 'axios';
+import { toast } from 'react-toastify';
 import {
   ArrowBack as ArrowBackIcon,
   Edit as EditIcon,
@@ -26,6 +28,9 @@ import {
   Badge as BadgeIcon
 } from '@mui/icons-material';
 
+// Get API URL from environment variables
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const StaffDetails = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -40,62 +45,25 @@ const StaffDetails = () => {
       setError(null);
       
       try {
-        // In a real app, we would call the API
-        // For now, we'll simulate an API call with mock data
-        setTimeout(() => {
-          // Mock data for the staff member
-          const mockStaff = {
-            id: id,
-            name: 'Dr. Priya Patel',
-            role: 'Orthodontist',
-            avatar: '',
-            email: 'priya.patel@dentalcrm.com',
-            phone: '+91 98765 43210',
-            address: '45 Dental Lane, Mumbai 400001',
-            dateOfBirth: '1985-06-15',
-            joinDate: '2018-03-10',
-            licenseNumber: 'DEN-MH-2018-54321',
-            specializations: ['Orthodontics', 'Pediatric Orthodontics', 'Invisalign'],
-            qualifications: [
-              { degree: 'BDS', institution: 'Mumbai Dental College', year: '2008' },
-              { degree: 'MDS (Orthodontics)', institution: 'National Dental Institute', year: '2012' },
-              { degree: 'Fellowship in Invisalign', institution: 'International Dental Academy', year: '2014' }
-            ],
-            certifications: [
-              { name: 'Certified Invisalign Provider', issuer: 'Align Technology', year: '2015', expiry: '2025' },
-              { name: 'Advanced Orthodontic Techniques', issuer: 'Indian Dental Association', year: '2017', expiry: '2027' }
-            ],
-            schedule: [
-              { day: 'Monday', hours: '9:00 AM - 5:00 PM', clinic: 'Smile Dental Care Center' },
-              { day: 'Tuesday', hours: '10:00 AM - 6:00 PM', clinic: 'Smile Dental Care Center' },
-              { day: 'Wednesday', hours: '9:00 AM - 5:00 PM', clinic: 'City Dental Clinic' },
-              { day: 'Thursday', hours: '10:00 AM - 6:00 PM', clinic: 'Smile Dental Care Center' },
-              { day: 'Friday', hours: '9:00 AM - 5:00 PM', clinic: 'City Dental Clinic' },
-              { day: 'Saturday', hours: '10:00 AM - 2:00 PM', clinic: 'Smile Dental Care Center' },
-              { day: 'Sunday', hours: 'Off', clinic: '-' }
-            ],
-            stats: {
-              patientsServed: 1250,
-              appointmentsThisMonth: 85,
-              averageRating: 4.9,
-              reviewCount: 120,
-              treatmentSuccess: 98
-            },
-            bio: 'Dr. Priya Patel is a highly skilled orthodontist with over 10 years of experience in providing comprehensive orthodontic care. She specializes in both traditional braces and modern clear aligner treatments, with a particular focus on pediatric orthodontics. Dr. Patel is known for her gentle approach and ability to make patients feel comfortable during treatment.',
-            languages: ['English', 'Hindi', 'Gujarati', 'Marathi'],
-            recentPatients: [
-              { id: '101', name: 'Rahul Sharma', treatment: 'Braces Adjustment', date: '2023-12-01' },
-              { id: '102', name: 'Ananya Singh', treatment: 'Invisalign Consultation', date: '2023-12-02' },
-              { id: '103', name: 'Vikram Mehta', treatment: 'Retainer Fitting', date: '2023-12-03' }
-            ]
-          };
-          
-          setStaff(mockStaff);
-          setLoading(false);
-        }, 1000);
+        // Get token from localStorage
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('Authentication token not found');
+        }
+        
+        // Make API call to get staff details
+        const response = await axios.get(`${API_URL}/staff/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        setStaff(response.data.data);
+        setLoading(false);
       } catch (err) {
         console.error('Error fetching staff details:', err);
         setError('Failed to load staff details. Please try again.');
+        toast.error(err.response?.data?.message || 'Failed to load staff details');
         setLoading(false);
       }
     };
@@ -223,7 +191,13 @@ const StaffDetails = () => {
               
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                 <LocationOnIcon color="primary" sx={{ mr: 1 }} />
-                <Typography variant="body1">{staff.address}</Typography>
+                <Typography variant="body1">
+                  {staff.address ? 
+                    (typeof staff.address === 'string' ? staff.address :
+                     `${staff.address.street || ''}, ${staff.address.city || ''}, ${staff.address.state || ''} ${staff.address.pincode || ''}`) :
+                    'Address not available'
+                  }
+                </Typography>
               </Box>
               
               <Typography variant="subtitle1" sx={{ mt: 2, mb: 1 }}>

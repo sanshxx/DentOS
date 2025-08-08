@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container, Typography, Paper, Box, Grid, TextField, Button,
   FormControl, InputLabel, Select, MenuItem, FormHelperText,
@@ -11,11 +11,16 @@ import {
   AttachMoney as AttachMoneyIcon
 } from '@mui/icons-material';
 import { toast } from 'react-toastify';
+import axios from 'axios';
+
+// Get API URL from environment variables
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const AddInventory = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [user, setUser] = useState(null);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -28,6 +33,10 @@ const AddInventory = () => {
     minStockLevel: '',
     price: '',
     supplier: '',
+    contactPerson: '',
+    phone: '',
+    email: '',
+    address: '',
     location: '',
     expiryDate: '',
     isActive: true
@@ -35,21 +44,30 @@ const AddInventory = () => {
   
   // Form validation errors
   const [errors, setErrors] = useState({});
+
+  // Get user data on component mount
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        setUser(payload.user);
+      } catch (err) {
+        console.error('Error parsing token:', err);
+      }
+    }
+  }, []);
   
   // Categories for inventory items
   const categories = [
-    'Restorative Materials',
-    'Endodontic Supplies',
-    'Orthodontic Supplies',
-    'Periodontal Supplies',
-    'Prosthodontic Materials',
+    'Consumables',
     'Instruments',
-    'Disposables',
-    'Infection Control',
-    'Office Supplies',
     'Equipment',
-    'Medications',
-    'Other'
+    'Medicines',
+    'Implants',
+    'Orthodontic Supplies',
+    'Office Supplies',
+    'Others'
   ];
   
   // Units for inventory items
@@ -57,18 +75,15 @@ const AddInventory = () => {
     'Piece',
     'Box',
     'Pack',
-    'Kit',
     'Set',
+    'Kit',
     'Bottle',
     'Tube',
     'Syringe',
-    'Cartridge',
     'Gram',
+    'Kilogram',
     'Milliliter',
     'Liter',
-    'Pair',
-    'Roll',
-    'Sheet',
     'Other'
   ];
   
@@ -95,7 +110,7 @@ const AddInventory = () => {
     if (!formData.itemCode.trim()) newErrors.itemCode = 'Item code is required';
     if (!formData.category) newErrors.category = 'Category is required';
     if (!formData.unit) newErrors.unit = 'Unit is required';
-    if (!formData.description.trim()) newErrors.description = 'Description is required';
+    // Description is optional in backend, so we don't validate it as required
     
     if (!formData.currentStock) {
       newErrors.currentStock = 'Current stock is required';
@@ -128,17 +143,52 @@ const AddInventory = () => {
     setError(null);
     
     try {
-      // In a real app, we would call the API
-      // For now, we'll simulate an API call
-      setTimeout(() => {
-        // Mock successful API response
-        toast.success('Inventory item added successfully!');
-        setLoading(false);
-        navigate('/inventory');
-      }, 1000);
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+      
+      // Prepare data for API
+      const inventoryData = {
+        itemName: formData.itemName,
+        itemCode: formData.itemCode,
+        category: formData.category,
+        description: formData.description,
+        unit: formData.unit,
+        costPrice: Number(formData.price), // Backend expects costPrice
+        sellingPrice: Number(formData.price), // Set same as cost price for now
+        clinics: [{
+          clinic: user?.clinic || '507f1f77bcf86cd799439011', // Default clinic ID
+          currentStock: Number(formData.currentStock),
+          minStockLevel: Number(formData.minStockLevel),
+          location: formData.location || 'Main Storage'
+        }],
+        supplier: {
+          name: formData.supplier || '',
+          contactPerson: formData.contactPerson || '',
+          phone: formData.phone || '',
+          email: formData.email || '',
+          address: formData.address || ''
+        },
+        expiryDate: formData.expiryDate || null,
+        status: 'active'
+      };
+      
+      // Call API to create inventory item
+      await axios.post(`${API_URL}/inventory`, inventoryData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      toast.success('Inventory item added successfully!');
+      setLoading(false);
+      navigate('/inventory');
     } catch (err) {
       console.error('Error adding inventory item:', err);
-      setError('Failed to add inventory item. Please try again.');
+      setError(err.response?.data?.message || 'Failed to add inventory item. Please try again.');
       setLoading(false);
     }
   };
@@ -337,10 +387,53 @@ const AddInventory = () => {
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label="Supplier"
+                  label="Supplier Name"
                   name="supplier"
                   value={formData.supplier}
                   onChange={handleChange}
+                />
+              </Grid>
+              
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Contact Person"
+                  name="contactPerson"
+                  value={formData.contactPerson}
+                  onChange={handleChange}
+                />
+              </Grid>
+              
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Supplier Phone"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                />
+              </Grid>
+              
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Supplier Email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                />
+              </Grid>
+              
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Supplier Address"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleChange}
+                  multiline
+                  rows={2}
                 />
               </Grid>
               

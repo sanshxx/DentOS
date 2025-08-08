@@ -11,6 +11,10 @@ import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import axios from 'axios';
+
+// Get API URL from environment variables
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const CreateInvoice = () => {
   const navigate = useNavigate();
@@ -43,40 +47,50 @@ const CreateInvoice = () => {
     }
   });
   
-  // Mock data for dropdowns
+  // State for dropdown data
   const [patients, setPatients] = useState([]);
   const [clinics, setClinics] = useState([]);
   const [treatments, setTreatments] = useState([]);
   
   useEffect(() => {
-    // Fetch patients, clinics, and treatments
-    // In a real app, we would fetch from the API
-    // For now, we'll use mock data
-    setPatients([
-      { _id: '60d21b4667d0d8992e610c01', name: 'John Doe', email: 'john@example.com', phone: '9876543210' },
-      { _id: '60d21b4667d0d8992e610c02', name: 'Jane Smith', email: 'jane@example.com', phone: '9876543211' },
-      { _id: '60d21b4667d0d8992e610c03', name: 'Robert Johnson', email: 'robert@example.com', phone: '9876543212' },
-      { _id: '60d21b4667d0d8992e610c04', name: 'Emily Davis', email: 'emily@example.com', phone: '9876543213' },
-      { _id: '60d21b4667d0d8992e610c05', name: 'Michael Wilson', email: 'michael@example.com', phone: '9876543214' }
-    ]);
+    const fetchData = async () => {
+      try {
+        // Get token from localStorage
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('Authentication token not found');
+        }
+
+        // Fetch patients
+        const patientsResponse = await axios.get(`${API_URL}/patients`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        setPatients(patientsResponse.data.data);
+        
+        // Fetch clinics
+        const clinicsResponse = await axios.get(`${API_URL}/clinics`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        setClinics(clinicsResponse.data.data);
+        
+        // Fetch treatments
+        const treatmentsResponse = await axios.get(`${API_URL}/treatments`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        setTreatments(treatmentsResponse.data.data);
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setError('Error fetching data. Please try again.');
+      }
+    };
     
-    setClinics([
-      { _id: '60d21b4667d0d8992e610c10', name: 'Main Clinic' },
-      { _id: '60d21b4667d0d8992e610c11', name: 'North Branch' },
-      { _id: '60d21b4667d0d8992e610c12', name: 'South Branch' },
-      { _id: '60d21b4667d0d8992e610c13', name: 'East Branch' },
-      { _id: '60d21b4667d0d8992e610c14', name: 'West Branch' }
-    ]);
-    
-    setTreatments([
-      { _id: '60d21b4667d0d8992e610c30', name: 'Dental Cleaning', price: 2000 },
-      { _id: '60d21b4667d0d8992e610c31', name: 'Root Canal Treatment', price: 8000 },
-      { _id: '60d21b4667d0d8992e610c32', name: 'Dental Crown', price: 5000 },
-      { _id: '60d21b4667d0d8992e610c33', name: 'Teeth Whitening', price: 4000 },
-      { _id: '60d21b4667d0d8992e610c34', name: 'Dental Implant', price: 25000 },
-      { _id: '60d21b4667d0d8992e610c35', name: 'X-Ray', price: 1500 },
-      { _id: '60d21b4667d0d8992e610c36', name: 'Consultation', price: 500 }
-    ]);
+    fetchData();
   }, []);
   
   // Calculate totals whenever items change
@@ -85,13 +99,29 @@ const CreateInvoice = () => {
   }, [formData.items]);
   
   const calculateTotals = () => {
-    const subtotal = formData.items.reduce((sum, item) => sum + item.amount, 0);
-    const discountAmount = formData.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice * item.discount / 100), 0);
-    const taxAmount = formData.items.reduce((sum, item) => {
-      const discountedPrice = item.quantity * item.unitPrice * (1 - item.discount / 100);
-      return sum + (discountedPrice * item.tax / 100);
+    // Calculate subtotal (sum of all item amounts before tax)
+    const subtotal = formData.items.reduce((sum, item) => {
+      const itemSubtotal = item.quantity * item.unitPrice;
+      const itemDiscount = itemSubtotal * (item.discount / 100);
+      return sum + (itemSubtotal - itemDiscount);
     }, 0);
-    const totalAmount = subtotal;
+    
+    // Calculate total discount amount
+    const discountAmount = formData.items.reduce((sum, item) => {
+      const itemSubtotal = item.quantity * item.unitPrice;
+      return sum + (itemSubtotal * item.discount / 100);
+    }, 0);
+    
+    // Calculate total tax amount
+    const taxAmount = formData.items.reduce((sum, item) => {
+      const itemSubtotal = item.quantity * item.unitPrice;
+      const itemDiscount = itemSubtotal * (item.discount / 100);
+      const discountedAmount = itemSubtotal - itemDiscount;
+      return sum + (discountedAmount * item.tax / 100);
+    }, 0);
+    
+    // Calculate total amount (subtotal + tax)
+    const totalAmount = subtotal + taxAmount;
     
     setFormData(prev => ({
       ...prev,
@@ -170,12 +200,14 @@ const CreateInvoice = () => {
     const newItems = [...formData.items];
     newItems[index][field] = value;
     
-    // Calculate amount for this item
+    // Calculate amount for this item (this is for display purposes only)
     if (field === 'quantity' || field === 'unitPrice' || field === 'discount' || field === 'tax') {
       const item = newItems[index];
-      const discountedPrice = item.quantity * item.unitPrice * (1 - item.discount / 100);
-      const taxAmount = discountedPrice * item.tax / 100;
-      item.amount = discountedPrice + taxAmount;
+      const itemSubtotal = item.quantity * item.unitPrice;
+      const itemDiscount = itemSubtotal * (item.discount / 100);
+      const discountedAmount = itemSubtotal - itemDiscount;
+      const itemTax = discountedAmount * (item.tax / 100);
+      item.amount = discountedAmount + itemTax;
     }
     
     setFormData(prev => ({
@@ -204,7 +236,7 @@ const CreateInvoice = () => {
     }
   };
   
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
@@ -236,18 +268,34 @@ const CreateInvoice = () => {
       }
     }
     
-    // In a real app, we would submit to the API
-    // For now, we'll simulate an API call
-    setTimeout(() => {
-      console.log('Submitting invoice:', formData);
+    try {
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      const response = await axios.post(`${API_URL}/billing`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('Invoice created:', response.data);
+      
       setSuccess(true);
-      setLoading(false);
       
       // Redirect to invoices list after a delay
       setTimeout(() => {
         navigate('/billing');
       }, 2000);
-    }, 1500);
+    } catch (err) {
+      console.error('Error creating invoice:', err);
+      setError(err.response?.data?.message || err.message || 'Failed to create invoice. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
   
   // Format currency

@@ -20,7 +20,6 @@ import {
   Tooltip,
   CircularProgress,
   Alert,
-  Menu,
   MenuItem,
   Dialog,
   DialogTitle,
@@ -48,186 +47,20 @@ import {
 import { toast } from 'react-toastify';
 import { format, parseISO } from 'date-fns';
 
-// Mock data for appointments (replace with API call)
-const MOCK_APPOINTMENTS = [
-  {
-    id: 'APT001',
-    patientId: '123456',
-    patientName: 'Rahul Sharma',
-    patientPhone: '9876543210',
-    doctorId: 'DOC001',
-    doctorName: 'Dr. Priya Patel',
-    clinicId: 1,
-    clinicName: 'Dental Care - Bandra',
-    date: '2023-06-20',
-    startTime: '10:00',
-    endTime: '10:30',
-    status: 'scheduled',
-    type: 'checkup',
-    notes: 'Regular dental checkup',
-    createdAt: '2023-05-15T10:30:00Z',
-  },
-  {
-    id: 'APT002',
-    patientId: '123457',
-    patientName: 'Priya Patel',
-    patientPhone: '9876543211',
-    doctorId: 'DOC002',
-    doctorName: 'Dr. Amit Singh',
-    clinicId: 2,
-    clinicName: 'Dental Care - Andheri',
-    date: '2023-06-21',
-    startTime: '11:00',
-    endTime: '12:00',
-    status: 'confirmed',
-    type: 'treatment',
-    notes: 'Root canal treatment - second session',
-    createdAt: '2023-05-16T09:15:00Z',
-  },
-  {
-    id: 'APT003',
-    patientId: '123458',
-    patientName: 'Amit Singh',
-    patientPhone: '9876543212',
-    doctorId: 'DOC003',
-    doctorName: 'Dr. Neha Gupta',
-    clinicId: 3,
-    clinicName: 'Dental Care - Powai',
-    date: '2023-06-15',
-    startTime: '14:00',
-    endTime: '14:30',
-    status: 'completed',
-    type: 'checkup',
-    notes: 'Post-treatment follow-up',
-    createdAt: '2023-05-10T14:20:00Z',
-  },
-  {
-    id: 'APT004',
-    patientId: '123459',
-    patientName: 'Neha Gupta',
-    patientPhone: '9876543213',
-    doctorId: 'DOC001',
-    doctorName: 'Dr. Priya Patel',
-    clinicId: 1,
-    clinicName: 'Dental Care - Bandra',
-    date: '2023-06-25',
-    startTime: '16:00',
-    endTime: '17:00',
-    status: 'scheduled',
-    type: 'treatment',
-    notes: 'Wisdom tooth extraction',
-    createdAt: '2023-05-18T11:45:00Z',
-  },
-  {
-    id: 'APT005',
-    patientId: '123460',
-    patientName: 'Vikram Malhotra',
-    patientPhone: '9876543214',
-    doctorId: 'DOC004',
-    doctorName: 'Dr. Rajesh Kumar',
-    clinicId: 4,
-    clinicName: 'Dental Care - Juhu',
-    date: '2023-06-10',
-    startTime: '09:30',
-    endTime: '10:00',
-    status: 'cancelled',
-    type: 'consultation',
-    notes: 'Initial consultation for dental implants',
-    createdAt: '2023-05-05T16:30:00Z',
-  },
-  {
-    id: 'APT006',
-    patientId: '123461',
-    patientName: 'Ananya Desai',
-    patientPhone: '9876543215',
-    doctorId: 'DOC002',
-    doctorName: 'Dr. Amit Singh',
-    clinicId: 2,
-    clinicName: 'Dental Care - Andheri',
-    date: '2023-06-22',
-    startTime: '13:00',
-    endTime: '13:30',
-    status: 'confirmed',
-    type: 'checkup',
-    notes: 'Regular dental checkup and cleaning',
-    createdAt: '2023-05-12T10:00:00Z',
-  },
-  {
-    id: 'APT007',
-    patientId: '123462',
-    patientName: 'Rajesh Kumar',
-    patientPhone: '9876543216',
-    doctorId: 'DOC003',
-    doctorName: 'Dr. Neha Gupta',
-    clinicId: 3,
-    clinicName: 'Dental Care - Powai',
-    date: '2023-06-18',
-    startTime: '15:00',
-    endTime: '16:00',
-    status: 'scheduled',
-    type: 'treatment',
-    notes: 'Dental crown fitting',
-    createdAt: '2023-04-30T09:45:00Z',
-  },
-  {
-    id: 'APT008',
-    patientId: '123463',
-    patientName: 'Meera Reddy',
-    patientPhone: '9876543217',
-    doctorId: 'DOC001',
-    doctorName: 'Dr. Priya Patel',
-    clinicId: 1,
-    clinicName: 'Dental Care - Bandra',
-    date: '2023-06-22',
-    startTime: '11:30',
-    endTime: '12:00',
-    status: 'confirmed',
-    type: 'checkup',
-    notes: 'Six-month dental checkup',
-    createdAt: '2023-05-20T13:15:00Z',
-  },
-  {
-    id: 'APT009',
-    patientId: '123464',
-    patientName: 'Sanjay Joshi',
-    patientPhone: '9876543218',
-    doctorId: 'DOC004',
-    doctorName: 'Dr. Rajesh Kumar',
-    clinicId: 4,
-    clinicName: 'Dental Care - Juhu',
-    date: '2023-06-12',
-    startTime: '10:00',
-    endTime: '11:00',
-    status: 'completed',
-    type: 'treatment',
-    notes: 'Dental filling - two cavities',
-    createdAt: '2023-05-08T11:30:00Z',
-  },
-  {
-    id: 'APT010',
-    patientId: '123465',
-    patientName: 'Kavita Sharma',
-    patientPhone: '9876543219',
-    doctorId: 'DOC002',
-    doctorName: 'Dr. Amit Singh',
-    clinicId: 2,
-    clinicName: 'Dental Care - Andheri',
-    date: '2023-06-28',
-    startTime: '14:30',
-    endTime: '15:00',
-    status: 'scheduled',
-    type: 'consultation',
-    notes: 'Consultation for orthodontic treatment',
-    createdAt: '2023-05-14T15:45:00Z',
-  },
-];
+// Import axios for API calls
+import axios from 'axios';
 
-// Appointment types
+// Get API URL from environment variables
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+// Appointment types for filtering
 const APPOINTMENT_TYPES = [
   { value: 'all', label: 'All Types' },
   { value: 'checkup', label: 'Checkup' },
-  { value: 'treatment', label: 'Treatment' },
+  { value: 'cleaning', label: 'Cleaning' },
   { value: 'consultation', label: 'Consultation' },
+  { value: 'follow-up', label: 'Follow-up' },
+  { value: 'treatment', label: 'Treatment' },
   { value: 'emergency', label: 'Emergency' },
 ];
 
@@ -241,6 +74,14 @@ const APPOINTMENT_STATUSES = [
   { value: 'no-show', label: 'No Show' },
 ];
 
+// Note: The following code was removed as it was causing a reference error
+// and the statuses are already included in the APPOINTMENT_STATUSES array
+// APPOINTMENT_STATUSES.push(
+//   { value: 'cancelled', label: 'Cancelled' },
+//   { value: 'no-show', label: 'No Show' }
+// );
+
+
 const AppointmentList = () => {
   const navigate = useNavigate();
   const [appointments, setAppointments] = useState([]);
@@ -251,7 +92,6 @@ const AppointmentList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [anchorEl, setAnchorEl] = useState(null);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingAppointment, setDeletingAppointment] = useState(false);
@@ -262,15 +102,44 @@ const AppointmentList = () => {
         setLoading(true);
         setError(null);
 
-        // In a real app, this would be an API call
-        // const response = await axios.get('/api/appointments');
-        // setAppointments(response.data);
+        // Build query parameters for filtering
+        const queryParams = new URLSearchParams();
+        if (searchTerm) queryParams.append('search', searchTerm);
+        if (filterType !== 'all') queryParams.append('type', filterType);
+        if (filterStatus !== 'all') queryParams.append('status', filterStatus);
+        queryParams.append('page', page + 1); // API uses 1-indexed pages
+        queryParams.append('limit', rowsPerPage);
 
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Get token from localStorage
+        const token = localStorage.getItem('token');
         
-        // Set mock data
-        setAppointments(MOCK_APPOINTMENTS);
+        // Fetch appointments from API
+        const response = await axios.get(`${API_URL}/appointments?${queryParams.toString()}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        // Format the response data
+        const formattedAppointments = response.data.data.map(appointment => ({
+          id: appointment._id,
+          patientId: appointment.patient?._id || '',
+          patientName: appointment.patient?.name || 'Unknown Patient',
+          patientPhone: appointment.patient?.phone || '',
+          doctorId: appointment.dentist?._id || '',
+          doctorName: appointment.dentist ? `${appointment.dentist.firstName} ${appointment.dentist.lastName}` : 'Unknown Doctor',
+          clinicId: appointment.clinic?._id || '',
+          clinicName: appointment.clinic?.name || 'Unknown Clinic',
+          date: appointment.appointmentDate ? new Date(appointment.appointmentDate).toISOString().split('T')[0] : '',
+          startTime: appointment.appointmentDate ? new Date(appointment.appointmentDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : '',
+          endTime: appointment.endTime ? new Date(appointment.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : '',
+          status: appointment.status || 'scheduled',
+          type: appointment.appointmentType || 'checkup',
+          notes: appointment.notes || '',
+          createdAt: appointment.createdAt || new Date().toISOString()
+        }));
+        
+        setAppointments(formattedAppointments);
       } catch (err) {
         console.error('Error fetching appointments:', err);
         setError('Failed to load appointments. Please try again.');
@@ -281,34 +150,10 @@ const AppointmentList = () => {
     };
 
     fetchAppointments();
-  }, []);
-
-  // Handle menu open
-  const handleMenuOpen = (event, appointment) => {
-    setAnchorEl(event.currentTarget);
-    setSelectedAppointment(appointment);
-  };
-
-  // Handle menu close
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-
-  // Handle view appointment
-  const handleViewAppointment = () => {
-    handleMenuClose();
-    navigate(`/appointments/${selectedAppointment.id}`);
-  };
-
-  // Handle edit appointment
-  const handleEditAppointment = () => {
-    handleMenuClose();
-    navigate(`/appointments/edit/${selectedAppointment.id}`);
-  };
+  }, [page, rowsPerPage, searchTerm, filterType, filterStatus]);
 
   // Handle delete dialog open
   const handleDeleteDialogOpen = () => {
-    handleMenuClose();
     setDeleteDialogOpen(true);
   };
 
@@ -322,18 +167,22 @@ const AppointmentList = () => {
     try {
       setDeletingAppointment(true);
 
-      // In a real app, this would be an API call
-      // await axios.delete(`/api/appointments/${selectedAppointment.id}`);
-
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      
+      // Delete appointment via API
+      await axios.delete(`${API_URL}/appointments/${selectedAppointment.id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
 
       // Update local state
       setAppointments(appointments.filter(appointment => appointment.id !== selectedAppointment.id));
       toast.success('Appointment deleted successfully');
     } catch (err) {
       console.error('Error deleting appointment:', err);
-      toast.error('Failed to delete appointment');
+      toast.error(err.response?.data?.message || 'Failed to delete appointment');
     } finally {
       setDeletingAppointment(false);
       handleDeleteDialogClose();
@@ -602,17 +451,21 @@ const AppointmentList = () => {
                         <Tooltip title="Edit">
                           <IconButton
                             size="small"
-                            onClick={() => navigate(`/appointments/edit/${appointment.id}`)}
+                            onClick={() => navigate(`/appointments/${appointment.id}/edit`)}
                           >
                             <EditIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
-                        <Tooltip title="More Options">
+                        <Tooltip title="Delete">
                           <IconButton
                             size="small"
-                            onClick={(event) => handleMenuOpen(event, appointment)}
+                            color="error"
+                            onClick={() => {
+                              setSelectedAppointment(appointment);
+                              setDeleteDialogOpen(true);
+                            }}
                           >
-                            <MoreVertIcon fontSize="small" />
+                            <DeleteIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
                       </TableCell>
@@ -643,25 +496,7 @@ const AppointmentList = () => {
         </Paper>
       </Box>
 
-      {/* Appointment Actions Menu */}
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleMenuClose}
-      >
-        <MenuItem onClick={handleViewAppointment}>
-          <VisibilityIcon fontSize="small" sx={{ mr: 1 }} />
-          View Details
-        </MenuItem>
-        <MenuItem onClick={handleEditAppointment}>
-          <EditIcon fontSize="small" sx={{ mr: 1 }} />
-          Edit Appointment
-        </MenuItem>
-        <MenuItem onClick={handleDeleteDialogOpen} sx={{ color: 'error.main' }}>
-          <DeleteIcon fontSize="small" sx={{ mr: 1 }} />
-          Delete Appointment
-        </MenuItem>
-      </Menu>
+
 
       {/* Delete Confirmation Dialog */}
       <Dialog

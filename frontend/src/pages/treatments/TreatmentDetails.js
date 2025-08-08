@@ -7,6 +7,8 @@ import {
   IconButton, Tooltip, Tabs, Tab, List, ListItem, ListItemText, ListItemIcon
 } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
+import axios from 'axios';
+import { toast } from 'react-toastify';
 import {
   ArrowBack as ArrowBackIcon,
   Edit as EditIcon,
@@ -24,7 +26,9 @@ import {
   Healing as HealingIcon
 } from '@mui/icons-material';
 import { format } from 'date-fns';
-import { toast } from 'react-toastify';
+
+// Get API URL from environment variables
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const TreatmentDetails = () => {
   const navigate = useNavigate();
@@ -44,71 +48,25 @@ const TreatmentDetails = () => {
     setError(null);
     
     try {
-      // In a real app, we would fetch from the API
-      // For now, we'll simulate an API call
-      setTimeout(() => {
-        // Mock API call
-        const mockTreatment = {
-          _id: id,
-          name: 'Root Canal Treatment',
-          code: 'RCT-001',
-          category: 'Endodontic',
-          description: 'Procedure to remove infected pulp and seal the tooth',
-          price: 8000,
-          duration: 90,
-          isActive: true,
-          requiredEquipment: ['Endodontic Files', 'Apex Locator', 'Gutta Percha'],
-          notes: 'May require multiple sessions depending on the case',
-          imageUrl: 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8NXx8ZGVudGFsJTIwdHJlYXRtZW50fGVufDB8fDB8fA%3D%3D&auto=format&fit=crop&w=800&q=60',
-          createdAt: '2023-01-15T10:30:00Z',
-          updatedAt: '2023-06-20T14:45:00Z',
-          // Additional details for the treatment details page
-          procedureSteps: [
-            'Initial examination and X-ray',
-            'Local anesthesia administration',
-            'Rubber dam placement for isolation',
-            'Access opening to reach the pulp chamber',
-            'Removal of infected pulp tissue',
-            'Cleaning and shaping of root canals',
-            'Disinfection of the canal system',
-            'Filling the canals with gutta-percha',
-            'Placement of temporary or permanent filling'
-          ],
-          contraindications: [
-            'Severe periodontal disease affecting the tooth',
-            'Vertical root fracture',
-            'Insufficient remaining tooth structure'
-          ],
-          sideEffects: [
-            'Temporary sensitivity or discomfort',
-            'Slight discoloration of the tooth',
-            'Potential need for crown placement later'
-          ],
-          aftercare: [
-            'Avoid chewing on the treated tooth until permanent restoration',
-            'Continue regular oral hygiene practices',
-            'Follow up with dentist as recommended',
-            'Consider crown placement to protect the tooth'
-          ],
-          relatedTreatments: [
-            { id: 'rel-1', name: 'Dental Crown', code: 'CRW-001' },
-            { id: 'rel-2', name: 'Apicoectomy', code: 'API-001' },
-            { id: 'rel-3', name: 'Post and Core', code: 'PNC-001' }
-          ],
-          usageStatistics: {
-            totalPerformed: 128,
-            averageDuration: 85,
-            successRate: 96,
-            commonlyUsedWith: ['Dental Crown', 'Post and Core']
-          }
-        };
-        
-        setTreatment(mockTreatment);
-        setLoading(false);
-      }, 1000); // Simulate loading delay
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+      
+      // Make API call to get treatment details
+      const response = await axios.get(`${API_URL}/treatments/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      setTreatment(response.data.data);
+      setLoading(false);
     } catch (err) {
       console.error('Error fetching treatment details:', err);
       setError('Failed to load treatment details. Please try again.');
+      toast.error(err.response?.data?.message || 'Failed to load treatment details');
       setLoading(false);
     }
   };

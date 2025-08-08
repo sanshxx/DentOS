@@ -22,6 +22,9 @@ import {
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
+// Get API URL from environment variables
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const Staff = () => {
   const navigate = useNavigate();
   const [staff, setStaff] = useState([]);
@@ -69,139 +72,72 @@ const Staff = () => {
     setError(null);
     
     try {
-      // In a real app, we would fetch from the API
-      // For now, we'll simulate an API call
-      setTimeout(() => {
-        // Mock API call
-        const mockResponse = {
-          success: true,
-          count: 6,
-          data: [
-            {
-              _id: '60d21b4667d0d8992e610c90',
-              firstName: 'Rajesh',
-              lastName: 'Sharma',
-              email: 'rajesh.sharma@dentalcrm.com',
-              phone: '9876543210',
-              role: 'Dentist',
-              specialization: 'Orthodontist',
-              qualification: 'MDS - Orthodontics',
-              experience: '12 years',
-              address: '123 Main Street, Mumbai',
-              joinDate: '2020-01-15',
-              status: 'Active',
-              clinic: {
-                _id: '60d21b4667d0d8992e610c10',
-                name: 'Main Clinic'
-              },
-              profileImage: 'https://randomuser.me/api/portraits/men/1.jpg'
-            },
-            {
-              _id: '60d21b4667d0d8992e610c91',
-              firstName: 'Priya',
-              lastName: 'Patel',
-              email: 'priya.patel@dentalcrm.com',
-              phone: '9876543211',
-              role: 'Dentist',
-              specialization: 'Endodontist',
-              qualification: 'MDS - Conservative Dentistry & Endodontics',
-              experience: '8 years',
-              address: '456 Park Avenue, Delhi',
-              joinDate: '2021-03-10',
-              status: 'Active',
-              clinic: {
-                _id: '60d21b4667d0d8992e610c10',
-                name: 'Main Clinic'
-              },
-              profileImage: 'https://randomuser.me/api/portraits/women/2.jpg'
-            },
-            {
-              _id: '60d21b4667d0d8992e610c92',
-              firstName: 'Amit',
-              lastName: 'Kumar',
-              email: 'amit.kumar@dentalcrm.com',
-              phone: '9876543212',
-              role: 'Receptionist',
-              specialization: '',
-              qualification: 'Bachelor of Commerce',
-              experience: '5 years',
-              address: '789 Lake View, Bangalore',
-              joinDate: '2022-01-05',
-              status: 'Active',
-              clinic: {
-                _id: '60d21b4667d0d8992e610c10',
-                name: 'Main Clinic'
-              },
-              profileImage: 'https://randomuser.me/api/portraits/men/3.jpg'
-            },
-            {
-              _id: '60d21b4667d0d8992e610c93',
-              firstName: 'Neha',
-              lastName: 'Gupta',
-              email: 'neha.gupta@dentalcrm.com',
-              phone: '9876543213',
-              role: 'Dental Assistant',
-              specialization: '',
-              qualification: 'Diploma in Dental Hygiene',
-              experience: '3 years',
-              address: '101 Green Park, Chennai',
-              joinDate: '2022-06-20',
-              status: 'Active',
-              clinic: {
-                _id: '60d21b4667d0d8992e610c10',
-                name: 'Main Clinic'
-              },
-              profileImage: 'https://randomuser.me/api/portraits/women/4.jpg'
-            },
-            {
-              _id: '60d21b4667d0d8992e610c94',
-              firstName: 'Vikram',
-              lastName: 'Singh',
-              email: 'vikram.singh@dentalcrm.com',
-              phone: '9876543214',
-              role: 'Manager',
-              specialization: '',
-              qualification: 'MBA - Healthcare Management',
-              experience: '10 years',
-              address: '202 Blue Hills, Hyderabad',
-              joinDate: '2020-05-15',
-              status: 'Active',
-              clinic: {
-                _id: '60d21b4667d0d8992e610c10',
-                name: 'Main Clinic'
-              },
-              profileImage: 'https://randomuser.me/api/portraits/men/5.jpg'
-            },
-            {
-              _id: '60d21b4667d0d8992e610c95',
-              firstName: 'Ananya',
-              lastName: 'Desai',
-              email: 'ananya.desai@dentalcrm.com',
-              phone: '9876543215',
-              role: 'Dentist',
-              specialization: 'Periodontist',
-              qualification: 'MDS - Periodontics',
-              experience: '7 years',
-              address: '303 Silver Towers, Pune',
-              joinDate: '2021-08-10',
-              status: 'On Leave',
-              clinic: {
-                _id: '60d21b4667d0d8992e610c10',
-                name: 'Main Clinic'
-              },
-              profileImage: 'https://randomuser.me/api/portraits/women/6.jpg'
-            }
-          ]
-        };
-        
-        setStaff(mockResponse.data);
-        setLoading(false);
-      }, 1000); // Simulate loading delay
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+      
+      // Build query parameters for filtering
+      const queryParams = new URLSearchParams();
+      if (searchTerm) queryParams.append('search', searchTerm);
+      if (roleFilter !== 'all') queryParams.append('role', roleFilter);
+      if (statusFilter !== 'all') queryParams.append('status', statusFilter);
+      queryParams.append('page', page + 1); // API uses 1-indexed pages
+      queryParams.append('limit', rowsPerPage);
+      
+      // Fetch staff from API
+      const response = await axios.get(`${API_URL}/staff?${queryParams.toString()}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      setStaff(response.data.data);
+      setLoading(false);
     } catch (err) {
       console.error('Error fetching staff:', err);
       setError('Failed to load staff data. Please try again.');
+      toast.error('Failed to load staff data');
       setLoading(false);
     }
+  };
+  
+  // Staff roles for filtering
+  const STAFF_ROLES = [
+    { value: 'all', label: 'All Roles' },
+    { value: 'dentist', label: 'Dentist' },
+    { value: 'receptionist', label: 'Receptionist' },
+    { value: 'nurse', label: 'Dental Assistant' },
+    { value: 'manager', label: 'Office Manager' },
+    { value: 'hygienist', label: 'Hygienist' },
+    { value: 'technician', label: 'Lab Technician' }
+  ];
+  
+  // Staff statuses for filtering
+  const STAFF_STATUSES = [
+    { value: 'all', label: 'All Statuses' },
+    { value: 'active', label: 'Active' },
+    { value: 'inactive', label: 'Inactive' },
+    { value: 'on_leave', label: 'On Leave' }
+  ];
+  
+  // Staff specializations for dentists
+  const DENTIST_SPECIALIZATIONS = [
+    { value: '', label: 'General Dentist' },
+    { value: 'Orthodontist', label: 'Orthodontist' },
+    { value: 'Periodontist', label: 'Periodontist' },
+    { value: 'Endodontist', label: 'Endodontist' },
+    { value: 'Oral Surgeon', label: 'Oral Surgeon' },
+    { value: 'Prosthodontist', label: 'Prosthodontist' },
+    { value: 'Pediatric Dentist', label: 'Pediatric Dentist' }
+  ];
+  
+  // Error handling function
+  const handleError = (err) => {
+    console.error('Error fetching staff:', err);
+    setError('Failed to load staff data. Please try again.');
+    setLoading(false);
   };
 
   const handleChangePage = (event, newPage) => {
@@ -241,18 +177,14 @@ const Staff = () => {
         lastName: '',
         email: '',
         phone: '',
-        role: '',
+        role: 'dentist',
         specialization: '',
         qualification: '',
         experience: '',
         address: '',
         joinDate: new Date().toISOString().split('T')[0],
-        status: 'Active',
+        status: 'active',
         password: '',
-        clinic: {
-          _id: '60d21b4667d0d8992e610c10', // Default clinic
-          name: 'Main Clinic'
-        },
         profileImage: ''
       });
       setIsEditing(false);
@@ -286,7 +218,7 @@ const Staff = () => {
     }
   };
 
-  const handleFormSubmit = () => {
+  const handleFormSubmit = async () => {
     // Basic validation
     const errors = {};
     if (!formData.firstName) errors.firstName = 'First name is required';
@@ -317,42 +249,90 @@ const Staff = () => {
       return;
     }
     
-    // In a real app, we would call the API to create/update the staff
-    if (isEditing) {
-      // Update existing staff
-      const updatedStaff = staff.map(member => {
-        if (member._id === formData._id) {
-          return {
-            ...formData,
-            password: undefined // Don't include password in the state
-          };
+    try {
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+      
+      // Prepare data for API
+      const staffData = { ...formData };
+      
+      // Convert experience to number if provided
+      if (staffData.experience && staffData.experience !== '') {
+        staffData.experience = parseInt(staffData.experience, 10);
+      } else {
+        delete staffData.experience;
+      }
+      
+      // Remove empty fields to avoid validation issues
+      Object.keys(staffData).forEach(key => {
+        if (staffData[key] === '' || staffData[key] === null || staffData[key] === undefined) {
+          delete staffData[key];
         }
-        return member;
       });
       
-      setStaff(updatedStaff);
-      toast.success(`${formData.firstName} ${formData.lastName}'s information updated successfully`);
-    } else {
-      // Create new staff
-      const newStaff = {
-        ...formData,
-        _id: `new-${Date.now()}`,
-        password: undefined // Don't include password in the state
-      };
+      // Remove clinic object if it exists (not part of Staff model)
+      if (staffData.clinic) {
+        delete staffData.clinic;
+      }
       
-      setStaff([...staff, newStaff]);
-      toast.success(`${formData.firstName} ${formData.lastName} added to staff`);
+      if (isEditing) {
+        // Update existing staff
+        await axios.put(`${API_URL}/staff/${formData._id}`, staffData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        toast.success(`${formData.firstName} ${formData.lastName}'s information updated successfully`);
+      } else {
+        // Create new staff
+        await axios.post(`${API_URL}/staff`, staffData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        toast.success(`${formData.firstName} ${formData.lastName} added to staff`);
+      }
+      
+      // Refresh staff list
+      fetchStaff();
+      handleCloseForm();
+    } catch (err) {
+      console.error('Error saving staff:', err);
+      toast.error(err.response?.data?.message || 'Failed to save staff information');
     }
-    
-    handleCloseForm();
   };
 
-  const handleDeleteStaff = (id) => {
+  const handleDeleteStaff = async (id) => {
     if (window.confirm('Are you sure you want to delete this staff member?')) {
-      // In a real app, we would call the API to delete the staff
-      const updatedStaff = staff.filter(member => member._id !== id);
-      setStaff(updatedStaff);
-      toast.success('Staff member deleted successfully');
+      try {
+        // Get token from localStorage
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('Authentication token not found');
+        }
+        
+        // Call API to delete staff
+        await axios.delete(`${API_URL}/staff/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        toast.success('Staff member deleted successfully');
+        
+        // Refresh staff list
+        fetchStaff();
+      } catch (err) {
+        console.error('Error deleting staff:', err);
+        toast.error(err.response?.data?.message || 'Failed to delete staff member');
+      }
     }
   };
 
@@ -387,24 +367,29 @@ const Staff = () => {
   // Render status chip with appropriate color
   const renderStatusChip = (status) => {
     let color = 'default';
+    let displayLabel = status;
     
     switch (status) {
-      case 'Active':
+      case 'active':
         color = 'success';
+        displayLabel = 'Active';
         break;
-      case 'On Leave':
+      case 'on_leave':
         color = 'warning';
+        displayLabel = 'On Leave';
         break;
-      case 'Inactive':
+      case 'inactive':
         color = 'error';
+        displayLabel = 'Inactive';
         break;
       default:
         color = 'default';
+        displayLabel = status;
     }
     
     return (
       <Chip 
-        label={status} 
+        label={displayLabel} 
         color={color} 
         size="small" 
       />
@@ -678,13 +663,13 @@ const Staff = () => {
                     label="Role"
                   >
                     <MenuItem value="">Select Role</MenuItem>
-                    <MenuItem value="Admin">Admin</MenuItem>
-                    <MenuItem value="Manager">Manager</MenuItem>
-                    <MenuItem value="Dentist">Dentist</MenuItem>
-                    <MenuItem value="Receptionist">Receptionist</MenuItem>
-                    <MenuItem value="Dental Assistant">Dental Assistant</MenuItem>
-                    <MenuItem value="Hygienist">Hygienist</MenuItem>
-                    <MenuItem value="Lab Technician">Lab Technician</MenuItem>
+                    <MenuItem value="admin">Admin</MenuItem>
+                    <MenuItem value="manager">Manager</MenuItem>
+                    <MenuItem value="dentist">Dentist</MenuItem>
+                    <MenuItem value="receptionist">Receptionist</MenuItem>
+                    <MenuItem value="nurse">Dental Assistant</MenuItem>
+                    <MenuItem value="hygienist">Hygienist</MenuItem>
+                    <MenuItem value="technician">Lab Technician</MenuItem>
                   </Select>
                   {formErrors.role && (
                     <Typography variant="caption" color="error">
@@ -758,9 +743,9 @@ const Staff = () => {
                     onChange={handleFormChange}
                     label="Status"
                   >
-                    <MenuItem value="Active">Active</MenuItem>
-                    <MenuItem value="On Leave">On Leave</MenuItem>
-                    <MenuItem value="Inactive">Inactive</MenuItem>
+                    <MenuItem value="active">Active</MenuItem>
+                    <MenuItem value="on_leave">On Leave</MenuItem>
+                    <MenuItem value="inactive">Inactive</MenuItem>
                   </Select>
                 </FormControl>
               </Grid>

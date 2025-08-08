@@ -1,10 +1,14 @@
 const mongoose = require('mongoose');
 
 const InvoiceSchema = new mongoose.Schema({
+  organization: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Organization',
+    required: true
+  },
   invoiceNumber: {
     type: String,
-    unique: true,
-    required: true
+    required: false // Will be set by pre-save hook
   },
   patient: {
     type: mongoose.Schema.Types.ObjectId,
@@ -139,41 +143,45 @@ const InvoiceSchema = new mongoose.Schema({
 
 // Generate invoice number before saving
 InvoiceSchema.pre('save', async function(next) {
-  if (!this.invoiceNumber) {
-    // Format: INV-YYYYMM-XXXX (e.g., INV-202307-0001)
-    const date = new Date();
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    
-    // Find the latest invoice to determine the next sequence number
-    const latestInvoice = await this.constructor.findOne(
-      { invoiceNumber: { $regex: `INV-${year}${month}-` } },
-      { invoiceNumber: 1 },
-      { sort: { invoiceNumber: -1 } }
-    );
-    
-    let sequenceNumber = 1;
-    if (latestInvoice && latestInvoice.invoiceNumber) {
-      const lastSequence = parseInt(latestInvoice.invoiceNumber.split('-')[2]);
-      sequenceNumber = lastSequence + 1;
+  try {
+    if (!this.invoiceNumber) {
+      // Format: INV-YYYYMM-XXXX (e.g., INV-202307-0001)
+      const date = new Date();
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      
+      // Find the latest invoice to determine the next sequence number
+      const latestInvoice = await this.constructor.findOne(
+        { invoiceNumber: { $regex: `INV-${year}${month}-` } },
+        { invoiceNumber: 1 },
+        { sort: { invoiceNumber: -1 } }
+      );
+      
+      let sequenceNumber = 1;
+      if (latestInvoice && latestInvoice.invoiceNumber) {
+        const lastSequence = parseInt(latestInvoice.invoiceNumber.split('-')[2]);
+        sequenceNumber = lastSequence + 1;
+      }
+      
+      this.invoiceNumber = `INV-${year}${month}-${String(sequenceNumber).padStart(4, '0')}`;
     }
     
-    this.invoiceNumber = `INV-${year}${month}-${String(sequenceNumber).padStart(4, '0')}`;
+    // Calculate balance amount
+    this.balanceAmount = this.totalAmount - this.amountPaid;
+    
+    // Update payment status based on amount paid and due date
+    if (this.amountPaid === 0) {
+      this.paymentStatus = this.dueDate < new Date() ? 'overdue' : 'unpaid';
+    } else if (this.amountPaid < this.totalAmount) {
+      this.paymentStatus = this.dueDate < new Date() ? 'overdue' : 'partially paid';
+    } else {
+      this.paymentStatus = 'paid';
+    }
+    
+    next();
+  } catch (error) {
+    next(error);
   }
-  
-  // Calculate balance amount
-  this.balanceAmount = this.totalAmount - this.amountPaid;
-  
-  // Update payment status based on amount paid and due date
-  if (this.amountPaid === 0) {
-    this.paymentStatus = this.dueDate < new Date() ? 'overdue' : 'unpaid';
-  } else if (this.amountPaid < this.totalAmount) {
-    this.paymentStatus = this.dueDate < new Date() ? 'overdue' : 'partially paid';
-  } else {
-    this.paymentStatus = 'paid';
-  }
-  
-  next();
 });
 
 // Update the updatedAt field on update
@@ -182,10 +190,11 @@ InvoiceSchema.pre('findOneAndUpdate', function() {
 });
 
 // Create indexes for faster queries
-InvoiceSchema.index({ invoiceNumber: 1 });
 InvoiceSchema.index({ patient: 1 });
 InvoiceSchema.index({ clinic: 1 });
 InvoiceSchema.index({ invoiceDate: 1 });
 InvoiceSchema.index({ paymentStatus: 1 });
+// Create compound index for unique invoiceNumber per organization
+InvoiceSchema.index({ invoiceNumber: 1, organization: 1 }, { unique: true });
 
 module.exports = mongoose.model('Invoice', InvoiceSchema);

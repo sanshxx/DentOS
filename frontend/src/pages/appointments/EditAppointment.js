@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import {
   Container,
   Paper,
@@ -26,66 +27,26 @@ import * as Yup from 'yup';
 import { toast } from 'react-toastify';
 import { format, addMinutes, parse } from 'date-fns';
 
-// Mock data for patients, doctors, and clinics
-const MOCK_PATIENTS = [
-  { id: '123456', name: 'Rahul Sharma', phone: '9876543210', email: 'rahul.sharma@example.com' },
-  { id: '123457', name: 'Priya Singh', phone: '9876543211', email: 'priya.singh@example.com' },
-  { id: '123458', name: 'Amit Patel', phone: '9876543212', email: 'amit.patel@example.com' },
-  { id: '123459', name: 'Neha Gupta', phone: '9876543213', email: 'neha.gupta@example.com' },
-  { id: '123460', name: 'Vikram Mehta', phone: '9876543214', email: 'vikram.mehta@example.com' },
-];
+// Get API URL from environment variables
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
-const MOCK_DOCTORS = [
-  { id: 'DOC001', name: 'Dr. Priya Patel', specialization: 'General Dentist' },
-  { id: 'DOC002', name: 'Dr. Rajesh Kumar', specialization: 'Orthodontist' },
-  { id: 'DOC003', name: 'Dr. Ananya Singh', specialization: 'Periodontist' },
-  { id: 'DOC004', name: 'Dr. Suresh Verma', specialization: 'Oral Surgeon' },
-  { id: 'DOC005', name: 'Dr. Meera Reddy', specialization: 'Pediatric Dentist' },
-];
-
-const MOCK_CLINICS = [
-  { id: 1, name: 'Dental Care - Bandra', address: '123 Hill Road, Bandra West, Mumbai 400050' },
-  { id: 2, name: 'Dental Care - Andheri', address: '456 Andheri East, Mumbai 400069' },
-  { id: 3, name: 'Dental Care - Powai', address: '789 Hiranandani Gardens, Powai, Mumbai 400076' },
-  { id: 4, name: 'Dental Care - Juhu', address: '101 Juhu Beach Road, Mumbai 400049' },
-];
-
-// Mock appointment data (replace with API call)
-const MOCK_APPOINTMENT = {
-  id: 'APT001',
-  patientId: '123456',
-  patientName: 'Rahul Sharma',
-  patientPhone: '9876543210',
-  patientEmail: 'rahul.sharma@example.com',
-  doctorId: 'DOC001',
-  doctorName: 'Dr. Priya Patel',
-  doctorSpecialization: 'General Dentist',
-  clinicId: 1,
-  clinicName: 'Dental Care - Bandra',
-  clinicAddress: '123 Hill Road, Bandra West, Mumbai 400050',
-  date: '2023-06-20',
-  startTime: '10:00',
-  endTime: '10:30',
-  duration: 30,
-  status: 'scheduled',
-  type: 'checkup',
-  notes: 'Regular dental checkup',
-  createdAt: '2023-05-15T10:30:00Z',
-  updatedAt: '2023-05-15T10:30:00Z',
-};
+// These are static data, not from API
 
 // Appointment types
 const APPOINTMENT_TYPES = [
-  { value: 'checkup', label: 'Regular Checkup' },
-  { value: 'cleaning', label: 'Teeth Cleaning' },
-  { value: 'consultation', label: 'Consultation' },
-  { value: 'filling', label: 'Cavity Filling' },
-  { value: 'rootcanal', label: 'Root Canal' },
-  { value: 'extraction', label: 'Tooth Extraction' },
-  { value: 'crown', label: 'Crown Fitting' },
-  { value: 'braces', label: 'Braces Adjustment' },
-  { value: 'dentures', label: 'Dentures Fitting' },
-  { value: 'emergency', label: 'Emergency' },
+  { value: 'New Consultation', label: 'New Consultation' },
+  { value: 'Follow-up', label: 'Follow-up' },
+  { value: 'Emergency', label: 'Emergency' },
+  { value: 'Cleaning', label: 'Cleaning' },
+  { value: 'Filling', label: 'Filling' },
+  { value: 'Root Canal', label: 'Root Canal' },
+  { value: 'Extraction', label: 'Extraction' },
+  { value: 'Crown/Bridge Work', label: 'Crown/Bridge Work' },
+  { value: 'Implant', label: 'Implant' },
+  { value: 'Orthodontic Adjustment', label: 'Orthodontic Adjustment' },
+  { value: 'Denture Fitting', label: 'Denture Fitting' },
+  { value: 'Surgical Procedure', label: 'Surgical Procedure' },
+  { value: 'Other', label: 'Other' },
 ];
 
 // Appointment durations
@@ -111,51 +72,120 @@ const APPOINTMENT_STATUSES = [
 const validationSchema = Yup.object({
   patientId: Yup.string().required('Patient is required'),
   doctorId: Yup.string().required('Doctor is required'),
-  clinicId: Yup.number().required('Clinic is required'),
+  clinicId: Yup.string().required('Clinic is required'),
   date: Yup.date().required('Date is required'),
   startTime: Yup.string().required('Start time is required'),
   duration: Yup.number().required('Duration is required'),
   type: Yup.string().required('Appointment type is required'),
   status: Yup.string().required('Status is required'),
+  reasonForVisit: Yup.string().required('Reason for visit is required'),
   notes: Yup.string(),
 });
 
 const EditAppointment = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  
+  console.log('EditAppointment: ID from params:', id);
+  
   const [appointment, setAppointment] = useState(null);
+  const [patients, setPatients] = useState([]);
+  const [doctors, setDoctors] = useState([]);
+  const [clinics, setClinics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchAppointment = async () => {
+    // Only fetch data if we have an ID
+    if (!id) return;
+    
+    const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
-
-        // In a real app, this would be an API call
-        // const response = await axios.get(`/api/appointments/${id}`);
-        // setAppointment(response.data);
-
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Set mock data
-        setAppointment(MOCK_APPOINTMENT);
+        if (!id) {
+          throw new Error('Appointment ID is required');
+        }
+
+        // Get token from localStorage
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('Authentication token not found');
+        }
+
+        // Make API calls to get all required data
+        const [appointmentResponse, patientsResponse, doctorsResponse, clinicsResponse] = await Promise.all([
+          axios.get(`${API_URL}/appointments/${id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          axios.get(`${API_URL}/patients`, {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          axios.get(`${API_URL}/staff`, {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          axios.get(`${API_URL}/clinics`, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+        ]);
+        
+        const appointmentData = appointmentResponse.data.data;
+        const doctorsData = doctorsResponse.data.data.filter(staff => staff.role === 'dentist');
+        
+        // Format appointment data for the form
+        const appointmentDate = appointmentData.appointmentDate ? new Date(appointmentData.appointmentDate) : null;
+        const startTimeString = appointmentDate ? format(appointmentDate, 'HH:mm') : '';
+        
+        const formattedAppointment = {
+          id: appointmentData._id,
+          patientId: appointmentData.patient?._id || '',
+          doctorId: appointmentData.dentist?._id || '',
+          clinicId: appointmentData.clinic?._id || '',
+          date: appointmentDate,
+          startTime: startTimeString,
+          duration: appointmentData.duration || 30,
+          type: appointmentData.appointmentType || '',
+          status: appointmentData.status || 'scheduled',
+          notes: appointmentData.notes || '',
+          reasonForVisit: appointmentData.reasonForVisit || ''
+        };
+        
+        setAppointment(formattedAppointment);
+        setPatients(patientsResponse.data.data || []);
+        setDoctors(doctorsData);
+        setClinics(clinicsResponse.data.data || []);
       } catch (err) {
-        console.error('Error fetching appointment:', err);
-        setError('Failed to load appointment details. Please try again.');
-        toast.error('Failed to load appointment details');
+        console.error('Error fetching data:', err);
+        setError('Failed to load appointment data. Please try again.');
+        toast.error(err.response?.data?.message || 'Failed to load appointment data');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchAppointment();
+    fetchData();
   }, [id]);
+  
+  // Add fallback for missing ID
+  if (!id) {
+    return (
+      <Container maxWidth="lg" sx={{ mt: 4 }}>
+        <Alert severity="error">Invalid appointment ID</Alert>
+        <Button
+          variant="outlined"
+          startIcon={<ArrowBackIcon />}
+          onClick={() => navigate('/appointments')}
+          sx={{ mt: 2 }}
+        >
+          Back to Appointments
+        </Button>
+      </Container>
+    );
+  }
 
-  // Calculate end time based on start time and duration
+  // Calculate end time based on start time and duration (for display only)
   const calculateEndTime = (startTime, duration) => {
     if (!startTime || !duration) return '';
     
@@ -182,40 +212,50 @@ const EditAppointment = () => {
       setSubmitting(true);
       setError(null);
 
-      // Calculate end time
-      const endTime = calculateEndTime(values.startTime, values.duration);
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
 
-      // Get patient, doctor, and clinic details
-      const patient = MOCK_PATIENTS.find(p => p.id === values.patientId);
-      const doctor = MOCK_DOCTORS.find(d => d.id === values.doctorId);
-      const clinic = MOCK_CLINICS.find(c => c.id === values.clinicId);
+      // Format date and times
+      const formattedDate = format(values.date, 'yyyy-MM-dd');
+      const formattedStartTime = values.startTime; // startTime is already in HH:mm format
+      
+      // Combine date and time into a single datetime
+      const appointmentDateTime = new Date(`${formattedDate}T${formattedStartTime}`);
 
       // Prepare data for API call
       const appointmentData = {
-        ...values,
-        endTime,
-        patientName: patient?.name || '',
-        patientPhone: patient?.phone || '',
-        patientEmail: patient?.email || '',
-        doctorName: doctor?.name || '',
-        doctorSpecialization: doctor?.specialization || '',
-        clinicName: clinic?.name || '',
-        clinicAddress: clinic?.address || '',
-        updatedAt: new Date().toISOString(),
+        patient: values.patientId,
+        clinic: values.clinicId,
+        dentist: values.doctorId,
+        appointmentDate: appointmentDateTime,
+        duration: values.duration,
+        appointmentType: values.type,
+        reasonForVisit: values.reasonForVisit,
+        notes: values.notes || '',
+        status: values.status
       };
 
-      // In a real app, this would be an API call
-      // await axios.put(`/api/appointments/${id}`, appointmentData);
+      console.log('🔍 Frontend sending appointment data:', appointmentData);
 
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Make API call to update appointment
+      const response = await axios.put(`${API_URL}/appointments/${id}`, appointmentData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('✅ Backend response:', response.data);
 
       toast.success('Appointment updated successfully');
       navigate(`/appointments/${id}`);
     } catch (err) {
       console.error('Error updating appointment:', err);
       setError('Failed to update appointment. Please try again.');
-      toast.error('Failed to update appointment');
+      toast.error(err.response?.data?.message || 'Failed to update appointment');
       formikSetSubmitting(false);
       setSubmitting(false);
     }
@@ -225,6 +265,9 @@ const EditAppointment = () => {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
         <CircularProgress />
+        <Typography variant="body1" sx={{ ml: 2 }}>
+          Loading appointment data...
+        </Typography>
       </Box>
     );
   }
@@ -246,10 +289,10 @@ const EditAppointment = () => {
     );
   }
 
-  if (!appointment) {
+  if (!appointment || !appointment.id) {
     return (
       <Container maxWidth="lg" sx={{ mt: 4 }}>
-        <Alert severity="warning">Appointment not found</Alert>
+        <Alert severity="warning">Appointment not found or data not loaded</Alert>
         <Box sx={{ mt: 2 }}>
           <Button
             variant="outlined"
@@ -268,11 +311,17 @@ const EditAppointment = () => {
 
   // Parse time string to Date object for the time picker
   const parseTimeStringToDate = (timeString) => {
-    if (!timeString) return null;
-    const [hours, minutes] = timeString.split(':');
-    const date = new Date();
-    date.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0);
-    return date;
+    if (!timeString || typeof timeString !== 'string') return null;
+    try {
+      const [hours, minutes] = timeString.split(':');
+      if (!hours || !minutes) return null;
+      const date = new Date();
+      date.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0);
+      return date;
+    } catch (error) {
+      console.error('Error parsing time string:', error);
+      return null;
+    }
   };
 
   const initialStartTime = parseTimeStringToDate(appointment.startTime);
@@ -287,6 +336,7 @@ const EditAppointment = () => {
     duration: appointment.duration,
     type: appointment.type,
     status: appointment.status,
+    reasonForVisit: appointment.reasonForVisit || '',
     notes: appointment.notes || '',
   };
 
@@ -326,13 +376,15 @@ const EditAppointment = () => {
                   <Grid item xs={12} md={6}>
                     <Autocomplete
                       id="patientId"
-                      options={MOCK_PATIENTS}
-                      getOptionLabel={(option) => 
-                        typeof option === 'string' ? option : `${option.name} (${option.phone})`
-                      }
-                      value={MOCK_PATIENTS.find(p => p.id === values.patientId) || null}
+                      options={patients}
+                      getOptionLabel={(option) => {
+                        if (typeof option === 'string') return option;
+                        if (!option) return '';
+                        return `${option.name || ''} (${option.phone || ''})`.trim();
+                      }}
+                      value={patients.find(p => p._id === values.patientId) || null}
                       onChange={(event, newValue) => {
-                        setFieldValue('patientId', newValue ? newValue.id : '');
+                        setFieldValue('patientId', newValue ? newValue._id : '');
                       }}
                       renderInput={(params) => (
                         <TextField
@@ -348,9 +400,9 @@ const EditAppointment = () => {
                       renderOption={(props, option) => (
                         <li {...props}>
                           <div>
-                            <Typography variant="body1">{option.name}</Typography>
+                            <Typography variant="body1">{option.name || 'Unknown Patient'}</Typography>
                             <Typography variant="body2" color="text.secondary">
-                              +91 {option.phone} | {option.email}
+                              {option.phone || 'No phone'} | {option.email || 'No email'}
                             </Typography>
                           </div>
                         </li>
@@ -363,13 +415,15 @@ const EditAppointment = () => {
                   <Grid item xs={12} md={6}>
                     <Autocomplete
                       id="doctorId"
-                      options={MOCK_DOCTORS}
-                      getOptionLabel={(option) => 
-                        typeof option === 'string' ? option : `${option.name} (${option.specialization})`
-                      }
-                      value={MOCK_DOCTORS.find(d => d.id === values.doctorId) || null}
+                      options={doctors}
+                      getOptionLabel={(option) => {
+                        if (typeof option === 'string') return option;
+                        if (!option) return '';
+                        return `${option.firstName || ''} ${option.lastName || ''} (${option.specialization || 'Doctor'})`.trim();
+                      }}
+                      value={doctors.find(d => d._id === values.doctorId) || null}
                       onChange={(event, newValue) => {
-                        setFieldValue('doctorId', newValue ? newValue.id : '');
+                        setFieldValue('doctorId', newValue ? newValue._id : '');
                       }}
                       renderInput={(params) => (
                         <TextField
@@ -385,9 +439,9 @@ const EditAppointment = () => {
                       renderOption={(props, option) => (
                         <li {...props}>
                           <div>
-                            <Typography variant="body1">{option.name}</Typography>
+                            <Typography variant="body1">{option.firstName || ''} {option.lastName || ''}</Typography>
                             <Typography variant="body2" color="text.secondary">
-                              {option.specialization}
+                              {option.specialization || 'Doctor'}
                             </Typography>
                           </div>
                         </li>
@@ -413,11 +467,27 @@ const EditAppointment = () => {
                         onBlur={handleBlur}
                         label="Clinic"
                       >
-                        {MOCK_CLINICS.map((clinic) => (
-                          <MenuItem key={clinic.id} value={clinic.id}>
-                            {clinic.name} - {clinic.address}
-                          </MenuItem>
-                        ))}
+                        {clinics.map((clinic) => {
+                          let addressText = 'Address not available';
+                          if (clinic.address) {
+                            if (typeof clinic.address === 'string') {
+                              addressText = clinic.address;
+                            } else if (typeof clinic.address === 'object') {
+                              const addressParts = [
+                                clinic.address.street,
+                                clinic.address.city,
+                                clinic.address.state,
+                                clinic.address.pincode
+                              ].filter(part => part && part.trim());
+                              addressText = addressParts.join(', ');
+                            }
+                          }
+                          return (
+                            <MenuItem key={clinic._id} value={clinic._id}>
+                              {clinic.name} - {addressText}
+                            </MenuItem>
+                          );
+                        })}
                       </Select>
                       {touched.clinicId && errors.clinicId && (
                         <FormHelperText>{errors.clinicId}</FormHelperText>
@@ -455,8 +525,10 @@ const EditAppointment = () => {
                         label="Start Time"
                         value={initialStartTime}
                         onChange={(newValue) => {
-                          const formattedTime = format(newValue, 'HH:mm');
-                          setFieldValue('startTime', formattedTime);
+                          if (newValue) {
+                            const formattedTime = format(newValue, 'HH:mm');
+                            setFieldValue('startTime', formattedTime);
+                          }
                         }}
                         renderInput={(params) => (
                           <TextField
@@ -557,6 +629,25 @@ const EditAppointment = () => {
                         <FormHelperText>{errors.status}</FormHelperText>
                       )}
                     </FormControl>
+                  </Grid>
+
+                  {/* Reason for Visit */}
+                  <Grid item xs={12}>
+                    <TextField
+                      id="reasonForVisit"
+                      name="reasonForVisit"
+                      label="Reason for Visit"
+                      multiline
+                      rows={2}
+                      value={values.reasonForVisit}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      error={touched.reasonForVisit && Boolean(errors.reasonForVisit)}
+                      helperText={touched.reasonForVisit && errors.reasonForVisit}
+                      fullWidth
+                      required
+                      disabled={isSubmitting || submitting}
+                    />
                   </Grid>
 
                   {/* Notes */}

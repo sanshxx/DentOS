@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import {
@@ -27,109 +28,92 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { format, differenceInYears, parse } from 'date-fns';
 import { toast } from 'react-toastify';
 
-// Mock data for clinics (replace with API call)
-const CLINICS = [
-  { id: 1, name: 'Dental Care - Bandra' },
-  { id: 2, name: 'Dental Care - Andheri' },
-  { id: 3, name: 'Dental Care - Powai' },
-  { id: 4, name: 'Dental Care - Juhu' },
-];
+// Get API URL from environment variables
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+// Clinics will be fetched from the API
 
 // Blood groups
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
-// Mock patient data (replace with API call)
-const MOCK_PATIENT = {
-  id: '123456',
-  firstName: 'Rahul',
-  lastName: 'Sharma',
-  email: 'rahul.sharma@example.com',
-  phone: '9876543210',
-  gender: 'male',
-  dateOfBirth: '1985-06-15',
-  age: 38,
-  address: '123 Main Street, Bandra West',
-  city: 'Mumbai',
-  state: 'Maharashtra',
-  pincode: '400050',
-  bloodGroup: 'O+',
-  allergies: 'Penicillin',
-  medicalHistory: 'Hypertension, Diabetes Type 2',
-  emergencyContactName: 'Priya Sharma',
-  emergencyContactPhone: '9876543211',
-  clinicId: 1,
-  registrationDate: '2022-03-10',
-  occupation: 'Software Engineer',
-  referredBy: 'Dr. Patel',
-};
+// Patient data will be fetched from the API
 
 const EditPatient = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [patient, setPatient] = useState(null);
+  const [clinics, setClinics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchPatient = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        // In a real app, this would be an API call
-        // const response = await axios.get(`/api/patients/${id}`);
-        // setPatient(response.data);
+        // Get token from localStorage
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('Authentication token not found');
+        }
 
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Make API calls to get patient data and clinics
+        const [patientResponse, clinicsResponse] = await Promise.all([
+          axios.get(`${API_URL}/patients/${id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          axios.get(`${API_URL}/clinics`, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+        ]);
         
-        // Set mock data
-        setPatient(MOCK_PATIENT);
+        setPatient(patientResponse.data.data);
+        setClinics(clinicsResponse.data.data || []);
       } catch (err) {
-        console.error('Error fetching patient:', err);
-        setError('Failed to load patient data. Please try again.');
-        toast.error('Failed to load patient data');
+        console.error('Error fetching data:', err);
+        setError('Failed to load data. Please try again.');
+        toast.error(err.response?.data?.message || 'Failed to load data');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPatient();
+    fetchData();
   }, [id]);
 
   const formik = useFormik({
     enableReinitialize: true,
     initialValues: {
-      firstName: patient?.firstName || '',
-      lastName: patient?.lastName || '',
+      name: patient?.name || '',
       email: patient?.email || '',
       phone: patient?.phone || '',
       gender: patient?.gender || '',
       dateOfBirth: patient?.dateOfBirth ? new Date(patient.dateOfBirth) : null,
-      address: patient?.address || '',
-      city: patient?.city || '',
-      state: patient?.state || '',
-      pincode: patient?.pincode || '',
+      address: patient?.address || {},
+      city: patient?.address?.city || '',
+      state: patient?.address?.state || '',
+      pincode: patient?.address?.pincode || '',
       bloodGroup: patient?.bloodGroup || '',
-      allergies: patient?.allergies || '',
-      medicalHistory: patient?.medicalHistory || '',
+      allergies: Array.isArray(patient?.medicalHistory?.allergies) 
+        ? patient.medicalHistory.allergies.join(', ') 
+        : patient?.medicalHistory?.allergies || '',
+      medicalHistory: patient?.medicalHistory?.other || '',
       emergencyContactName: patient?.emergencyContactName || '',
       emergencyContactPhone: patient?.emergencyContactPhone || '',
-      clinicId: patient?.clinicId || '',
+      registeredClinic: patient?.registeredClinic?._id || patient?.registeredClinic || '',
       occupation: patient?.occupation || '',
       referredBy: patient?.referredBy || '',
     },
     validationSchema: Yup.object({
-      firstName: Yup.string().required('First name is required'),
-      lastName: Yup.string().required('Last name is required'),
+      name: Yup.string().required('Name is required'),
       email: Yup.string().email('Invalid email address'),
       phone: Yup.string()
         .matches(/^[6-9]\d{9}$/, 'Phone number must be a valid Indian number')
         .required('Phone number is required'),
       gender: Yup.string().required('Gender is required'),
       dateOfBirth: Yup.date().nullable().required('Date of birth is required'),
-      address: Yup.string().required('Address is required'),
       city: Yup.string().required('City is required'),
       state: Yup.string().required('State is required'),
       pincode: Yup.string()
@@ -138,7 +122,7 @@ const EditPatient = () => {
       bloodGroup: Yup.string(),
       emergencyContactName: Yup.string(),
       emergencyContactPhone: Yup.string().matches(/^[6-9]\d{9}$/, 'Phone number must be a valid Indian number'),
-      clinicId: Yup.number().required('Clinic is required'),
+      registeredClinic: Yup.string().required('Clinic is required'),
     }),
     onSubmit: async (values) => {
       try {
@@ -151,26 +135,55 @@ const EditPatient = () => {
         // Format date of birth to ISO string
         const formattedDOB = values.dateOfBirth ? format(new Date(values.dateOfBirth), 'yyyy-MM-dd') : null;
         
-        // Prepare patient data
-        const patientData = {
-          ...values,
-          dateOfBirth: formattedDOB,
-          age,
+        // Prepare address object
+        const address = {
+          street: values.address?.street || '',
+          city: values.city,
+          state: values.state,
+          pincode: values.pincode,
+          country: 'India'
         };
         
-        // API call to update patient
-        // Replace with actual API endpoint
-        // const response = await axios.put(`/api/patients/${id}`, patientData);
+        // Prepare patient data
+        const patientData = {
+          name: values.name,
+          email: values.email,
+          phone: values.phone,
+          gender: values.gender,
+          dateOfBirth: formattedDOB,
+          age,
+          address,
+          bloodGroup: values.bloodGroup,
+          occupation: values.occupation,
+          referredBy: values.referredBy,
+          registeredClinic: values.registeredClinic,
+          emergencyContactName: values.emergencyContactName,
+          emergencyContactPhone: values.emergencyContactPhone,
+          medicalHistory: {
+            allergies: values.allergies ? values.allergies.split(',').map(a => a.trim()) : [],
+            other: values.medicalHistory
+          }
+        };
         
-        // For demo purposes, simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Get token from localStorage
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('Authentication token not found');
+        }
+        
+        // API call to update patient
+        const response = await axios.put(`${API_URL}/patients/${id}`, patientData, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
         
         toast.success('Patient updated successfully!');
         navigate(`/patients/${id}`);
       } catch (err) {
         console.error('Error updating patient:', err);
         setError(err.response?.data?.message || 'Failed to update patient. Please try again.');
-        toast.error('Failed to update patient');
+        toast.error(err.response?.data?.message || 'Failed to update patient');
       } finally {
         setSubmitting(false);
       }
@@ -227,7 +240,7 @@ const EditPatient = () => {
     <Container maxWidth="lg">
       <Paper elevation={3} sx={{ p: 4, mt: 4, mb: 4, borderRadius: 2 }}>
         <Typography variant="h4" component="h1" gutterBottom>
-          Edit Patient: {patient.firstName} {patient.lastName}
+          Edit Patient: {patient.name}
         </Typography>
         <Divider sx={{ mb: 4 }} />
 
@@ -249,29 +262,14 @@ const EditPatient = () => {
             <Grid item xs={12} sm={6} md={4}>
               <TextField
                 fullWidth
-                id="firstName"
-                name="firstName"
-                label="First Name"
-                value={formik.values.firstName}
+                id="name"
+                name="name"
+                label="Full Name"
+                value={formik.values.name}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
-                error={formik.touched.firstName && Boolean(formik.errors.firstName)}
-                helperText={formik.touched.firstName && formik.errors.firstName}
-                disabled={submitting}
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={4}>
-              <TextField
-                fullWidth
-                id="lastName"
-                name="lastName"
-                label="Last Name"
-                value={formik.values.lastName}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={formik.touched.lastName && Boolean(formik.errors.lastName)}
-                helperText={formik.touched.lastName && formik.errors.lastName}
+                error={formik.touched.name && Boolean(formik.errors.name)}
+                helperText={formik.touched.name && formik.errors.name}
                 disabled={submitting}
               />
             </Grid>
@@ -418,9 +416,14 @@ const EditPatient = () => {
                 fullWidth
                 id="address"
                 name="address"
-                label="Address"
-                value={formik.values.address}
-                onChange={formik.handleChange}
+                label="Street Address"
+                value={formik.values.address?.street || ''}
+                onChange={(e) => {
+                  formik.setFieldValue('address', {
+                    ...formik.values.address,
+                    street: e.target.value
+                  });
+                }}
                 onBlur={formik.handleBlur}
                 error={formik.touched.address && Boolean(formik.errors.address)}
                 helperText={formik.touched.address && formik.errors.address}
@@ -559,30 +562,30 @@ const EditPatient = () => {
               </Typography>
             </Grid>
 
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth error={formik.touched.clinicId && Boolean(formik.errors.clinicId)}>
-                <InputLabel id="clinic-label">Clinic</InputLabel>
-                <Select
-                  labelId="clinic-label"
-                  id="clinicId"
-                  name="clinicId"
-                  value={formik.values.clinicId}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  label="Clinic"
-                  disabled={submitting}
-                >
-                  {CLINICS.map((clinic) => (
-                    <MenuItem key={clinic.id} value={clinic.id}>
-                      {clinic.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-                {formik.touched.clinicId && formik.errors.clinicId && (
-                  <FormHelperText>{formik.errors.clinicId}</FormHelperText>
-                )}
-              </FormControl>
-            </Grid>
+                         <Grid item xs={12} sm={6}>
+               <FormControl fullWidth error={formik.touched.registeredClinic && Boolean(formik.errors.registeredClinic)}>
+                 <InputLabel id="clinic-label">Clinic</InputLabel>
+                 <Select
+                   labelId="clinic-label"
+                   id="registeredClinic"
+                   name="registeredClinic"
+                   value={formik.values.registeredClinic}
+                   onChange={formik.handleChange}
+                   onBlur={formik.handleBlur}
+                   label="Clinic"
+                   disabled={submitting}
+                 >
+                   {clinics.map((clinic) => (
+                     <MenuItem key={clinic._id} value={clinic._id}>
+                       {clinic.name}
+                     </MenuItem>
+                   ))}
+                 </Select>
+                 {formik.touched.registeredClinic && formik.errors.registeredClinic && (
+                   <FormHelperText>{formik.errors.registeredClinic}</FormHelperText>
+                 )}
+               </FormControl>
+             </Grid>
 
             <Grid item xs={12} sm={6}>
               <TextField

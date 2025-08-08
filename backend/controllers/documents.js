@@ -113,6 +113,23 @@ exports.uploadDocument = async (req, res) => {
       });
     }
 
+    // Validate file size (additional check)
+    const maxFileSize = 10 * 1024 * 1024; // 10MB
+    if (req.file.size > maxFileSize) {
+      return res.status(400).json({
+        success: false,
+        message: 'File size exceeds 10MB limit'
+      });
+    }
+
+    // Validate file exists on disk
+    if (!fs.existsSync(req.file.path)) {
+      return res.status(500).json({
+        success: false,
+        message: 'File upload failed - file not found on disk'
+      });
+    }
+
     // Create document
     const document = await PatientDocument.create({
       patient: patientId,
@@ -133,9 +150,13 @@ exports.uploadDocument = async (req, res) => {
     });
     await document.save();
 
+    // Populate the document with user info before sending response
+    const populatedDocument = await PatientDocument.findById(document._id)
+      .populate('uploadedBy', 'name');
+
     res.status(201).json({
       success: true,
-      data: document
+      data: populatedDocument
     });
   } catch (err) {
     console.error(err);
@@ -147,7 +168,7 @@ exports.uploadDocument = async (req, res) => {
 };
 
 // @desc    Download a document
-// @route   GET /api/documents/:id/download
+// @route   GET /api/patients/:patientId/documents/:id/download
 // @access  Private
 exports.downloadDocument = async (req, res) => {
   try {
@@ -162,9 +183,21 @@ exports.downloadDocument = async (req, res) => {
 
     // Check if file exists
     if (!fs.existsSync(document.filePath)) {
+      console.error(`File not found: ${document.filePath}`);
       return res.status(404).json({
         success: false,
-        message: 'File not found'
+        message: 'File not found on server'
+      });
+    }
+
+    // Check if file is readable
+    try {
+      fs.accessSync(document.filePath, fs.constants.R_OK);
+    } catch (error) {
+      console.error(`File not readable: ${document.filePath}`, error);
+      return res.status(500).json({
+        success: false,
+        message: 'File access error'
       });
     }
 

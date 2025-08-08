@@ -23,6 +23,9 @@ import {
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
+// Get API URL from environment variables
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const Treatments = () => {
   const navigate = useNavigate();
   const [treatments, setTreatments] = useState([]);
@@ -52,135 +55,45 @@ const Treatments = () => {
 
   useEffect(() => {
     fetchTreatments();
-  }, []);
+  }, [page, rowsPerPage, searchTerm, categoryFilter, priceRangeFilter]);
 
   const fetchTreatments = async () => {
     setLoading(true);
     setError(null);
     
     try {
-      // In a real app, we would fetch from the API
-      // For now, we'll simulate an API call
-      setTimeout(() => {
-        // Mock API call
-        const mockResponse = {
-          success: true,
-          count: 8,
-          data: [
-            {
-              _id: '60d21b4667d0d8992e610c20',
-              name: 'Dental Checkup',
-              code: 'CHK-001',
-              category: 'Preventive',
-              description: 'Regular dental checkup including examination and cleaning',
-              price: 1500,
-              duration: 30,
-              isActive: true,
-              requiredEquipment: ['Basic Dental Kit', 'Dental Mirror', 'Probe'],
-              notes: 'Recommended every 6 months for adults and children',
-              imageUrl: 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8ZGVudGFsJTIwY2hlY2t1cHxlbnwwfHwwfHw%3D&auto=format&fit=crop&w=800&q=60'
-            },
-            {
-              _id: '60d21b4667d0d8992e610c21',
-              name: 'Root Canal Treatment',
-              code: 'RCT-001',
-              category: 'Endodontic',
-              description: 'Procedure to remove infected pulp and seal the tooth',
-              price: 8000,
-              duration: 90,
-              isActive: true,
-              requiredEquipment: ['Endodontic Files', 'Apex Locator', 'Gutta Percha'],
-              notes: 'May require multiple sessions depending on the case',
-              imageUrl: 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8NXx8ZGVudGFsJTIwdHJlYXRtZW50fGVufDB8fDB8fA%3D%3D&auto=format&fit=crop&w=800&q=60'
-            },
-            {
-              _id: '60d21b4667d0d8992e610c22',
-              name: 'Teeth Whitening',
-              code: 'WHT-001',
-              category: 'Cosmetic',
-              description: 'Professional teeth whitening procedure',
-              price: 5000,
-              duration: 60,
-              isActive: true,
-              requiredEquipment: ['Whitening Gel', 'UV Light', 'Mouth Guard'],
-              notes: 'Results may vary depending on initial teeth condition',
-              imageUrl: 'https://images.unsplash.com/photo-1581585095852-97958afb5b6c?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8OHx8dGVldGglMjB3aGl0ZW5pbmd8ZW58MHx8MHx8&auto=format&fit=crop&w=800&q=60'
-            },
-            {
-              _id: '60d21b4667d0d8992e610c23',
-              name: 'Dental Implant',
-              code: 'IMP-001',
-              category: 'Surgical',
-              description: 'Surgical placement of a dental implant to replace missing tooth',
-              price: 25000,
-              duration: 120,
-              isActive: true,
-              requiredEquipment: ['Implant Kit', 'Surgical Drill', 'Abutment'],
-              notes: 'Requires healing period of 3-6 months before final crown placement',
-              imageUrl: 'https://images.unsplash.com/photo-1579083578954-4105c0f3d0b5?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8MTB8fGRlbnRhbCUyMGltcGxhbnR8ZW58MHx8MHx8&auto=format&fit=crop&w=800&q=60'
-            },
-            {
-              _id: '60d21b4667d0d8992e610c24',
-              name: 'Orthodontic Braces',
-              code: 'ORT-001',
-              category: 'Orthodontic',
-              description: 'Traditional metal braces for teeth alignment',
-              price: 35000,
-              duration: 45,
-              isActive: true,
-              requiredEquipment: ['Brackets', 'Archwires', 'Elastic Bands'],
-              notes: 'Treatment duration typically 18-24 months with monthly adjustments',
-              imageUrl: 'https://images.unsplash.com/photo-1600271886742-f049cd451bba?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8MTJ8fGJyYWNlc3xlbnwwfHwwfHw%3D&auto=format&fit=crop&w=800&q=60'
-            },
-            {
-              _id: '60d21b4667d0d8992e610c25',
-              name: 'Wisdom Tooth Extraction',
-              code: 'EXT-001',
-              category: 'Surgical',
-              description: 'Surgical removal of impacted wisdom teeth',
-              price: 7500,
-              duration: 60,
-              isActive: true,
-              requiredEquipment: ['Extraction Forceps', 'Surgical Drill', 'Suture Kit'],
-              notes: 'Recovery period of 7-10 days with proper post-operative care',
-              imageUrl: 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8MTR8fHRvb3RoJTIwZXh0cmFjdGlvbnxlbnwwfHwwfHw%3D&auto=format&fit=crop&w=800&q=60'
-            },
-            {
-              _id: '60d21b4667d0d8992e610c26',
-              name: 'Dental Crown',
-              code: 'CRW-001',
-              category: 'Restorative',
-              description: 'Custom-made crown to restore damaged tooth',
-              price: 12000,
-              duration: 75,
-              isActive: true,
-              requiredEquipment: ['Crown Kit', 'Impression Material', 'Temporary Crown'],
-              notes: 'Requires two appointments - preparation and fitting',
-              imageUrl: 'https://images.unsplash.com/photo-1579083578954-4105c0f3d0b5?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8MTZ8fGRlbnRhbCUyMGNyb3dufGVufDB8fDB8fA%3D%3D&auto=format&fit=crop&w=800&q=60'
-            },
-            {
-              _id: '60d21b4667d0d8992e610c27',
-              name: 'Pediatric Fluoride Treatment',
-              code: 'PED-001',
-              category: 'Preventive',
-              description: 'Fluoride application for children to prevent cavities',
-              price: 1000,
-              duration: 15,
-              isActive: false,
-              requiredEquipment: ['Fluoride Gel', 'Applicator Tray'],
-              notes: 'Recommended every 6 months for children aged 2-18',
-              imageUrl: 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8MTh8fGNoaWxkJTIwZGVudGlzdHxlbnwwfHwwfHw%3D&auto=format&fit=crop&w=800&q=60'
-            }
-          ]
-        };
-        
-        setTreatments(mockResponse.data);
-        setLoading(false);
-      }, 1000); // Simulate loading delay
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+      
+      // Build query parameters
+      let queryParams = new URLSearchParams();
+      if (searchTerm) queryParams.append('search', searchTerm);
+      if (categoryFilter && categoryFilter !== 'all') queryParams.append('category', categoryFilter);
+      if (priceRangeFilter && priceRangeFilter !== 'all') {
+        const [min, max] = priceRangeFilter.split('-');
+        if (min) queryParams.append('minPrice', min);
+        if (max) queryParams.append('maxPrice', max);
+      }
+      queryParams.append('page', page + 1);
+      queryParams.append('limit', rowsPerPage);
+      
+      // Make API call
+      const response = await axios.get(`${API_URL}/treatments?${queryParams.toString()}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      setTreatments(response.data.data);
+      setLoading(false);
     } catch (err) {
       console.error('Error fetching treatments:', err);
-      setError('Failed to load treatment data. Please try again.');
+      setError(err.response?.data?.message || 'Failed to load treatments');
       setLoading(false);
+      toast.error(err.response?.data?.message || err.message || 'Failed to fetch treatments');
     }
   };
 
@@ -258,7 +171,7 @@ const Treatments = () => {
     }
   };
 
-  const handleFormSubmit = () => {
+  const handleFormSubmit = async () => {
     // Basic validation
     const errors = {};
     if (!formData.name) errors.name = 'Treatment name is required';
@@ -282,44 +195,84 @@ const Treatments = () => {
       return;
     }
     
-    // In a real app, we would call the API to create/update the treatment
-    if (isEditing) {
-      // Update existing treatment
-      const updatedTreatments = treatments.map(treatment => {
-        if (treatment._id === formData._id) {
-          return {
-            ...formData,
-            price: Number(formData.price),
-            duration: Number(formData.duration)
-          };
-        }
-        return treatment;
-      });
+    try {
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
       
-      setTreatments(updatedTreatments);
-      toast.success(`${formData.name} updated successfully`);
-    } else {
-      // Create new treatment
-      const newTreatment = {
+      // Prepare data for API
+      const treatmentData = {
         ...formData,
-        _id: `new-${Date.now()}`,
         price: Number(formData.price),
         duration: Number(formData.duration)
       };
       
-      setTreatments([...treatments, newTreatment]);
-      toast.success(`${formData.name} added successfully`);
+      let response;
+      
+      if (isEditing) {
+        // Update existing treatment
+        response = await axios.put(`${API_URL}/treatments/${formData._id}`, treatmentData, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        // Update local state
+        const updatedTreatments = treatments.map(treatment => {
+          if (treatment._id === formData._id) {
+            return response.data.data;
+          }
+          return treatment;
+        });
+        
+        setTreatments(updatedTreatments);
+        toast.success(`${formData.name} updated successfully`);
+      } else {
+        // Create new treatment
+        response = await axios.post(`${API_URL}/treatments`, treatmentData, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        // Update local state with the new treatment from API
+        setTreatments([...treatments, response.data.data]);
+        toast.success(`${formData.name} added successfully`);
+      }
+      
+      handleCloseForm();
+    } catch (err) {
+      console.error('Error saving treatment:', err);
+      toast.error(err.response?.data?.message || err.message || 'Failed to save treatment');
     }
-    
-    handleCloseForm();
   };
 
-  const handleDeleteTreatment = (id) => {
+  const handleDeleteTreatment = async (id) => {
     if (window.confirm('Are you sure you want to delete this treatment?')) {
-      // In a real app, we would call the API to delete the treatment
-      const updatedTreatments = treatments.filter(treatment => treatment._id !== id);
-      setTreatments(updatedTreatments);
-      toast.success('Treatment deleted successfully');
+      try {
+        // Get token from localStorage
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('Authentication token not found');
+        }
+        
+        // Call API to delete the treatment
+        await axios.delete(`${API_URL}/treatments/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        // Update local state
+        const updatedTreatments = treatments.filter(treatment => treatment._id !== id);
+        setTreatments(updatedTreatments);
+        toast.success('Treatment deleted successfully');
+      } catch (err) {
+        console.error('Error deleting treatment:', err);
+        toast.error(err.response?.data?.message || err.message || 'Failed to delete treatment');
+      }
     }
   };
 
@@ -639,12 +592,14 @@ const Treatments = () => {
                     label="Category"
                   >
                     <MenuItem value="">Select Category</MenuItem>
+                    <MenuItem value="Diagnostic">Diagnostic</MenuItem>
                     <MenuItem value="Preventive">Preventive</MenuItem>
                     <MenuItem value="Restorative">Restorative</MenuItem>
                     <MenuItem value="Endodontic">Endodontic</MenuItem>
                     <MenuItem value="Periodontic">Periodontic</MenuItem>
+                    <MenuItem value="Prosthodontic">Prosthodontic</MenuItem>
+                    <MenuItem value="Oral Surgery">Oral Surgery</MenuItem>
                     <MenuItem value="Orthodontic">Orthodontic</MenuItem>
-                    <MenuItem value="Surgical">Surgical</MenuItem>
                     <MenuItem value="Cosmetic">Cosmetic</MenuItem>
                     <MenuItem value="Pediatric">Pediatric</MenuItem>
                   </Select>

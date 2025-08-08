@@ -1,173 +1,710 @@
 const asyncHandler = require('../middleware/async');
-
-// Mock data for reports
-const mockRevenueData = [
-  { month: 'Jan', revenue: 125000 },
-  { month: 'Feb', revenue: 145000 },
-  { month: 'Mar', revenue: 165000 },
-  { month: 'Apr', revenue: 185000 },
-  { month: 'May', revenue: 205000 },
-  { month: 'Jun', revenue: 225000 },
-  { month: 'Jul', revenue: 245000 },
-  { month: 'Aug', revenue: 265000 },
-  { month: 'Sep', revenue: 285000 },
-  { month: 'Oct', revenue: 305000 },
-  { month: 'Nov', revenue: 325000 },
-  { month: 'Dec', revenue: 345000 }
-];
-
-const mockPatientData = [
-  { month: 'Jan', newPatients: 45, returning: 120 },
-  { month: 'Feb', newPatients: 50, returning: 130 },
-  { month: 'Mar', newPatients: 55, returning: 140 },
-  { month: 'Apr', newPatients: 60, returning: 150 },
-  { month: 'May', newPatients: 65, returning: 160 },
-  { month: 'Jun', newPatients: 70, returning: 170 },
-  { month: 'Jul', newPatients: 75, returning: 180 },
-  { month: 'Aug', newPatients: 80, returning: 190 },
-  { month: 'Sep', newPatients: 85, returning: 200 },
-  { month: 'Oct', newPatients: 90, returning: 210 },
-  { month: 'Nov', newPatients: 95, returning: 220 },
-  { month: 'Dec', newPatients: 100, returning: 230 }
-];
-
-const mockAppointmentData = [
-  { month: 'Jan', scheduled: 180, completed: 165, cancelled: 15 },
-  { month: 'Feb', scheduled: 190, completed: 175, cancelled: 15 },
-  { month: 'Mar', scheduled: 200, completed: 185, cancelled: 15 },
-  { month: 'Apr', scheduled: 210, completed: 195, cancelled: 15 },
-  { month: 'May', scheduled: 220, completed: 205, cancelled: 15 },
-  { month: 'Jun', scheduled: 230, completed: 215, cancelled: 15 },
-  { month: 'Jul', scheduled: 240, completed: 225, cancelled: 15 },
-  { month: 'Aug', scheduled: 250, completed: 235, cancelled: 15 },
-  { month: 'Sep', scheduled: 260, completed: 245, cancelled: 15 },
-  { month: 'Oct', scheduled: 270, completed: 255, cancelled: 15 },
-  { month: 'Nov', scheduled: 280, completed: 265, cancelled: 15 },
-  { month: 'Dec', scheduled: 290, completed: 275, cancelled: 15 }
-];
-
-const mockTreatmentData = [
-  { name: 'Cleaning', count: 450, value: 450 },
-  { name: 'Filling', count: 320, value: 320 },
-  { name: 'Root Canal', count: 180, value: 180 },
-  { name: 'Crown', count: 150, value: 150 },
-  { name: 'Extraction', count: 120, value: 120 },
-  { name: 'Whitening', count: 100, value: 100 },
-  { name: 'Braces', count: 80, value: 80 },
-  { name: 'Dentures', count: 50, value: 50 }
-];
-
-const mockClinicData = [
-  { name: 'Main Clinic', patients: 450, revenue: 450000 },
-  { name: 'North Branch', patients: 320, revenue: 320000 },
-  { name: 'South Branch', patients: 280, revenue: 280000 },
-  { name: 'East Branch', patients: 250, revenue: 250000 },
-  { name: 'West Branch', patients: 200, revenue: 200000 }
-];
-
-const mockDentistData = [
-  { name: 'Dr. Smith', patients: 350, revenue: 350000 },
-  { name: 'Dr. Johnson', patients: 300, revenue: 300000 },
-  { name: 'Dr. Williams', patients: 280, revenue: 280000 },
-  { name: 'Dr. Brown', patients: 250, revenue: 250000 },
-  { name: 'Dr. Jones', patients: 220, revenue: 220000 },
-  { name: 'Dr. Garcia', patients: 200, revenue: 200000 },
-  { name: 'Dr. Miller', patients: 180, revenue: 180000 },
-  { name: 'Dr. Davis', patients: 150, revenue: 150000 }
-];
+const mongoose = require('mongoose');
+const Patient = require('../models/Patient');
+const Appointment = require('../models/Appointment');
+const Invoice = require('../models/Invoice');
+const Treatment = require('../models/Treatment');
+const Clinic = require('../models/Clinic');
+const User = require('../models/User');
 
 // @desc    Get all reports data
 // @route   GET /api/reports
 // @access  Private
 exports.getReports = asyncHandler(async (req, res, next) => {
-  res.status(200).json({
-    success: true,
-    message: 'Reports data retrieved successfully',
-    data: {
-      revenue: mockRevenueData,
-      patients: mockPatientData,
-      appointments: mockAppointmentData,
-      treatments: mockTreatmentData,
-      clinics: mockClinicData,
-      dentists: mockDentistData
+  try {
+    // Get query parameters for filtering
+    const { startDate, endDate, clinicId } = req.query;
+    
+    // Build date filter
+    const dateFilter = {};
+    if (startDate) {
+      dateFilter.createdAt = { $gte: new Date(startDate) };
+    } else {
+      // Default to last 12 months if no start date
+      const twelveMonthsAgo = new Date();
+      twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 11);
+      twelveMonthsAgo.setDate(1);
+      twelveMonthsAgo.setHours(0, 0, 0, 0);
+      dateFilter.createdAt = { $gte: twelveMonthsAgo };
     }
-  });
+    
+    if (endDate) {
+      if (dateFilter.createdAt) {
+        dateFilter.createdAt.$lte = new Date(endDate);
+      } else {
+        dateFilter.createdAt = { $lte: new Date(endDate) };
+      }
+    }
+    
+    // Build clinic filter
+    const clinicFilter = clinicId ? { clinic: new mongoose.Types.ObjectId(clinicId) } : {};
+    const patientClinicFilter = clinicId ? { registeredClinic: new mongoose.Types.ObjectId(clinicId) } : {};
+    
+    // Combine filters with organization
+    const filter = { organization: req.user.organization, ...dateFilter, ...clinicFilter };
+    const patientFilter = { organization: req.user.organization, ...dateFilter, ...patientClinicFilter };
+    
+
+    
+    const revenueData = await Invoice.aggregate([
+      {
+        $match: filter
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
+          revenue: { $sum: "$totalAmount" }
+        }
+      },
+      {
+        $sort: { _id: 1 }
+      }
+    ]);
+    
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    // Format revenue data
+    const formattedRevenueData = [];
+    const currentDate = new Date();
+    
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(currentDate);
+      date.setMonth(currentDate.getMonth() - i);
+      const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      
+      const monthData = revenueData.find(item => item._id === yearMonth);
+      
+      formattedRevenueData.unshift({
+        month: months[date.getMonth()],
+        revenue: monthData ? monthData.revenue : 0
+      });
+    }
+    
+    // Get patient data by month (new vs returning)
+    const patientData = await Patient.aggregate([
+      {
+        $match: patientFilter
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
+          newPatients: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { _id: 1 }
+      }
+    ]);
+    
+    // Get appointment data by month and status
+    const appointmentData = await Appointment.aggregate([
+      {
+        $match: filter
+      },
+      {
+        $group: {
+          _id: { 
+            yearMonth: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
+            status: "$status"
+          },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { "_id.yearMonth": 1 }
+      }
+    ]);
+    
+    // Format patient and appointment data
+    const formattedPatientData = [];
+    const formattedAppointmentData = [];
+    
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(currentDate);
+      date.setMonth(currentDate.getMonth() - i);
+      const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      
+      const monthPatientData = patientData.find(item => item._id === yearMonth);
+      
+      // Get appointment counts by status for this month
+      const scheduled = appointmentData.find(item => 
+        item._id.yearMonth === yearMonth && item._id.status === 'scheduled'
+      );
+      
+      const completed = appointmentData.find(item => 
+        item._id.yearMonth === yearMonth && item._id.status === 'completed'
+      );
+      
+      const cancelled = appointmentData.find(item => 
+        item._id.yearMonth === yearMonth && (item._id.status === 'cancelled' || item._id.status === 'no-show')
+      );
+      
+      formattedPatientData.unshift({
+        month: months[date.getMonth()],
+        newPatients: monthPatientData ? monthPatientData.newPatients : 0,
+        returning: 0 // This would require more complex queries with patient visit history
+      });
+      
+      formattedAppointmentData.unshift({
+        month: months[date.getMonth()],
+        scheduled: scheduled ? scheduled.count : 0,
+        completed: completed ? completed.count : 0,
+        cancelled: cancelled ? cancelled.count : 0
+      });
+    }
+    
+    // Get treatment data by appointment type
+    const treatmentData = await Appointment.aggregate([
+      {
+        $match: {
+          ...filter,
+          appointmentType: { $exists: true, $ne: null }
+        }
+      },
+      {
+        $group: {
+          _id: '$appointmentType',
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { count: -1 }
+      },
+      {
+        $limit: 8
+      }
+    ]);
+    
+    const formattedTreatmentData = treatmentData.map(item => ({
+      name: item._id,
+      count: item.count,
+      value: item.count // Using count as value for visualization
+    }));
+    
+    // Get clinic data
+    const clinicData = await Clinic.aggregate([
+      // If a specific clinic is selected, filter by that clinic
+      ...(clinicId ? [{ $match: { _id: clinicId } }] : []),
+      {
+        $lookup: {
+          from: 'patients',
+          localField: '_id',
+          foreignField: 'registeredClinic',
+          as: 'patients'
+        }
+      },
+      {
+        $lookup: {
+          from: 'invoices',
+          localField: '_id',
+          foreignField: 'clinic',
+          as: 'invoices'
+        }
+      },
+      {
+        $project: {
+          name: 1,
+          patientCount: { $size: '$patients' },
+          revenue: { $sum: '$invoices.totalAmount' }
+        }
+      },
+      {
+        $sort: { patientCount: -1 }
+      },
+      {
+        $limit: 5
+      }
+    ]);
+    
+    const formattedClinicData = clinicData.map(clinic => ({
+      name: clinic.name,
+      patients: clinic.patientCount,
+      revenue: clinic.revenue
+    }));
+    
+    // Get dentist data
+    const dentistData = await User.aggregate([
+      {
+        $match: { role: 'dentist' }
+      },
+      {
+        $lookup: {
+          from: 'appointments',
+          localField: '_id',
+          foreignField: 'dentist',
+          as: 'appointments'
+        }
+      },
+      // Filter appointments by clinic if clinic is selected
+      ...(clinicId ? [{
+        $addFields: {
+          appointments: {
+            $filter: {
+              input: '$appointments',
+              as: 'appointment',
+              cond: { $eq: ['$$appointment.clinic', clinicId] }
+            }
+          }
+        }
+      }] : []),
+      {
+        $lookup: {
+          from: 'invoices',
+          localField: 'appointments.invoice',
+          foreignField: '_id',
+          as: 'invoices'
+        }
+      },
+      {
+        $project: {
+          name: 1,
+          patientCount: { $size: { $setUnion: '$appointments.patient' } },
+          revenue: { $sum: '$invoices.totalAmount' }
+        }
+      },
+      {
+        $sort: { patientCount: -1 }
+      },
+      {
+        $limit: 8
+      }
+    ]);
+    
+    const formattedDentistData = dentistData.map(dentist => ({
+      name: dentist.name,
+      patients: dentist.patientCount,
+      revenue: dentist.revenue
+    }));
+    
+    res.status(200).json({
+      success: true,
+      message: 'Reports data retrieved successfully',
+      data: {
+        revenue: formattedRevenueData,
+        patients: formattedPatientData,
+        appointments: formattedAppointmentData,
+        treatments: formattedTreatmentData,
+        clinics: formattedClinicData,
+        dentists: formattedDentistData
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      message: 'Server Error'
+    });
+  }
 });
 
 // @desc    Get financial reports
 // @route   GET /api/reports/financial
 // @access  Private
 exports.getFinancialReports = asyncHandler(async (req, res, next) => {
-  // Get query parameters for filtering
-  const { startDate, endDate, clinicId } = req.query;
-  
-  // In a real app, we would filter based on these parameters
-  // For now, we'll just return the mock data
-  
-  res.status(200).json({
-    success: true,
-    message: 'Financial reports retrieved successfully',
-    data: {
-      revenue: mockRevenueData,
-      clinics: mockClinicData,
-      dentists: mockDentistData
+  try {
+    // Get query parameters for filtering
+    const { startDate, endDate, clinicId } = req.query;
+    
+    // Build date filter
+    const dateFilter = {};
+    if (startDate) {
+      dateFilter.invoiceDate = { $gte: new Date(startDate) };
     }
-  });
+    if (endDate) {
+      if (dateFilter.invoiceDate) {
+        dateFilter.invoiceDate.$lte = new Date(endDate);
+      } else {
+        dateFilter.invoiceDate = { $lte: new Date(endDate) };
+      }
+    }
+    
+    // Build clinic filter
+    const clinicFilter = clinicId ? { clinic: clinicId } : {};
+    
+    // Combine filters
+    const filter = { ...dateFilter, ...clinicFilter };
+    
+    // Get revenue data by month
+    const revenueData = await Invoice.aggregate([
+      { $match: filter },
+      {
+        $group: {
+          _id: {
+            year: { $year: "$invoiceDate" },
+            month: { $month: "$invoiceDate" }
+          },
+          revenue: { $sum: "$totalAmount" }
+        }
+      },
+      { $sort: { "_id.year": 1, "_id.month": 1 } }
+    ]);
+    
+    // Format revenue data
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const formattedRevenueData = revenueData.map(item => ({
+      month: months[item._id.month - 1],
+      revenue: item.revenue
+    }));
+    
+    // Get revenue by clinic
+    const clinicRevenueData = await Invoice.aggregate([
+      { $match: filter },
+      {
+        $group: {
+          _id: "$clinic",
+          revenue: { $sum: "$totalAmount" },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $lookup: {
+          from: 'clinics',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'clinicInfo'
+        }
+      },
+      { $unwind: "$clinicInfo" },
+      {
+        $project: {
+          name: "$clinicInfo.name",
+          revenue: 1,
+          count: 1
+        }
+      },
+      { $sort: { revenue: -1 } }
+    ]);
+    
+    // Get revenue by dentist
+    const dentistRevenueData = await Appointment.aggregate([
+      { $match: { ...filter, dentist: { $exists: true } } },
+      {
+        $group: {
+          _id: "$dentist",
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'dentistInfo'
+        }
+      },
+      { $unwind: "$dentistInfo" },
+      {
+        $project: {
+          name: { $concat: ["$dentistInfo.firstName", " ", "$dentistInfo.lastName"] },
+          count: 1
+        }
+      },
+      { $sort: { count: -1 } }
+    ]);
+    
+    res.status(200).json({
+      success: true,
+      message: 'Financial reports retrieved successfully',
+      data: {
+        revenue: formattedRevenueData,
+        clinics: clinicRevenueData,
+        dentists: dentistRevenueData
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      message: 'Server Error'
+    });
+  }
 });
 
 // @desc    Get patient reports
 // @route   GET /api/reports/patients
 // @access  Private
 exports.getPatientReports = asyncHandler(async (req, res, next) => {
-  // Get query parameters for filtering
-  const { startDate, endDate, clinicId } = req.query;
-  
-  // In a real app, we would filter based on these parameters
-  // For now, we'll just return the mock data
-  
-  res.status(200).json({
-    success: true,
-    message: 'Patient reports retrieved successfully',
-    data: {
-      patients: mockPatientData
+  try {
+    // Get query parameters for filtering
+    const { startDate, endDate, clinicId } = req.query;
+    
+    // Build date filter
+    const dateFilter = {};
+    if (startDate) {
+      dateFilter.createdAt = { $gte: new Date(startDate) };
     }
-  });
+    if (endDate) {
+      if (dateFilter.createdAt) {
+        dateFilter.createdAt.$lte = new Date(endDate);
+      } else {
+        dateFilter.createdAt = { $lte: new Date(endDate) };
+      }
+    }
+    
+    // Build clinic filter for appointments
+    const clinicFilter = clinicId ? { clinic: clinicId } : {};
+    
+    // Get new patients by month
+    const newPatientsByMonth = await Patient.aggregate([
+      { $match: dateFilter },
+      {
+        $group: {
+          _id: {
+            year: { $year: "$createdAt" },
+            month: { $month: "$createdAt" }
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { "_id.year": 1, "_id.month": 1 } }
+    ]);
+    
+    // Get returning patients by month (patients with appointments)
+    const returningPatientsByMonth = await Appointment.aggregate([
+      { $match: { ...dateFilter, ...clinicFilter } },
+      {
+        $group: {
+          _id: {
+            year: { $year: "$date" },
+            month: { $month: "$date" },
+            patient: "$patient"
+          }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            year: "$_id.year",
+            month: "$_id.month"
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { "_id.year": 1, "_id.month": 1 } }
+    ]);
+    
+    // Format patient data
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const formattedPatientData = [];
+    
+    // Create a map for quick lookup
+    const newPatientsMap = new Map();
+    const returningPatientsMap = new Map();
+    
+    newPatientsByMonth.forEach(item => {
+      const key = `${item._id.year}-${item._id.month}`;
+      newPatientsMap.set(key, item.count);
+    });
+    
+    returningPatientsByMonth.forEach(item => {
+      const key = `${item._id.year}-${item._id.month}`;
+      returningPatientsMap.set(key, item.count);
+    });
+    
+    // Get current year and month
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    
+    // Create data for the last 12 months
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(currentDate);
+      date.setMonth(currentDate.getMonth() - i);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1; // JavaScript months are 0-indexed
+      const key = `${year}-${month}`;
+      
+      formattedPatientData.unshift({
+        month: months[month - 1],
+        newPatients: newPatientsMap.get(key) || 0,
+        returning: returningPatientsMap.get(key) || 0
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      message: 'Patient reports retrieved successfully',
+      data: {
+        patients: formattedPatientData
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      message: 'Server Error'
+    });
+  }
 });
 
 // @desc    Get appointment reports
 // @route   GET /api/reports/appointments
 // @access  Private
 exports.getAppointmentReports = asyncHandler(async (req, res, next) => {
-  // Get query parameters for filtering
-  const { startDate, endDate, clinicId } = req.query;
-  
-  // In a real app, we would filter based on these parameters
-  // For now, we'll just return the mock data
-  
-  res.status(200).json({
-    success: true,
-    message: 'Appointment reports retrieved successfully',
-    data: {
-      appointments: mockAppointmentData
+  try {
+    // Get query parameters for filtering
+    const { startDate, endDate, clinicId } = req.query;
+    
+    // Build date filter
+    const dateFilter = {};
+    if (startDate) {
+      dateFilter.date = { $gte: new Date(startDate) };
     }
-  });
+    if (endDate) {
+      if (dateFilter.date) {
+        dateFilter.date.$lte = new Date(endDate);
+      } else {
+        dateFilter.date = { $lte: new Date(endDate) };
+      }
+    }
+    
+    // Build clinic filter
+    const clinicFilter = clinicId ? { clinic: clinicId } : {};
+    
+    // Combine filters
+    const filter = { ...dateFilter, ...clinicFilter };
+    
+    // Get appointment data by month and status
+    const appointmentsByMonth = await Appointment.aggregate([
+      { $match: filter },
+      {
+        $group: {
+          _id: {
+            year: { $year: "$date" },
+            month: { $month: "$date" },
+            status: "$status"
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { "_id.year": 1, "_id.month": 1 } }
+    ]);
+    
+    // Format appointment data
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const formattedAppointmentData = [];
+    
+    // Create a map for quick lookup
+    const appointmentsMap = new Map();
+    
+    appointmentsByMonth.forEach(item => {
+      const key = `${item._id.year}-${item._id.month}`;
+      if (!appointmentsMap.has(key)) {
+        appointmentsMap.set(key, {
+          scheduled: 0,
+          completed: 0,
+          cancelled: 0
+        });
+      }
+      
+      const statusMap = {
+        'scheduled': 'scheduled',
+        'confirmed': 'scheduled',
+        'completed': 'completed',
+        'cancelled': 'cancelled',
+        'no-show': 'cancelled'
+      };
+      
+      const mappedStatus = statusMap[item._id.status] || 'scheduled';
+      appointmentsMap.get(key)[mappedStatus] += item.count;
+    });
+    
+    // Get current year and month
+    const currentDate = new Date();
+    
+    // Create data for the last 12 months
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(currentDate);
+      date.setMonth(currentDate.getMonth() - i);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1; // JavaScript months are 0-indexed
+      const key = `${year}-${month}`;
+      
+      const appointmentData = appointmentsMap.get(key) || { scheduled: 0, completed: 0, cancelled: 0 };
+      
+      formattedAppointmentData.unshift({
+        month: months[month - 1],
+        scheduled: appointmentData.scheduled + appointmentData.completed + appointmentData.cancelled,
+        completed: appointmentData.completed,
+        cancelled: appointmentData.cancelled
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      message: 'Appointment reports retrieved successfully',
+      data: {
+        appointments: formattedAppointmentData
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      message: 'Server Error'
+    });
+  }
 });
 
 // @desc    Get treatment reports
 // @route   GET /api/reports/treatments
 // @access  Private
 exports.getTreatmentReports = asyncHandler(async (req, res, next) => {
-  // Get query parameters for filtering
-  const { startDate, endDate, clinicId } = req.query;
-  
-  // In a real app, we would filter based on these parameters
-  // For now, we'll just return the mock data
-  
-  res.status(200).json({
-    success: true,
-    message: 'Treatment reports retrieved successfully',
-    data: {
-      treatments: mockTreatmentData
+  try {
+    // Get query parameters for filtering
+    const { startDate, endDate, clinicId } = req.query;
+    
+    // Build date filter
+    const dateFilter = {};
+    if (startDate) {
+      dateFilter.date = { $gte: new Date(startDate) };
     }
-  });
+    if (endDate) {
+      if (dateFilter.date) {
+        dateFilter.date.$lte = new Date(endDate);
+      } else {
+        dateFilter.date = { $lte: new Date(endDate) };
+      }
+    }
+    
+    // Build clinic filter
+    const clinicFilter = clinicId ? { clinic: clinicId } : {};
+    
+    // Combine filters
+    const filter = { ...dateFilter, ...clinicFilter };
+    
+    // Get treatment data by type
+    const treatmentData = await Treatment.aggregate([
+      { $match: filter },
+      {
+        $group: {
+          _id: "$type",
+          count: { $sum: 1 },
+          value: { $sum: "$cost" }
+        }
+      },
+      { $sort: { count: -1 } },
+      {
+        $project: {
+          _id: 0,
+          name: "$_id",
+          count: 1,
+          value: 1
+        }
+      }
+    ]);
+    
+    res.status(200).json({
+      success: true,
+      message: 'Treatment reports retrieved successfully',
+      data: {
+        treatments: treatmentData
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      message: 'Server Error'
+    });
+  }
 });

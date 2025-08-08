@@ -8,7 +8,8 @@ const {
   resetPassword,
   updatePassword,
   updateDetails,
-  logout
+  logout,
+  changePassword
 } = require('../controllers/auth');
 const { protect } = require('../middleware/auth');
 
@@ -80,6 +81,17 @@ router.put(
     check('phone', 'Please include a valid 10-digit phone number').matches(/^[0-9]{10}$/)
   ],
   updateDetails
+);
+
+// Change password (for forced password change)
+router.put(
+  '/change-password',
+  protect,
+  [
+    check('currentPassword', 'Current password is required').not().isEmpty(),
+    check('newPassword', 'New password must be at least 6 characters').isLength({ min: 6 })
+  ],
+  changePassword
 );
 
 // Logout user

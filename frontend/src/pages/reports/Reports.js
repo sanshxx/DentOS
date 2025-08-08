@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
+import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import {
   Container, Typography, Paper, Box, Grid, Card, CardContent, CardHeader,
@@ -19,76 +20,10 @@ import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import PrintIcon from '@mui/icons-material/Print';
 import RefreshIcon from '@mui/icons-material/Refresh';
 
-// Mock data for reports
-const mockRevenueData = [
-  { month: 'Jan', revenue: 350000 },
-  { month: 'Feb', revenue: 420000 },
-  { month: 'Mar', revenue: 380000 },
-  { month: 'Apr', revenue: 450000 },
-  { month: 'May', revenue: 520000 },
-  { month: 'Jun', revenue: 480000 },
-  { month: 'Jul', revenue: 550000 },
-  { month: 'Aug', revenue: 590000 },
-  { month: 'Sep', revenue: 620000 },
-  { month: 'Oct', revenue: 580000 },
-  { month: 'Nov', revenue: 630000 },
-  { month: 'Dec', revenue: 680000 }
-];
+// Get API URL from environment variables
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
-const mockTreatmentData = [
-  { name: 'Root Canal', count: 145, revenue: 1450000 },
-  { name: 'Cleaning', count: 230, revenue: 575000 },
-  { name: 'Filling', count: 310, revenue: 930000 },
-  { name: 'Extraction', count: 180, revenue: 540000 },
-  { name: 'Crown', count: 120, revenue: 1080000 },
-  { name: 'Braces', count: 85, revenue: 1275000 }
-];
-
-const mockPatientData = [
-  { month: 'Jan', newPatients: 28, returning: 65 },
-  { month: 'Feb', newPatients: 32, returning: 59 },
-  { month: 'Mar', newPatients: 25, returning: 72 },
-  { month: 'Apr', newPatients: 30, returning: 68 },
-  { month: 'May', newPatients: 35, returning: 75 },
-  { month: 'Jun', newPatients: 40, returning: 70 },
-  { month: 'Jul', newPatients: 38, returning: 80 },
-  { month: 'Aug', newPatients: 42, returning: 78 },
-  { month: 'Sep', newPatients: 45, returning: 82 },
-  { month: 'Oct', newPatients: 48, returning: 85 },
-  { month: 'Nov', newPatients: 50, returning: 90 },
-  { month: 'Dec', newPatients: 55, returning: 95 }
-];
-
-const mockAppointmentData = [
-  { month: 'Jan', scheduled: 120, completed: 105, cancelled: 15 },
-  { month: 'Feb', scheduled: 135, completed: 118, cancelled: 17 },
-  { month: 'Mar', scheduled: 128, completed: 110, cancelled: 18 },
-  { month: 'Apr', scheduled: 142, completed: 125, cancelled: 17 },
-  { month: 'May', scheduled: 150, completed: 135, cancelled: 15 },
-  { month: 'Jun', scheduled: 145, completed: 130, cancelled: 15 },
-  { month: 'Jul', scheduled: 160, completed: 145, cancelled: 15 },
-  { month: 'Aug', scheduled: 165, completed: 150, cancelled: 15 },
-  { month: 'Sep', scheduled: 170, completed: 155, cancelled: 15 },
-  { month: 'Oct', scheduled: 175, completed: 160, cancelled: 15 },
-  { month: 'Nov', scheduled: 180, completed: 165, cancelled: 15 },
-  { month: 'Dec', scheduled: 190, completed: 175, cancelled: 15 }
-];
-
-const mockClinicData = [
-  { name: 'Main Clinic', patients: 520, revenue: 2500000, appointments: 780 },
-  { name: 'Branch 1', patients: 380, revenue: 1800000, appointments: 620 },
-  { name: 'Branch 2', patients: 420, revenue: 2100000, appointments: 680 },
-  { name: 'Branch 3', patients: 350, revenue: 1700000, appointments: 580 }
-];
-
-const mockDentistData = [
-  { name: 'Dr. Sharma', patients: 180, revenue: 900000, appointments: 240 },
-  { name: 'Dr. Patel', patients: 210, revenue: 1050000, appointments: 280 },
-  { name: 'Dr. Singh', patients: 160, revenue: 800000, appointments: 220 },
-  { name: 'Dr. Gupta', patients: 190, revenue: 950000, appointments: 260 },
-  { name: 'Dr. Verma', patients: 170, revenue: 850000, appointments: 230 }
-];
-
+// Colors for charts
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
 
 const Reports = () => {
@@ -97,6 +32,19 @@ const Reports = () => {
   const [tabValue, setTabValue] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  
+  // State for report data
+  const [revenueData, setRevenueData] = useState([]);
+  const [treatmentData, setTreatmentData] = useState([]);
+  const [patientData, setPatientData] = useState([]);
+  const [appointmentData, setAppointmentData] = useState([]);
+  const [clinicData, setClinicData] = useState([]);
+  const [dentistData, setDentistData] = useState([]);
+  
+  // State for clinics
+  const [clinics, setClinics] = useState([]);
+  const [clinicsLoading, setClinicsLoading] = useState(false);
+  
   const [dateRange, setDateRange] = useState({
     startDate: subMonths(startOfMonth(new Date()), 6),
     endDate: endOfMonth(new Date())
@@ -147,72 +95,7 @@ const Reports = () => {
   };
   
   const handleGenerateReport = () => {
-    setLoading(true);
-    setError(null);
-    
-    // Prepare query parameters
-    const params = new URLSearchParams();
-    if (dateRange.startDate) {
-      params.append('startDate', dateRange.startDate.toISOString());
-    }
-    if (dateRange.endDate) {
-      params.append('endDate', dateRange.endDate.toISOString());
-    }
-    if (selectedClinic !== 'all') {
-      params.append('clinicId', selectedClinic);
-    }
-    
-    // Make API call to fetch report data
-    fetch(`/api/reports?${params.toString()}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        // In a real app, we would include authentication token
-        // 'Authorization': `Bearer ${token}`
-      }
-    })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Failed to fetch report data');
-        }
-        return response.json();
-      })
-      .then(data => {
-        // In a real app, we would use the data from the API
-        // For now, we'll still use our mock data with filtering
-        
-        // Filter data based on date range and clinic
-        const filteredRevenue = filterDataByDateRange(mockRevenueData);
-        const filteredPatients = filterDataByDateRange(mockPatientData);
-        const filteredAppointments = filterDataByDateRange(mockAppointmentData);
-        
-        // Filter clinic data if a specific clinic is selected
-        const filteredClinics = selectedClinic === 'all' 
-          ? mockClinicData 
-          : mockClinicData.filter(clinic => clinic.name === selectedClinic);
-        
-        // Filter dentist data based on clinic if selected
-        const filteredDentists = selectedClinic === 'all'
-          ? mockDentistData
-          : mockDentistData.slice(0, 3); // Simplified mock filtering
-        
-        setFilteredData({
-          revenue: filteredRevenue,
-          treatments: mockTreatmentData, // Treatments don't have date info in our mock data
-          patients: filteredPatients,
-          appointments: filteredAppointments,
-          clinics: filteredClinics,
-          dentists: filteredDentists
-        });
-        
-        setReportGenerated(true);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error('Error generating report:', err);
-        setError('Error generating report: ' + err.message);
-        setLoading(false);
-      });
+    fetchReportData();
   };
   
   const handleExportReport = () => {
@@ -251,58 +134,146 @@ const Reports = () => {
         filename = 'staff_report.csv';
         break;
       default:
-        dataToExport = filteredData.revenue;
+        dataToExport = [];
         filename = 'report.csv';
     }
     
     // Convert data to CSV
-    const headers = Object.keys(dataToExport[0]);
-    const csvRows = [
-      headers.join(','), // Header row
-      ...dataToExport.map(row => headers.map(header => row[header]).join(',')) // Data rows
-    ];
+    const csvContent = convertToCSV(dataToExport);
     
-    const csvContent = csvRows.join('\n');
-    
-    // Create a blob and download link
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    
-    // Create a temporary link and trigger download
+    // Create a download link
+    const encodedUri = encodeURI('data:text/csv;charset=utf-8,' + csvContent);
     const link = document.createElement('a');
-    link.setAttribute('href', url);
+    link.setAttribute('href', encodedUri);
     link.setAttribute('download', filename);
-    link.style.visibility = 'hidden';
-    
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
   
+  const convertToCSV = (objArray) => {
+    if (objArray.length === 0) return '';
+    
+    const header = Object.keys(objArray[0]).join(',') + '\n';
+    const rows = objArray.map(obj => {
+      return Object.values(obj).map(value => {
+        // Handle values with commas by wrapping in quotes
+        if (typeof value === 'string' && value.includes(',')) {
+          return `"${value}"`;
+        }
+        return value;
+      }).join(',');
+    }).join('\n');
+    
+    return header + rows;
+  };
+  
   const handlePrintReport = () => {
+    if (!reportGenerated) {
+      alert('Please generate a report first');
+      return;
+    }
     window.print();
   };
   
-  const handleRefresh = () => {
-    handleGenerateReport();
-  };
+  const fetchReportData = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Format date range for API request
+      const startDate = format(dateRange.startDate, 'yyyy-MM-dd');
+      const endDate = format(dateRange.endDate, 'yyyy-MM-dd');
+      
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
 
-  const filterDataByDateRange = (data) => {
-    // This is a simplified filter for mock data
-    // In a real application, you would filter based on actual dates
-    if (selectedClinic !== 'all') {
-      // If a clinic is selected, return fewer items to simulate filtering
-      return data.slice(0, Math.ceil(data.length * 0.7));
+      // Fetch reports data from API
+      const response = await axios.get(`${API_URL}/reports`, {
+        params: { startDate, endDate, clinicId: selectedClinic !== 'all' ? selectedClinic : undefined },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      const data = response.data.data;
+      
+      // Update state with fetched data
+      if (data.revenue) setRevenueData(data.revenue);
+      if (data.treatments) setTreatmentData(data.treatments);
+      if (data.patients) setPatientData(data.patients);
+      if (data.appointments) setAppointmentData(data.appointments);
+      if (data.clinics) setClinicData(data.clinics);
+      if (data.dentists) setDentistData(data.dentists);
+      
+      // Update filtered data
+      setFilteredData({
+        revenue: data.revenue || [],
+        treatments: data.treatments || [],
+        patients: data.patients || [],
+        appointments: data.appointments || [],
+        clinics: data.clinics || [],
+        dentists: data.dentists || []
+      });
+      
+      setReportGenerated(true);
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching report data:', err);
+      setError(err.response?.data?.message || 'Failed to load report data');
+      setLoading(false);
     }
-    return data;
   };
+  
+  const handleRefresh = () => {
+    fetchReportData();
+  };
+  
+  // Fetch clinics for dropdown
+  const fetchClinics = async () => {
+    setClinicsLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      const response = await axios.get(`${API_URL}/clinics`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      setClinics(response.data.data || []);
+    } catch (err) {
+      console.error('Error fetching clinics:', err);
+      setError('Failed to load clinics');
+    } finally {
+      setClinicsLoading(false);
+    }
+  };
+  
+  useEffect(() => {
+    fetchClinics();
+  }, []);
+  
+  useEffect(() => {
+    fetchReportData();
+  }, [dateRange]);
+
+  // Filtering is now handled by the backend API
 
   // Calculate summary statistics
   const calculateSummary = () => {
-    const totalRevenue = mockRevenueData.reduce((sum, item) => sum + item.revenue, 0);
-    const totalAppointments = mockAppointmentData.reduce((sum, item) => sum + item.scheduled, 0);
-    const totalPatients = mockPatientData.reduce((sum, item) => sum + item.newPatients + item.returning, 0);
-    const totalTreatments = mockTreatmentData.reduce((sum, item) => sum + item.count, 0);
+    const totalRevenue = filteredData.revenue.reduce((sum, item) => sum + item.revenue, 0);
+    const totalAppointments = filteredData.appointments.reduce((sum, item) => sum + item.scheduled, 0);
+    const totalPatients = filteredData.patients.reduce((sum, item) => sum + (item.newPatients + item.returning), 0);
+    const totalTreatments = filteredData.treatments.reduce((sum, item) => sum + item.count, 0);
     
     return {
       totalRevenue,
@@ -343,156 +314,155 @@ const Reports = () => {
           )}
         </Box>
         
-        {/* Filters */}
         <Paper sx={{ p: 3, mb: 3 }}>
-          <Grid container spacing={3} alignItems="center">
-            <Grid item xs={12} md={3}>
-              <FormControl fullWidth>
-                <InputLabel>Clinic</InputLabel>
-                <Select
-                  value={selectedClinic}
-                  label="Clinic"
-                  onChange={handleClinicChange}
-                >
-                  <MenuItem value="all">All Clinics</MenuItem>
-                  <MenuItem value="main">Main Clinic</MenuItem>
-                  <MenuItem value="branch1">Branch 1</MenuItem>
-                  <MenuItem value="branch2">Branch 2</MenuItem>
-                  <MenuItem value="branch3">Branch 3</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <LocalizationProvider dateAdapter={AdapterDateFns}>
-                <DatePicker
-                  label="Start Date"
-                  value={dateRange.startDate}
-                  onChange={handleStartDateChange}
-                  renderInput={(params) => <TextField {...params} fullWidth />}
-                />
-              </LocalizationProvider>
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <LocalizationProvider dateAdapter={AdapterDateFns}>
-                <DatePicker
-                  label="End Date"
-                  value={dateRange.endDate}
-                  onChange={handleEndDateChange}
-                  renderInput={(params) => <TextField {...params} fullWidth />}
-                />
-              </LocalizationProvider>
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <Button 
-                variant="contained" 
-                fullWidth
-                onClick={handleGenerateReport}
-                disabled={loading}
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
+            <FormControl sx={{ minWidth: 200 }}>
+              <InputLabel>Clinic</InputLabel>
+              <Select
+                value={selectedClinic}
+                label="Clinic"
+                onChange={handleClinicChange}
+                disabled={clinicsLoading}
               >
-                {loading ? 'Generating...' : 'Generate Report'}
-              </Button>
-            </Grid>
-          </Grid>
-        </Paper>
-        
-        {/* Summary Cards */}
-        <Grid container spacing={3} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" color="textSecondary" gutterBottom>
-                  Total Revenue
-                </Typography>
-                <Typography variant="h4">
-                  {formatCurrency(summary.totalRevenue)}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" color="textSecondary" gutterBottom>
-                  Total Appointments
-                </Typography>
-                <Typography variant="h4">
-                  {summary.totalAppointments}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" color="textSecondary" gutterBottom>
-                  Total Patients
-                </Typography>
-                <Typography variant="h4">
-                  {summary.totalPatients}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" color="textSecondary" gutterBottom>
-                  Total Treatments
-                </Typography>
-                <Typography variant="h4">
-                  {summary.totalTreatments}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-        
-        {/* Tabs for different report types */}
-        <Paper sx={{ p: 3 }}>
-          <Tabs value={tabValue} onChange={handleTabChange} variant="scrollable" scrollButtons="auto">
-            <Tab label="Financial" />
-            <Tab label="Patients" />
-            <Tab label="Appointments" />
-            <Tab label="Treatments" />
-            <Tab label="Clinics" />
-            <Tab label="Staff" />
-          </Tabs>
+                <MenuItem value="all">All Clinics</MenuItem>
+                {clinics.map((clinic) => (
+                  <MenuItem key={clinic._id} value={clinic._id}>
+                    {clinic.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            
+            <LocalizationProvider dateAdapter={AdapterDateFns}>
+              <DatePicker
+                label="Start Date"
+                value={dateRange.startDate}
+                onChange={handleStartDateChange}
+                renderInput={(params) => <TextField {...params} />}
+              />
+              <DatePicker
+                label="End Date"
+                value={dateRange.endDate}
+                onChange={handleEndDateChange}
+                renderInput={(params) => <TextField {...params} />}
+              />
+            </LocalizationProvider>
+            
+            <Button 
+              variant="contained" 
+              color="primary" 
+              onClick={handleGenerateReport}
+              disabled={loading}
+            >
+              {loading ? <CircularProgress size={24} /> : 'Generate Report'}
+            </Button>
+          </Box>
           
-          <Box sx={{ mt: 3 }}>
+          {error && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {error}
+            </Alert>
+          )}
+          
+          {reportGenerated && (
+            <Box sx={{ mb: 3 }}>
+              <Grid container spacing={3}>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Card>
+                    <CardContent>
+                      <Typography color="textSecondary" gutterBottom>
+                        Total Revenue
+                      </Typography>
+                      <Typography variant="h4">
+                        {formatCurrency(summary.totalRevenue)}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Card>
+                    <CardContent>
+                      <Typography color="textSecondary" gutterBottom>
+                        Total Appointments
+                      </Typography>
+                      <Typography variant="h4">
+                        {summary.totalAppointments}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Card>
+                    <CardContent>
+                      <Typography color="textSecondary" gutterBottom>
+                        Total Patients
+                      </Typography>
+                      <Typography variant="h4">
+                        {summary.totalPatients}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Card>
+                    <CardContent>
+                      <Typography color="textSecondary" gutterBottom>
+                        Total Treatments
+                      </Typography>
+                      <Typography variant="h4">
+                        {summary.totalTreatments}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              </Grid>
+            </Box>
+          )}
+          
+          <Box>
+            <Tabs value={tabValue} onChange={handleTabChange} variant="scrollable" scrollButtons="auto">
+              <Tab label="Financial" />
+              <Tab label="Patients" />
+              <Tab label="Appointments" />
+              <Tab label="Treatments" />
+              <Tab label="Clinics" />
+              <Tab label="Staff" />
+            </Tabs>
+            
             {/* Financial Reports */}
             {tabValue === 0 && (
-              <Grid container spacing={3}>
+              <Grid container spacing={3} sx={{ mt: 2 }}>
                 <Grid item xs={12}>
-                  <Typography variant="h6" gutterBottom>Monthly Revenue</Typography>
+                  <Typography variant="h6" gutterBottom>Revenue Trend</Typography>
                   <Paper sx={{ p: 2, height: 400 }}>
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={reportGenerated ? filteredData.revenue : mockRevenueData}>
+                      <LineChart data={reportGenerated ? filteredData.revenue : []}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="month" />
                         <YAxis tickFormatter={(value) => `₹${value/1000}K`} />
                         <Tooltip formatter={(value) => formatCurrency(value)} />
                         <Legend />
-                        <Bar dataKey="revenue" name="Revenue" fill="#8884d8" />
-                      </BarChart>
+                        <Line type="monotone" dataKey="revenue" name="Revenue" stroke="#8884d8" activeDot={{ r: 8 }} />
+                      </LineChart>
                     </ResponsiveContainer>
                   </Paper>
                 </Grid>
                 <Grid item xs={12} md={6}>
-                  <Typography variant="h6" gutterBottom>Revenue by Treatment</Typography>
+                  <Typography variant="h6" gutterBottom>Revenue by Clinic</Typography>
                   <Paper sx={{ p: 2, height: 400 }}>
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
-                          data={reportGenerated ? filteredData.treatments : mockTreatmentData}
+                          data={reportGenerated ? filteredData.clinics : []}
                           cx="50%"
                           cy="50%"
                           labelLine={false}
                           label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                          outerRadius={150}
+                          outerRadius={80}
                           fill="#8884d8"
                           dataKey="revenue"
                         >
-                          {mockTreatmentData.map((entry, index) => (
+                          {(reportGenerated ? filteredData.clinics : []).map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                           ))}
                         </Pie>
@@ -502,17 +472,26 @@ const Reports = () => {
                   </Paper>
                 </Grid>
                 <Grid item xs={12} md={6}>
-                  <Typography variant="h6" gutterBottom>Revenue by Clinic</Typography>
+                  <Typography variant="h6" gutterBottom>Revenue by Treatment</Typography>
                   <Paper sx={{ p: 2, height: 400 }}>
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={reportGenerated ? filteredData.clinics : mockClinicData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis tickFormatter={(value) => `₹${value/1000}K`} />
+                      <PieChart>
+                        <Pie
+                          data={reportGenerated ? filteredData.treatments : []}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="count"
+                        >
+                          {(reportGenerated ? filteredData.treatments : []).map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
                         <Tooltip formatter={(value) => formatCurrency(value)} />
-                        <Legend />
-                        <Bar dataKey="revenue" name="Revenue" fill="#82ca9d" />
-                      </BarChart>
+                      </PieChart>
                     </ResponsiveContainer>
                   </Paper>
                 </Grid>
@@ -521,18 +500,18 @@ const Reports = () => {
             
             {/* Patient Reports */}
             {tabValue === 1 && (
-              <Grid container spacing={3}>
+              <Grid container spacing={3} sx={{ mt: 2 }}>
                 <Grid item xs={12}>
-                  <Typography variant="h6" gutterBottom>Patient Trends</Typography>
+                  <Typography variant="h6" gutterBottom>Patient Trend</Typography>
                   <Paper sx={{ p: 2, height: 400 }}>
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={reportGenerated ? filteredData.patients : filterDataByDateRange(mockPatientData)}>
+                      <LineChart data={reportGenerated ? filteredData.patients : []}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="month" />
                         <YAxis />
                         <Tooltip />
                         <Legend />
-                        <Line type="monotone" dataKey="newPatients" name="New Patients" stroke="#8884d8" activeDot={{ r: 8 }} />
+                        <Line type="monotone" dataKey="newPatients" name="New Patients" stroke="#8884d8" />
                         <Line type="monotone" dataKey="returning" name="Returning Patients" stroke="#82ca9d" />
                       </LineChart>
                     </ResponsiveContainer>
@@ -542,7 +521,7 @@ const Reports = () => {
                   <Typography variant="h6" gutterBottom>Patients by Clinic</Typography>
                   <Paper sx={{ p: 2, height: 400 }}>
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={mockClinicData}>
+                      <BarChart data={reportGenerated ? filteredData.clinics : []}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="name" />
                         <YAxis />
@@ -554,17 +533,28 @@ const Reports = () => {
                   </Paper>
                 </Grid>
                 <Grid item xs={12} md={6}>
-                  <Typography variant="h6" gutterBottom>Patients by Dentist</Typography>
+                  <Typography variant="h6" gutterBottom>New vs Returning Patients</Typography>
                   <Paper sx={{ p: 2, height: 400 }}>
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={reportGenerated ? filteredData.dentists : mockDentistData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
+                      <PieChart>
+                        <Pie
+                          data={[
+                            { name: 'New Patients', value: reportGenerated ? filteredData.patients.reduce((sum, item) => sum + item.newPatients, 0) : 0 },
+                            { name: 'Returning Patients', value: reportGenerated ? filteredData.patients.reduce((sum, item) => sum + item.returning, 0) : 0 }
+                          ]}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          <Cell fill="#8884d8" />
+                          <Cell fill="#82ca9d" />
+                        </Pie>
                         <Tooltip />
-                        <Legend />
-                        <Bar dataKey="patients" name="Patients" fill="#82ca9d" />
-                      </BarChart>
+                      </PieChart>
                     </ResponsiveContainer>
                   </Paper>
                 </Grid>
@@ -573,12 +563,12 @@ const Reports = () => {
             
             {/* Appointment Reports */}
             {tabValue === 2 && (
-              <Grid container spacing={3}>
+              <Grid container spacing={3} sx={{ mt: 2 }}>
                 <Grid item xs={12}>
-                  <Typography variant="h6" gutterBottom>Appointment Trends</Typography>
+                  <Typography variant="h6" gutterBottom>Appointment Trend</Typography>
                   <Paper sx={{ p: 2, height: 400 }}>
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={reportGenerated ? filteredData.appointments : filterDataByDateRange(mockAppointmentData)}>
+                      <LineChart data={reportGenerated ? filteredData.appointments : []}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="month" />
                         <YAxis />
@@ -592,32 +582,45 @@ const Reports = () => {
                   </Paper>
                 </Grid>
                 <Grid item xs={12} md={6}>
-                  <Typography variant="h6" gutterBottom>Appointments by Clinic</Typography>
+                  <Typography variant="h6" gutterBottom>Revenue by Clinic</Typography>
                   <Paper sx={{ p: 2, height: 400 }}>
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={mockClinicData}>
+                      <BarChart data={reportGenerated ? filteredData.clinics : []}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="name" />
                         <YAxis />
-                        <Tooltip />
+                        <Tooltip formatter={(value) => formatCurrency(value)} />
                         <Legend />
-                        <Bar dataKey="appointments" name="Appointments" fill="#8884d8" />
+                        <Bar dataKey="revenue" name="Revenue" fill="#8884d8" />
                       </BarChart>
                     </ResponsiveContainer>
                   </Paper>
                 </Grid>
                 <Grid item xs={12} md={6}>
-                  <Typography variant="h6" gutterBottom>Appointments by Dentist</Typography>
+                  <Typography variant="h6" gutterBottom>Appointment Status</Typography>
                   <Paper sx={{ p: 2, height: 400 }}>
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={mockDentistData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
+                      <PieChart>
+                        <Pie
+                          data={[
+                            { name: 'Scheduled', value: reportGenerated ? filteredData.appointments.reduce((sum, item) => sum + item.scheduled, 0) : 0 },
+                            { name: 'Completed', value: reportGenerated ? filteredData.appointments.reduce((sum, item) => sum + item.completed, 0) : 0 },
+                            { name: 'Cancelled', value: reportGenerated ? filteredData.appointments.reduce((sum, item) => sum + item.cancelled, 0) : 0 }
+                          ]}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          <Cell fill="#8884d8" />
+                          <Cell fill="#82ca9d" />
+                          <Cell fill="#ff8042" />
+                        </Pie>
                         <Tooltip />
-                        <Legend />
-                        <Bar dataKey="appointments" name="Appointments" fill="#82ca9d" />
-                      </BarChart>
+                      </PieChart>
                     </ResponsiveContainer>
                   </Paper>
                 </Grid>
@@ -626,42 +629,18 @@ const Reports = () => {
             
             {/* Treatment Reports */}
             {tabValue === 3 && (
-              <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
-                  <Typography variant="h6" gutterBottom>Treatments by Count</Typography>
+              <Grid container spacing={3} sx={{ mt: 2 }}>
+                <Grid item xs={12}>
+                  <Typography variant="h6" gutterBottom>Treatment Distribution</Typography>
                   <Paper sx={{ p: 2, height: 400 }}>
                     <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={reportGenerated ? filteredData.treatments : mockTreatmentData}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                          outerRadius={150}
-                          fill="#8884d8"
-                          dataKey="count"
-                        >
-                          {mockTreatmentData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </Paper>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <Typography variant="h6" gutterBottom>Treatments by Revenue</Typography>
-                  <Paper sx={{ p: 2, height: 400 }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={mockTreatmentData}>
+                      <BarChart data={reportGenerated ? filteredData.treatments : []}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="name" />
-                        <YAxis tickFormatter={(value) => `₹${value/1000}K`} />
-                        <Tooltip formatter={(value, name) => name === 'revenue' ? formatCurrency(value) : value} />
+                        <YAxis />
+                        <Tooltip />
                         <Legend />
-                        <Bar dataKey="revenue" name="Revenue" fill="#82ca9d" />
+                        <Bar dataKey="count" name="Count" fill="#8884d8" />
                       </BarChart>
                     </ResponsiveContainer>
                   </Paper>
@@ -670,15 +649,15 @@ const Reports = () => {
                   <Typography variant="h6" gutterBottom>Treatment Details</Typography>
                   <Paper sx={{ p: 2 }}>
                     <List>
-                      {mockTreatmentData.map((treatment, index) => (
+                      {(reportGenerated ? filteredData.treatments : []).map((treatment, index) => (
                         <React.Fragment key={index}>
                           <ListItem>
                             <ListItemText
                               primary={treatment.name}
-                              secondary={`Count: ${treatment.count} | Revenue: ${formatCurrency(treatment.revenue)}`}
+                              secondary={`Count: ${treatment.count} appointments`}
                             />
                           </ListItem>
-                          {index < mockTreatmentData.length - 1 && <Divider />}
+                          {index < (reportGenerated ? filteredData.treatments.length : 0) - 1 && <Divider />}
                         </React.Fragment>
                       ))}
                     </List>
@@ -694,7 +673,7 @@ const Reports = () => {
                   <Typography variant="h6" gutterBottom>Clinic Performance</Typography>
                   <Paper sx={{ p: 2, height: 400 }}>
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={mockClinicData}>
+                      <BarChart data={reportGenerated ? filteredData.clinics : []}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="name" />
                         <YAxis yAxisId="left" />
@@ -712,7 +691,7 @@ const Reports = () => {
                   <Typography variant="h6" gutterBottom>Clinic Details</Typography>
                   <Paper sx={{ p: 2 }}>
                     <List>
-                      {mockClinicData.map((clinic, index) => (
+                      {(reportGenerated ? filteredData.clinics : []).map((clinic, index) => (
                         <React.Fragment key={index}>
                           <ListItem>
                             <ListItemText
@@ -720,7 +699,7 @@ const Reports = () => {
                               secondary={`Patients: ${clinic.patients} | Appointments: ${clinic.appointments} | Revenue: ${formatCurrency(clinic.revenue)}`}
                             />
                           </ListItem>
-                          {index < mockClinicData.length - 1 && <Divider />}
+                          {index < (reportGenerated ? filteredData.clinics.length : 0) - 1 && <Divider />}
                         </React.Fragment>
                       ))}
                     </List>
@@ -736,7 +715,7 @@ const Reports = () => {
                   <Typography variant="h6" gutterBottom>Dentist Performance</Typography>
                   <Paper sx={{ p: 2, height: 400 }}>
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={mockDentistData}>
+                      <BarChart data={reportGenerated ? filteredData.dentists : []}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="name" />
                         <YAxis yAxisId="left" />
@@ -754,7 +733,7 @@ const Reports = () => {
                   <Typography variant="h6" gutterBottom>Dentist Details</Typography>
                   <Paper sx={{ p: 2 }}>
                     <List>
-                      {mockDentistData.map((dentist, index) => (
+                      {(reportGenerated ? filteredData.dentists : []).map((dentist, index) => (
                         <React.Fragment key={index}>
                           <ListItem>
                             <ListItemText
@@ -762,7 +741,7 @@ const Reports = () => {
                               secondary={`Patients: ${dentist.patients} | Appointments: ${dentist.appointments} | Revenue: ${formatCurrency(dentist.revenue)}`}
                             />
                           </ListItem>
-                          {index < mockDentistData.length - 1 && <Divider />}
+                          {index < (reportGenerated ? filteredData.dentists.length : 0) - 1 && <Divider />}
                         </React.Fragment>
                       ))}
                     </List>

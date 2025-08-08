@@ -5,45 +5,99 @@ const crypto = require('crypto');
 const { validationResult } = require('express-validator');
 const sendEmail = require('../utils/sendEmail');
 
-// @desc    Register user
+// @desc    Register user with organization
 // @route   POST /api/auth/register
 // @access  Public
-// --- THIS FUNCTION HAS BEEN REPLACED WITH REAL DATABASE LOGIC ---
 exports.register = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ success: false, errors: errors.array() });
   }
 
-  const { name, email, password, role, phone, clinic } = req.body;
+  const { 
+    name, 
+    email, 
+    password, 
+    role, 
+    phone, 
+    clinic,
+    organization 
+  } = req.body;
 
   try {
     // 1. Check if user already exists
     let user = await User.findOne({ email });
 
     if (user) {
-      return res.status(400).json({ errors: [{ msg: 'User already exists' }] });
+      return res.status(400).json({ 
+        success: false, 
+        errors: [{ msg: 'User already exists' }] 
+      });
     }
 
-    // 2. Create new user instance (password will be hashed by the User model pre-save hook)
+    // 2. Handle organization assignment
+    let organizationId = null;
+    if (organization) {
+      const Organization = require('../models/Organization');
+      
+      // Check if organization slug already exists
+      const existingOrg = await Organization.findOne({ slug: organization.slug });
+      if (existingOrg) {
+        return res.status(400).json({
+          success: false,
+          errors: [{ msg: 'Organization slug already exists' }]
+        });
+      }
+
+      // Create organization
+      const newOrganization = await Organization.create({
+        ...organization,
+        createdBy: null // Will be updated after user creation
+      });
+      
+      organizationId = newOrganization._id;
+    } else {
+      // If no organization provided, assign to default organization
+      const Organization = require('../models/Organization');
+      const defaultOrganization = await Organization.findOne({ slug: 'dentos-default' });
+      
+      if (!defaultOrganization) {
+        return res.status(500).json({
+          success: false,
+          errors: [{ msg: 'Default organization not found. Please contact administrator.' }]
+        });
+      }
+      
+      organizationId = defaultOrganization._id;
+    }
+
+    // 3. Create new user instance
     user = new User({
       name,
       email,
       phone,
       password,
-      role: role || 'dentist', // Default to dentist if not provided
-      clinic
+      role: role || 'admin', // Default to admin for new organizations
+      organization: organizationId,
+      clinic: clinic || null // Make clinic optional
     });
 
-    // 3. Save the new user to the database
+    // 4. Save the new user to the database
     await user.save();
 
-    // 4. Create a real JSON Web Token (JWT)
+    // 5. Update organization with createdBy if organization was created
+    if (organizationId) {
+      const Organization = require('../models/Organization');
+      await Organization.findByIdAndUpdate(organizationId, {
+        createdBy: user._id
+      });
+    }
+
+    // 6. Create JWT token
     const payload = {
-      user: {
-        id: user.id,
-        role: user.role
-      }
+      id: user.id,
+      role: user.role,
+      organization: user.organization
     };
 
     jwt.sign(
@@ -52,7 +106,8 @@ exports.register = async (req, res) => {
       { expiresIn: process.env.JWT_EXPIRE || '30d' },
       (err, token) => {
         if (err) throw err;
-        // 5. Send the token back to the client
+        
+        // 7. Send the token back to the client
         res.status(201).json({ 
           success: true, 
           token,
@@ -60,15 +115,19 @@ exports.register = async (req, res) => {
             id: user.id,
             name: user.name,
             email: user.email,
-            role: user.role
+            role: user.role,
+            organization: user.organization
           }
         });
       }
     );
 
   } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server error');
+    console.error('Registration error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during registration'
+    });
   }
 };
 
@@ -104,10 +163,9 @@ exports.login = async (req, res) => {
 
     // 3. If credentials are correct, create a real token
     const payload = {
-      user: {
-        id: user.id,
-        role: user.role
-      }
+      id: user.id,
+      role: user.role,
+      organization: user.organization
     };
 
     jwt.sign(
@@ -124,7 +182,8 @@ exports.login = async (req, res) => {
             id: user.id,
             name: user.name,
             email: user.email,
-            role: user.role
+            role: user.role,
+            organization: user.organization
           }
         });
       }
@@ -349,4 +408,60 @@ exports.logout = async (req, res) => {
     success: true,
     message: 'Logged out successfully'
   });
+};
+
+// @desc    Change password (for forced password change)
+// @route   PUT /api/auth/change-password
+// @access  Private
+exports.changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    // Get user with password
+    const user = await User.findById(req.user.id).select('+password');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Check current password
+    const isMatch = await user.matchPassword(currentPassword);
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password is incorrect'
+      });
+    }
+
+    // Update password
+    user.password = newPassword;
+    user.forcePasswordChange = false; // Reset the flag
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Password changed successfully'
+    });
+
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during password change'
+    });
+  }
+};
+
+module.exports = {
+  register: exports.register,
+  login: exports.login,
+  getMe: exports.getMe,
+  logout: exports.logout,
+  forgotPassword: exports.forgotPassword,
+  resetPassword: exports.resetPassword,
+  updatePassword: exports.updatePassword,
+  updateDetails: exports.updateDetails,
+  changePassword: exports.changePassword
 };

@@ -1,25 +1,96 @@
-# Dental CRM - User Guide
+# DentOS - User Guide
 
 ## Introduction
 
-Welcome to the Dental CRM system! This guide will help you navigate and use the various features of the application effectively. The Dental CRM is designed to streamline your dental practice management with comprehensive tools for patient management, appointments, treatments, billing, document management, and patient communications.
+Welcome to DentOS - a comprehensive, multi-tenant dental practice management system! This guide will help you navigate and use the various features based on your role and organization. DentOS provides complete data isolation between organizations while enabling powerful collaboration within your dental practice.
+
+## 🎯 Demo Access - Try DentOS Now!
+
+**Experience DentOS instantly with our pre-loaded demo organization:**
+
+| Role | Email | Password | What You Can Access |
+|------|-------|----------|-------------------|
+| **👑 Admin** | admin@smilecare.com | Demo@2025 | Everything + Revenue + User Management |
+| **👨‍💼 Manager** | manager@smilecare.com | Demo@2025 | Business Operations + Revenue |
+| **🦷 Dentist** | dentist@smilecare.com | Demo@2025 | Patient Care + Treatments |
+| **📞 Receptionist** | receptionist@smilecare.com | Demo@2025 | Appointments + Front Desk |
+| **🤝 Assistant** | assistant@smilecare.com | Demo@2025 | Limited Clinical Support |
+
+**Demo includes:** Complete organization with 2 clinics, 8 patients, multiple appointments, treatment plans, inventory management, professional invoices, staff profiles, document management, and communication system
+
+## 🔐 Understanding User Roles
+
+### 👑 Admin
+- **Full System Access**: Manage all aspects of the organization
+- **Financial Access**: View revenue, create invoices, manage payments
+- **User Management**: Add/edit/delete users, manage team
+- **System Configuration**: Manage clinics, treatment definitions, inventory
+
+### 👨‍💼 Manager  
+- **Business Operations**: Access to all operational data
+- **Financial Oversight**: View revenue reports and financial analytics
+- **Staff Coordination**: Manage appointments and staff schedules
+- **Reporting**: Access to comprehensive business reports
+
+### 🦷 Dentist
+- **Clinical Focus**: Full access to patient care and treatments
+- **Patient Management**: Create, view, and edit patient records
+- **Treatment Planning**: Manage treatment plans and procedures
+- **Appointment Management**: Schedule and manage appointments
+
+### 📞 Receptionist
+- **Front Desk Operations**: Handle patient check-ins and appointments
+- **Appointment Scheduling**: Book, reschedule, and cancel appointments
+- **Basic Patient Info**: View and update basic patient information
+- **Communication**: Send appointment reminders and notifications
+
+### 🤝 Assistant
+- **Clinical Support**: Limited access to support dentist operations
+- **Patient Assistance**: View patient information during procedures
+- **Appointment Support**: Assist with appointment preparation
+- **Basic Inventory**: View inventory levels for clinical supplies
 
 ## Getting Started
 
-### Logging In
+### First-Time Login
 
-1. Open your web browser and navigate to the application URL
-2. Enter your username and password
-3. Click the "Login" button
+1. **Navigate to DentOS** in your web browser
+2. **Choose Login Method:**
+   - Use demo credentials above for instant access
+   - Or register for a new organization
+3. **Enter credentials** and click "Login"
+4. **Organization Setup** (for new users):
+   - Create your organization profile
+   - Set up your first clinic
+   - Configure basic settings
 
-### Dashboard Overview
+### Dashboard Overview (Role-Based)
 
-After logging in, you'll see the dashboard with key metrics and quick access to frequently used features:
+Your dashboard displays different information based on your role:
 
-- **Appointments Today**: Shows today's scheduled appointments
-- **Recent Patients**: Displays recently added or updated patients
-- **Revenue Overview**: Shows recent billing and payment information
-- **Quick Actions**: Buttons for common tasks like adding patients or scheduling appointments
+**Admin/Manager Dashboard:**
+- **Revenue Metrics**: Total revenue, monthly trends, payment status
+- **Appointments Today**: Scheduled appointments across all clinics
+- **Recent Patients**: Newly registered patients
+- **Revenue Chart**: Monthly revenue visualization
+- **Quick Actions**: Add patients, schedule appointments, create invoices
+
+**Dentist Dashboard:**
+- **Appointments Today**: Your scheduled appointments
+- **Recent Patients**: Patients you've recently treated
+- **Treatment Progress**: Active treatment plans
+- **Quick Actions**: Add patients, schedule appointments, create treatments
+
+**Receptionist Dashboard:**
+- **Today's Schedule**: All appointments for today
+- **Recent Patients**: Recently registered patients
+- **Appointment Types**: Distribution of appointment types
+- **Quick Actions**: Schedule appointments, add patients
+
+**Assistant Dashboard:**
+- **Today's Schedule**: Appointments you're supporting
+- **Recent Patients**: Patients in current treatments
+- **Quick Actions**: View patient information, check inventory
 
 ## Patient Management
 
@@ -229,10 +300,66 @@ After logging in, you'll see the dashboard with key metrics and quick access to 
 4. Enter your current password and new password
 5. Click "Save" to update your password
 
+## 🌙 Theme System
+
+### Switching Between Light and Dark Themes
+
+1. Click on "Settings" in the sidebar menu
+2. Navigate to the "System Settings" tab
+3. Use the "Theme Toggle" to switch between light and dark modes
+4. The theme change is applied immediately across the entire application
+5. Your preference is saved and will be remembered for future sessions
+
+### Theme Features
+- **Automatic Adaptation**: All components adapt to the selected theme
+- **Consistent Styling**: Tables, cards, menus, and forms follow the theme
+- **Better Readability**: Optimized contrast and colors for each theme
+- **User Preference**: Theme choice is saved in your browser
+
+## 🔔 Notification System
+
+### Viewing Notifications
+
+1. Click on the bell icon in the top-right corner of the header
+2. View your recent notifications in the dropdown
+3. Notifications are filtered based on your role and permissions
+4. Click on a notification to view details or take action
+
+### Notification Types
+- **Appointment Reminders**: Upcoming appointments and schedule changes
+- **Patient Updates**: New patient registrations and updates
+- **Inventory Alerts**: Low stock warnings and reorder notifications
+- **Payment Notifications**: Invoice payments and outstanding reminders
+- **System Alerts**: Important system updates and announcements
+
+## 📁 Document Management
+
+### Uploading Documents
+
+1. Navigate to a patient's profile
+2. Click on the "Documents & Images" tab
+3. Click the "Upload Document" button
+4. Select a file from your computer (PDF, images, DICOM files supported)
+5. Add a description and category if needed
+6. Click "Upload" to save the document
+
+### Viewing and Downloading Documents
+
+1. In the patient's Documents tab, you'll see all uploaded files
+2. Click the eye icon to view a document
+3. Click the download icon to download a file to your computer
+4. Documents are organized by upload date and type
+
+### Document Features
+- **Multiple Formats**: Support for PDF, JPG, PNG, DICOM, and more
+- **Secure Storage**: Files are stored securely on the server
+- **Access Control**: Only authorized users can view documents
+- **Download Tracking**: System logs who accessed which documents
+
 ## Getting Help
 
-If you encounter any issues or have questions about using the Dental CRM system, please contact your system administrator or refer to the technical documentation for more detailed information.
+If you encounter any issues or have questions about using the DentOS system, please contact your system administrator or refer to the technical documentation for more detailed information.
 
 ---
 
-Thank you for using Dental CRM! We hope this guide helps you make the most of the system's features to efficiently manage your dental practice.
+Thank you for using DentOS! We hope this guide helps you make the most of the system's features to efficiently manage your dental practice.

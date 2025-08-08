@@ -11,6 +11,10 @@ import {
   AttachMoney as AttachMoneyIcon
 } from '@mui/icons-material';
 import { toast } from 'react-toastify';
+import axios from 'axios';
+
+// Get API URL from environment variables
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const EditInventory = () => {
   const navigate = useNavigate();
@@ -81,32 +85,39 @@ const EditInventory = () => {
       setError(null);
       
       try {
-        // In a real app, we would call the API
-        // For now, we'll simulate an API call with mock data
-        setTimeout(() => {
-          // Mock data for the inventory item
-          const mockItem = {
-            id: id,
-            itemName: 'Composite Resin',
-            itemCode: 'CR-101',
-            category: 'Restorative Materials',
-            description: 'High-quality light-cured composite resin for dental restorations. Provides excellent aesthetics and durability.',
-            unit: 'Syringe',
-            currentStock: 45,
-            minStockLevel: 10,
-            price: 29.99,
-            supplier: 'Dental Supplies Inc.',
-            location: 'Cabinet B, Shelf 3',
-            expiryDate: '2024-12-31',
-            isActive: true
-          };
-          
-          setFormData(mockItem);
-          setFetchLoading(false);
-        }, 1000);
+        // Get token from localStorage
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('Authentication token not found');
+        }
+        
+        // Fetch inventory item from API
+        const response = await axios.get(`${API_URL}/inventory/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        // Map API response to form data
+        const item = response.data.data;
+        setFormData({
+          itemName: item.itemName,
+          itemCode: item.itemCode,
+          category: item.category,
+          description: item.description,
+          unit: item.unit,
+          currentStock: item.currentStock,
+          minStockLevel: item.minimumStock || item.minStockLevel,
+          price: item.unitPrice || item.price,
+          supplier: item.supplier?.name || item.supplier,
+          location: item.location,
+          expiryDate: item.expiryDate,
+          isActive: item.isActive !== undefined ? item.isActive : true
+        });
+        setFetchLoading(false);
       } catch (err) {
         console.error('Error fetching inventory item:', err);
-        setError('Failed to load inventory item. Please try again.');
+        setError(err.response?.data?.message || 'Failed to load inventory item. Please try again.');
         setFetchLoading(false);
       }
     };
@@ -170,17 +181,42 @@ const EditInventory = () => {
     setError(null);
     
     try {
-      // In a real app, we would call the API
-      // For now, we'll simulate an API call
-      setTimeout(() => {
-        // Mock successful API response
-        toast.success('Inventory item updated successfully!');
-        setLoading(false);
-        navigate('/inventory');
-      }, 1000);
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+      
+      // Prepare data for API
+      const inventoryData = {
+        itemName: formData.itemName,
+        itemCode: formData.itemCode,
+        category: formData.category,
+        description: formData.description,
+        unit: formData.unit,
+        currentStock: Number(formData.currentStock),
+        minimumStock: Number(formData.minStockLevel),
+        unitPrice: Number(formData.price),
+        supplier: formData.supplier,
+        location: formData.location,
+        expiryDate: formData.expiryDate,
+        isActive: formData.isActive
+      };
+      
+      // Call API to update inventory item
+      await axios.put(`${API_URL}/inventory/${id}`, inventoryData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      toast.success('Inventory item updated successfully!');
+      setLoading(false);
+      navigate('/inventory');
     } catch (err) {
       console.error('Error updating inventory item:', err);
-      setError('Failed to update inventory item. Please try again.');
+      setError(err.response?.data?.message || 'Failed to update inventory item. Please try again.');
       setLoading(false);
     }
   };

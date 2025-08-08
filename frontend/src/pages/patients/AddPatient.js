@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
@@ -28,13 +28,8 @@ import { format, differenceInYears } from 'date-fns';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
-// Mock data for clinics (replace with API call)
-const CLINICS = [
-  { id: 1, name: 'Dental Care - Bandra' },
-  { id: 2, name: 'Dental Care - Andheri' },
-  { id: 3, name: 'Dental Care - Powai' },
-  { id: 4, name: 'Dental Care - Juhu' },
-];
+// Get API URL from environment variables
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 // Blood groups
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
@@ -42,7 +37,28 @@ const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 const AddPatient = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [clinicsLoading, setClinicsLoading] = useState(false);
+  const [clinics, setClinics] = useState([]);
   const navigate = useNavigate();
+  
+  // Fetch clinics when component mounts
+  useEffect(() => {
+    fetchClinics();
+  }, []);
+  
+  // Function to fetch clinics from API
+  const fetchClinics = async () => {
+    setClinicsLoading(true);
+    try {
+      const response = await axios.get(`${API_URL}/clinics`);
+      setClinics(response.data.data || []);
+    } catch (err) {
+      console.error('Error fetching clinics:', err);
+      toast.error('Failed to load clinics');
+    } finally {
+      setClinicsLoading(false);
+    }
+  };
 
   const formik = useFormik({
     initialValues: {
@@ -68,7 +84,7 @@ const AddPatient = () => {
     validationSchema: Yup.object({
       firstName: Yup.string().required('First name is required'),
       lastName: Yup.string().required('Last name is required'),
-      email: Yup.string().email('Invalid email address'),
+      email: Yup.string().email('Invalid email address').required('Email is required'),
       phone: Yup.string()
         .matches(/^[6-9]\d{9}$/, 'Phone number must be a valid Indian number')
         .required('Phone number is required'),
@@ -80,12 +96,19 @@ const AddPatient = () => {
       pincode: Yup.string()
         .matches(/^\d{6}$/, 'Pincode must be 6 digits')
         .required('Pincode is required'),
-      bloodGroup: Yup.string(),
-      emergencyContactName: Yup.string(),
-      emergencyContactPhone: Yup.string().matches(/^[6-9]\d{9}$/, 'Phone number must be a valid Indian number'),
-      clinicId: Yup.number().required('Clinic is required'),
+      bloodGroup: Yup.string().required('Blood group is required'),
+      emergencyContactName: Yup.string().required('Emergency contact name is required'),
+      emergencyContactPhone: Yup.string()
+        .matches(/^[6-9]\d{9}$/, 'Phone number must be a valid Indian number')
+        .required('Emergency contact phone is required'),
+      clinicId: Yup.string().required('Clinic is required'),
     }),
     onSubmit: async (values) => {
+      console.log('🔍 Form submission started');
+      console.log('Form values:', values);
+      console.log('Form errors:', formik.errors);
+      console.log('Form touched:', formik.touched);
+      
       try {
         setLoading(true);
         setError(null);
@@ -99,22 +122,46 @@ const AddPatient = () => {
         // Prepare patient data
         const patientData = {
           ...values,
+          name: `${values.firstName} ${values.lastName}`.trim(), // Combine first and last name
           dateOfBirth: formattedDOB,
           age,
           registrationDate: format(new Date(), 'yyyy-MM-dd'),
+          registeredClinic: values.clinicId, // Map clinicId to registeredClinic
+          address: {
+            street: values.address,
+            city: values.city,
+            state: values.state,
+            pincode: values.pincode,
+            country: 'India'
+          },
+          medicalHistory: {
+            allergies: values.allergies ? [values.allergies] : [],
+            other: values.medicalHistory || ''
+          }
         };
         
+        // Remove clinicId, firstName/lastName, and individual address fields from the data
+        delete patientData.clinicId;
+        delete patientData.firstName;
+        delete patientData.lastName;
+        delete patientData.address; // Remove the string address field
+        delete patientData.city;
+        delete patientData.state;
+        delete patientData.pincode;
+        delete patientData.allergies; // Remove individual medical history fields
+        delete patientData.medicalHistory; // Remove the string medical history field
+        
+        console.log('Patient data to send:', patientData);
+        
         // API call to create patient
-        // Replace with actual API endpoint
-        // const response = await axios.post('/api/patients', patientData);
+        const response = await axios.post(`${API_URL}/patients`, patientData);
         
-        // For demo purposes, simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
+        console.log('API response:', response.data);
         toast.success('Patient added successfully!');
         navigate('/patients');
       } catch (err) {
         console.error('Error adding patient:', err);
+        console.error('Error response:', err.response?.data);
         setError(err.response?.data?.message || 'Failed to add patient. Please try again.');
         toast.error('Failed to add patient');
       } finally {
@@ -134,6 +181,9 @@ const AddPatient = () => {
       <Paper elevation={3} sx={{ p: 4, mt: 4, mb: 4, borderRadius: 2 }}>
         <Typography variant="h4" component="h1" gutterBottom>
           Add New Patient
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Fields marked with * are required
         </Typography>
         <Divider sx={{ mb: 4 }} />
 
@@ -157,13 +207,14 @@ const AddPatient = () => {
                 fullWidth
                 id="firstName"
                 name="firstName"
-                label="First Name"
+                label="First Name *"
                 value={formik.values.firstName}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
                 error={formik.touched.firstName && Boolean(formik.errors.firstName)}
                 helperText={formik.touched.firstName && formik.errors.firstName}
                 disabled={loading}
+                required
               />
             </Grid>
 
@@ -172,7 +223,7 @@ const AddPatient = () => {
                 fullWidth
                 id="lastName"
                 name="lastName"
-                label="Last Name"
+                label="Last Name *"
                 value={formik.values.lastName}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
@@ -184,7 +235,7 @@ const AddPatient = () => {
 
             <Grid item xs={12} sm={6} md={4}>
               <FormControl fullWidth error={formik.touched.gender && Boolean(formik.errors.gender)}>
-                <InputLabel id="gender-label">Gender</InputLabel>
+                <InputLabel id="gender-label">Gender *</InputLabel>
                 <Select
                   labelId="gender-label"
                   id="gender"
@@ -247,7 +298,7 @@ const AddPatient = () => {
 
             <Grid item xs={12} sm={6} md={4}>
               <FormControl fullWidth>
-                <InputLabel id="bloodGroup-label">Blood Group</InputLabel>
+                <InputLabel id="bloodGroup-label">Blood Group *</InputLabel>
                 <Select
                   labelId="bloodGroup-label"
                   id="bloodGroup"
@@ -291,7 +342,7 @@ const AddPatient = () => {
                 fullWidth
                 id="email"
                 name="email"
-                label="Email Address"
+                label="Email Address *"
                 value={formik.values.email}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
@@ -306,7 +357,7 @@ const AddPatient = () => {
                 fullWidth
                 id="phone"
                 name="phone"
-                label="Phone Number"
+                label="Phone Number *"
                 value={formik.values.phone}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
@@ -324,7 +375,7 @@ const AddPatient = () => {
                 fullWidth
                 id="address"
                 name="address"
-                label="Address"
+                label="Address *"
                 value={formik.values.address}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
@@ -341,7 +392,7 @@ const AddPatient = () => {
                 fullWidth
                 id="city"
                 name="city"
-                label="City"
+                label="City *"
                 value={formik.values.city}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
@@ -356,7 +407,7 @@ const AddPatient = () => {
                 fullWidth
                 id="state"
                 name="state"
-                label="State"
+                label="State *"
                 value={formik.values.state}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
@@ -371,7 +422,7 @@ const AddPatient = () => {
                 fullWidth
                 id="pincode"
                 name="pincode"
-                label="Pincode"
+                label="Pincode *"
                 value={formik.values.pincode}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
@@ -393,7 +444,7 @@ const AddPatient = () => {
                 fullWidth
                 id="emergencyContactName"
                 name="emergencyContactName"
-                label="Emergency Contact Name"
+                label="Emergency Contact Name *"
                 value={formik.values.emergencyContactName}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
@@ -408,7 +459,7 @@ const AddPatient = () => {
                 fullWidth
                 id="emergencyContactPhone"
                 name="emergencyContactPhone"
-                label="Emergency Contact Phone"
+                label="Emergency Contact Phone *"
                 value={formik.values.emergencyContactPhone}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
@@ -467,7 +518,7 @@ const AddPatient = () => {
 
             <Grid item xs={12} sm={6}>
               <FormControl fullWidth error={formik.touched.clinicId && Boolean(formik.errors.clinicId)}>
-                <InputLabel id="clinic-label">Clinic</InputLabel>
+                <InputLabel id="clinic-label">Clinic *</InputLabel>
                 <Select
                   labelId="clinic-label"
                   id="clinicId"
@@ -476,13 +527,19 @@ const AddPatient = () => {
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   label="Clinic"
-                  disabled={loading}
+                  disabled={loading || clinicsLoading}
                 >
-                  {CLINICS.map((clinic) => (
-                    <MenuItem key={clinic.id} value={clinic.id}>
-                      {clinic.name}
-                    </MenuItem>
-                  ))}
+                  {clinicsLoading ? (
+                    <MenuItem disabled>Loading clinics...</MenuItem>
+                  ) : clinics.length > 0 ? (
+                    clinics.map((clinic) => (
+                      <MenuItem key={clinic._id} value={clinic._id}>
+                        {clinic.name}
+                      </MenuItem>
+                    ))
+                  ) : (
+                    <MenuItem disabled>No clinics available</MenuItem>
+                  )}
                 </Select>
                 {formik.touched.clinicId && formik.errors.clinicId && (
                   <FormHelperText>{formik.errors.clinicId}</FormHelperText>
@@ -506,6 +563,22 @@ const AddPatient = () => {
             {/* Submit Button */}
             <Grid item xs={12} sx={{ mt: 3 }}>
               <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+                <Button
+                  variant="outlined"
+                  color="secondary"
+                  onClick={() => {
+                    console.log('🔍 Debug: Form validation check');
+                    console.log('Form is valid:', formik.isValid);
+                    console.log('Form errors:', formik.errors);
+                    console.log('Form values:', formik.values);
+                    formik.validateForm().then(errors => {
+                      console.log('Validation errors:', errors);
+                    });
+                  }}
+                  disabled={loading}
+                >
+                  Debug Form
+                </Button>
                 <Button
                   variant="outlined"
                   color="primary"

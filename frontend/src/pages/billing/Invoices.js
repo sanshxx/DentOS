@@ -3,7 +3,8 @@ import {
   Container, Typography, Paper, Box, Button, Grid, 
   Table, TableBody, TableCell, TableContainer, TableHead, 
   TableRow, TablePagination, Chip, IconButton, TextField,
-  InputAdornment, MenuItem, Select, FormControl, InputLabel
+  InputAdornment, MenuItem, Select, FormControl, InputLabel, Alert,
+  Dialog, DialogTitle, DialogContent, DialogActions
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import AddIcon from '@mui/icons-material/Add';
@@ -13,6 +14,12 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PrintIcon from '@mui/icons-material/Print';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import PaymentIcon from '@mui/icons-material/Payment';
+import axios from 'axios';
+import { printInvoice, downloadInvoicePDF, downloadInvoiceCSV } from '../../utils/invoiceUtils';
+
+// Get API URL from environment variables
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const Invoices = () => {
   const navigate = useNavigate();
@@ -33,29 +40,23 @@ const Invoices = () => {
     setError(null);
     
     try {
-      // In a real app, we would fetch from the API
-      // For now, we'll simulate an API call
-      setTimeout(() => {
-        fetch('/api/billing')
-          .then(response => {
-            if (!response.ok) {
-              throw new Error('Failed to fetch invoices');
-            }
-            return response.json();
-          })
-          .then(data => {
-            setInvoices(data.data);
-            setLoading(false);
-          })
-          .catch(err => {
-            console.error('Error fetching invoices:', err);
-            setError('Error fetching invoices. Please try again.');
-            setLoading(false);
-          });
-      }, 1000); // Simulate loading delay
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      const response = await axios.get(`${API_URL}/billing`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      setInvoices(response.data.data);
+      setLoading(false);
     } catch (err) {
-      console.error('Error:', err);
-      setError('An unexpected error occurred. Please try again.');
+      console.error('Error fetching invoices:', err);
+      setError('Error fetching invoices. Please try again.');
       setLoading(false);
     }
   };
@@ -80,7 +81,7 @@ const Invoices = () => {
   };
 
   const handleCreateInvoice = () => {
-    navigate('/billing/create');
+          navigate('/billing/create');
   };
 
   const handleViewInvoice = (id) => {
@@ -88,28 +89,107 @@ const Invoices = () => {
   };
 
   const handleEditInvoice = (id) => {
-    navigate(`/billing/invoice/${id}`);
+    navigate(`/billing/invoice/${id}/edit`);
   };
 
-  const handleDeleteInvoice = (id) => {
+  const handleDeleteInvoice = async (id) => {
     if (window.confirm('Are you sure you want to delete this invoice?')) {
-      // In a real app, we would call the API to delete the invoice
-      console.log('Deleting invoice:', id);
-      // Then refresh the list
-      fetchInvoices();
+      try {
+        // Clear any previous errors
+        setError(null);
+        
+        // Get token from localStorage
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('Authentication token not found');
+        }
+
+        await axios.delete(`${API_URL}/billing/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        // Show success message
+        alert('Invoice deleted successfully!');
+        
+        // Refresh the list after successful deletion
+        fetchInvoices();
+      } catch (err) {
+        console.error('Error deleting invoice:', err);
+        const errorMessage = err.response?.data?.message || 'Error deleting invoice. Please try again.';
+        setError(errorMessage);
+      }
     }
   };
 
-  const handlePrintInvoice = (id) => {
-    // In a real app, we would generate a printable version of the invoice
-    console.log('Printing invoice:', id);
-    window.alert('Print functionality would be implemented here');
+  const handlePrintInvoice = async (id) => {
+    try {
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      // Fetch the specific invoice data
+      const response = await axios.get(`${API_URL}/billing/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      const invoice = response.data.data;
+      await printInvoice(invoice);
+    } catch (error) {
+      console.error('Error printing invoice:', error);
+      alert('Failed to print invoice. Please try again.');
+    }
   };
 
-  const handleDownloadInvoice = (id) => {
-    // In a real app, we would generate a PDF and trigger download
-    console.log('Downloading invoice:', id);
-    window.alert('Download functionality would be implemented here');
+  const [downloadDialog, setDownloadDialog] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
+
+  const handleDownloadInvoice = async (id) => {
+    try {
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      // Fetch the specific invoice data
+      const response = await axios.get(`${API_URL}/billing/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      const invoice = response.data.data;
+      setSelectedInvoice(invoice);
+      setDownloadDialog(true);
+    } catch (error) {
+      console.error('Error downloading invoice:', error);
+      alert('Failed to download invoice. Please try again.');
+    }
+  };
+
+  const handleDownloadFormat = async (format) => {
+    try {
+      if (format === 'pdf') {
+        await downloadInvoicePDF(selectedInvoice);
+      } else {
+        downloadInvoiceCSV(selectedInvoice);
+      }
+      setDownloadDialog(false);
+      setSelectedInvoice(null);
+    } catch (error) {
+      console.error('Error downloading invoice:', error);
+      alert('Failed to download invoice. Please try again.');
+    }
+  };
+
+  const handleRecordPayment = (id) => {
+    navigate(`/billing/invoice/${id}/payment`);
   };
 
   // Filter invoices based on search term and status filter
@@ -228,7 +308,13 @@ const Invoices = () => {
           {loading ? (
             <Typography>Loading invoices...</Typography>
           ) : error ? (
-            <Typography color="error">{error}</Typography>
+            <Alert 
+              severity="error" 
+              onClose={() => setError(null)}
+              sx={{ mb: 2 }}
+            >
+              {error}
+            </Alert>
           ) : (
             <>
               <TableContainer>
@@ -293,6 +379,16 @@ const Invoices = () => {
                             >
                               <FileDownloadIcon fontSize="small" />
                             </IconButton>
+                            {invoice.paymentStatus !== 'paid' && (
+                              <IconButton 
+                                size="small" 
+                                color="success" 
+                                onClick={() => handleRecordPayment(invoice._id)}
+                                title="Record Payment"
+                              >
+                                <PaymentIcon fontSize="small" />
+                              </IconButton>
+                            )}
                             <IconButton 
                               size="small" 
                               color="error" 
@@ -327,6 +423,61 @@ const Invoices = () => {
           )}
         </Paper>
       </Box>
+
+      {/* Download Format Dialog */}
+      <Dialog open={downloadDialog} onClose={() => setDownloadDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Choose Download Format</DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ mb: 2 }}>
+            Select the format you would like to download the invoice:
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={6}>
+              <Button
+                fullWidth
+                variant="outlined"
+                size="large"
+                onClick={() => handleDownloadFormat('pdf')}
+                sx={{ 
+                  height: 80, 
+                  flexDirection: 'column',
+                  border: '2px solid #1976d2',
+                  '&:hover': { border: '2px solid #1565c0' }
+                }}
+              >
+                <Typography variant="h6" color="primary">PDF</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Professional format
+                </Typography>
+              </Button>
+            </Grid>
+            <Grid item xs={6}>
+              <Button
+                fullWidth
+                variant="outlined"
+                size="large"
+                onClick={() => handleDownloadFormat('csv')}
+                sx={{ 
+                  height: 80, 
+                  flexDirection: 'column',
+                  border: '2px solid #2e7d32',
+                  '&:hover': { border: '2px solid #1b5e20' }
+                }}
+              >
+                <Typography variant="h6" color="success.main">CSV</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Data analysis
+                </Typography>
+              </Button>
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDownloadDialog(false)}>
+            Cancel
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

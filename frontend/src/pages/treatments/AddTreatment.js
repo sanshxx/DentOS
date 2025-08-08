@@ -6,6 +6,7 @@ import {
   List, ListItem, ListItemText, ListItemSecondaryAction
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import {
   ArrowBack as ArrowBackIcon,
   Save as SaveIcon,
@@ -15,6 +16,9 @@ import {
   AttachMoney as AttachMoneyIcon
 } from '@mui/icons-material';
 import { toast } from 'react-toastify';
+
+// Get API URL from environment variables
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const AddTreatment = () => {
   const navigate = useNavigate();
@@ -111,6 +115,11 @@ const AddTreatment = () => {
       newErrors.duration = 'Duration must be a positive number';
     }
     
+    // Validate category is in the allowed list
+    if (formData.category && !categories.includes(formData.category)) {
+      newErrors.category = `Invalid category. Please select from: ${categories.join(', ')}`;
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -124,17 +133,41 @@ const AddTreatment = () => {
     setError(null);
     
     try {
-      // In a real app, we would call the API
-      // For now, we'll simulate an API call
-      setTimeout(() => {
-        // Mock successful API response
-        toast.success('Treatment added successfully!');
-        setLoading(false);
-        navigate('/treatments');
-      }, 1000);
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+      
+      // Prepare data for API - convert strings to numbers where needed
+      const apiData = {
+        ...formData,
+        price: Number(formData.price),
+        duration: Number(formData.duration)
+      };
+      
+      // Make API call to add treatment
+      await axios.post(`${API_URL}/treatments`, apiData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      toast.success('Treatment added successfully!');
+      setLoading(false);
+      navigate('/treatments');
     } catch (err) {
       console.error('Error adding treatment:', err);
-      setError('Failed to add treatment. Please try again.');
+      
+      // Get specific error message from response
+      const errorMessage = err.response?.data?.message || 
+                          err.response?.data?.error || 
+                          err.message || 
+                          'Failed to add treatment. Please try again.';
+      
+      setError(errorMessage);
+      toast.error(errorMessage);
       setLoading(false);
     }
   };
@@ -176,7 +209,7 @@ const AddTreatment = () => {
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label="Treatment Name"
+                  label="Treatment Name *"
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
@@ -189,7 +222,7 @@ const AddTreatment = () => {
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label="Treatment Code"
+                  label="Treatment Code *"
                   name="code"
                   value={formData.code}
                   onChange={handleChange}
@@ -201,12 +234,12 @@ const AddTreatment = () => {
               
               <Grid item xs={12} sm={6}>
                 <FormControl fullWidth error={!!errors.category} required>
-                  <InputLabel>Category</InputLabel>
+                  <InputLabel>Category *</InputLabel>
                   <Select
                     name="category"
                     value={formData.category}
                     onChange={handleChange}
-                    label="Category"
+                    label="Category *"
                   >
                     {categories.map((category) => (
                       <MenuItem key={category} value={category}>
@@ -236,14 +269,15 @@ const AddTreatment = () => {
               <Grid item xs={12}>
                 <TextField
                   fullWidth
-                  label="Description"
+                  label="Description *"
                   name="description"
                   value={formData.description}
                   onChange={handleChange}
                   multiline
                   rows={3}
+                  placeholder="Enter a detailed description of the treatment procedure..."
                   error={!!errors.description}
-                  helperText={errors.description}
+                  helperText={errors.description || "Please provide a detailed description of the treatment"}
                   required
                 />
               </Grid>
@@ -259,7 +293,7 @@ const AddTreatment = () => {
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label="Price (₹)"
+                  label="Price (₹) *"
                   name="price"
                   type="number"
                   value={formData.price}
@@ -280,7 +314,7 @@ const AddTreatment = () => {
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label="Duration (minutes)"
+                  label="Duration (minutes) *"
                   name="duration"
                   type="number"
                   value={formData.duration}

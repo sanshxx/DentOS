@@ -37,6 +37,9 @@ import { Pie, Bar } from 'react-chartjs-2';
 import AuthContext from '../../context/AuthContext';
 import { format } from 'date-fns';
 
+// Get API URL from environment variables
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 // Register ChartJS components
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
 
@@ -61,59 +64,22 @@ const Dashboard = () => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
-        // In a real application, you would fetch this data from your API
-        // For now, we'll use mock data
         
-        // Simulate API call delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Get token from localStorage
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('Authentication token not found');
+        }
+
+        // Fetch dashboard data from API
+        const response = await axios.get(`${API_URL}/dashboard`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
         
-        // Mock data
-        const mockData = {
-          totalPatients: 1248,
-          totalAppointments: 3567,
-          totalRevenue: 4582750, // In INR (₹)
-          totalTreatments: 2890,
-          appointmentsToday: [
-            { id: 1, patientName: 'Rahul Sharma', time: '10:00 AM', type: 'Check-up', status: 'confirmed' },
-            { id: 2, patientName: 'Priya Patel', time: '11:30 AM', type: 'Root Canal', status: 'confirmed' },
-            { id: 3, patientName: 'Amit Singh', time: '2:00 PM', type: 'Cleaning', status: 'scheduled' },
-            { id: 4, patientName: 'Neha Gupta', time: '3:30 PM', type: 'Consultation', status: 'scheduled' },
-            { id: 5, patientName: 'Vikram Mehta', time: '5:00 PM', type: 'Filling', status: 'scheduled' }
-          ],
-          recentPatients: [
-            { id: 1, name: 'Priya Patel', date: '2023-07-10', phone: '9876543210', gender: 'Female' },
-            { id: 2, name: 'Rahul Sharma', date: '2023-07-09', phone: '9876543211', gender: 'Male' },
-            { id: 3, name: 'Neha Gupta', date: '2023-07-08', phone: '9876543212', gender: 'Female' },
-            { id: 4, name: 'Amit Singh', date: '2023-07-07', phone: '9876543213', gender: 'Male' },
-            { id: 5, name: 'Sneha Verma', date: '2023-07-06', phone: '9876543214', gender: 'Female' }
-          ],
-          upcomingAppointments: [
-            { id: 1, patientName: 'Rahul Sharma', date: '2023-07-15', time: '10:00 AM', type: 'Check-up' },
-            { id: 2, patientName: 'Priya Patel', date: '2023-07-16', time: '11:30 AM', type: 'Root Canal' },
-            { id: 3, patientName: 'Amit Singh', date: '2023-07-17', time: '2:00 PM', type: 'Cleaning' },
-            { id: 4, patientName: 'Neha Gupta', date: '2023-07-18', time: '3:30 PM', type: 'Consultation' },
-            { id: 5, patientName: 'Vikram Mehta', date: '2023-07-19', time: '5:00 PM', type: 'Filling' }
-          ],
-          revenueByMonth: [
-            { month: 'Jan', revenue: 350000 },
-            { month: 'Feb', revenue: 420000 },
-            { month: 'Mar', revenue: 380000 },
-            { month: 'Apr', revenue: 450000 },
-            { month: 'May', revenue: 520000 },
-            { month: 'Jun', revenue: 480000 },
-            { month: 'Jul', revenue: 400000 }
-          ],
-          appointmentsByType: [
-            { type: 'Check-up', count: 120 },
-            { type: 'Cleaning', count: 80 },
-            { type: 'Filling', count: 60 },
-            { type: 'Root Canal', count: 40 },
-            { type: 'Extraction', count: 30 },
-            { type: 'Other', count: 50 }
-          ]
-        };
-        
-        setStats(mockData);
+        const data = response.data.data;
+        setStats(data);
         setError(null);
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
@@ -137,11 +103,11 @@ const Dashboard = () => {
 
   // Prepare chart data for appointments by type
   const appointmentTypeChartData = {
-    labels: stats.appointmentsByType.map(item => item.type),
+    labels: stats?.appointmentsByType?.map(item => item.type) || [],
     datasets: [
       {
         label: 'Appointments',
-        data: stats.appointmentsByType.map(item => item.count),
+        data: stats?.appointmentsByType?.map(item => item.count) || [],
         backgroundColor: [
           'rgba(54, 162, 235, 0.6)',
           'rgba(75, 192, 192, 0.6)',
@@ -165,11 +131,11 @@ const Dashboard = () => {
 
   // Prepare chart data for revenue by month
   const revenueChartData = {
-    labels: stats.revenueByMonth.map(item => item.month),
+    labels: stats?.revenueByMonth?.map(item => item.month) || [],
     datasets: [
       {
         label: 'Revenue (₹)',
-        data: stats.revenueByMonth.map(item => item.revenue),
+        data: stats?.revenueByMonth?.map(item => item.revenue) || [],
         backgroundColor: 'rgba(75, 192, 192, 0.6)',
         borderColor: 'rgba(75, 192, 192, 1)',
         borderWidth: 1,
@@ -228,11 +194,19 @@ const Dashboard = () => {
                   <PeopleIcon />
                 </Avatar>
               </Box>
-              <Typography variant="h4">{stats.totalPatients.toLocaleString()}</Typography>
+                              <Typography variant="h4">{stats?.totalPatients?.toLocaleString() || '0'}</Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                <TrendingUpIcon color="success" fontSize="small" />
-                <Typography variant="body2" color="success.main" sx={{ ml: 0.5 }}>
-                  +5.3% from last month
+                {stats?.trends?.patients > 0 ? (
+                  <TrendingUpIcon color="success" fontSize="small" />
+                ) : (
+                  <TrendingDownIcon color="error" fontSize="small" />
+                )}
+                <Typography 
+                  variant="body2" 
+                  color={stats?.trends?.patients > 0 ? "success.main" : "error.main"} 
+                  sx={{ ml: 0.5 }}
+                >
+                  {stats?.trends?.patients > 0 ? '+' : ''}{stats?.trends?.patients || 0}% from last month
                 </Typography>
               </Box>
             </CardContent>
@@ -250,38 +224,57 @@ const Dashboard = () => {
                   <CalendarTodayIcon />
                 </Avatar>
               </Box>
-              <Typography variant="h4">{stats.totalAppointments.toLocaleString()}</Typography>
+                              <Typography variant="h4">{stats?.totalAppointments?.toLocaleString() || '0'}</Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                <TrendingUpIcon color="success" fontSize="small" />
-                <Typography variant="body2" color="success.main" sx={{ ml: 0.5 }}>
-                  +3.2% from last month
+                {stats?.trends?.appointments > 0 ? (
+                  <TrendingUpIcon color="success" fontSize="small" />
+                ) : (
+                  <TrendingDownIcon color="error" fontSize="small" />
+                )}
+                <Typography 
+                  variant="body2" 
+                  color={stats?.trends?.appointments > 0 ? "success.main" : "error.main"} 
+                  sx={{ ml: 0.5 }}
+                >
+                  {stats?.trends?.appointments > 0 ? '+' : ''}{stats?.trends?.appointments || 0}% from last month
                 </Typography>
               </Box>
             </CardContent>
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ height: '100%', borderRadius: 2 }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant="h6" color="text.secondary">
-                  Revenue
-                </Typography>
-                <Avatar sx={{ bgcolor: 'success.light' }}>
-                  <MonetizationOnIcon />
-                </Avatar>
-              </Box>
-              <Typography variant="h4">{formatCurrency(stats.totalRevenue)}</Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                <TrendingUpIcon color="success" fontSize="small" />
-                <Typography variant="body2" color="success.main" sx={{ ml: 0.5 }}>
-                  +8.1% from last month
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+        {/* Revenue Card - Only visible to admin and manager */}
+        {(user?.role === 'admin' || user?.role === 'manager') && (
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ height: '100%', borderRadius: 2 }}>
+              <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="h6" color="text.secondary">
+                    Revenue
+                  </Typography>
+                  <Avatar sx={{ bgcolor: 'success.light' }}>
+                    <MonetizationOnIcon />
+                  </Avatar>
+                </Box>
+                <Typography variant="h4">{formatCurrency(stats?.totalRevenue || 0)}</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                  {stats?.trends?.revenue > 0 ? (
+                    <TrendingUpIcon color="success" fontSize="small" />
+                  ) : (
+                    <TrendingDownIcon color="error" fontSize="small" />
+                  )}
+                  <Typography 
+                    variant="body2" 
+                    color={stats?.trends?.revenue > 0 ? "success.main" : "error.main"} 
+                    sx={{ ml: 0.5 }}
+                  >
+                    {stats?.trends?.revenue > 0 ? '+' : ''}{stats?.trends?.revenue || 0}% from last month
+                  </Typography>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        )}
 
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ height: '100%', borderRadius: 2 }}>
@@ -294,11 +287,19 @@ const Dashboard = () => {
                   <MedicalServicesIcon />
                 </Avatar>
               </Box>
-              <Typography variant="h4">{stats.totalTreatments.toLocaleString()}</Typography>
+                              <Typography variant="h4">{stats?.totalTreatments?.toLocaleString() || '0'}</Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                <TrendingUpIcon color="success" fontSize="small" />
-                <Typography variant="body2" color="success.main" sx={{ ml: 0.5 }}>
-                  +4.7% from last month
+                {stats?.trends?.treatments > 0 ? (
+                  <TrendingUpIcon color="success" fontSize="small" />
+                ) : (
+                  <TrendingDownIcon color="error" fontSize="small" />
+                )}
+                <Typography 
+                  variant="body2" 
+                  color={stats?.trends?.treatments > 0 ? "success.main" : "error.main"} 
+                  sx={{ ml: 0.5 }}
+                >
+                  {stats?.trends?.treatments > 0 ? '+' : ''}{stats?.trends?.treatments || 0}% from last month
                 </Typography>
               </Box>
             </CardContent>
@@ -326,8 +327,8 @@ const Dashboard = () => {
             <Divider />
             <CardContent sx={{ p: 0 }}>
               <List sx={{ width: '100%', p: 0 }}>
-                {stats.appointmentsToday.length > 0 ? (
-                  stats.appointmentsToday.map((appointment, index) => (
+                            {stats?.appointmentsToday?.length > 0 ? (
+              stats.appointmentsToday.map((appointment, index) => (
                     <React.Fragment key={appointment.id}>
                       <ListItem
                         alignItems="flex-start"
@@ -367,7 +368,7 @@ const Dashboard = () => {
                           }
                         />
                       </ListItem>
-                      {index < stats.appointmentsToday.length - 1 && <Divider variant="inset" component="li" />}
+                      {index < (stats?.appointmentsToday?.length || 0) - 1 && <Divider variant="inset" component="li" />}
                     </React.Fragment>
                   ))
                 ) : (
@@ -381,7 +382,7 @@ const Dashboard = () => {
         </Grid>
 
         {/* Recent Patients */}
-        <Grid item xs={12} md={6} lg={4}>
+        <Grid item xs={12} md={6} lg={(user?.role === 'admin' || user?.role === 'manager') ? 4 : 6}>
           <Card sx={{ height: '100%', borderRadius: 2 }}>
             <CardHeader 
               title="Recent Patients" 
@@ -398,8 +399,8 @@ const Dashboard = () => {
             <Divider />
             <CardContent sx={{ p: 0 }}>
               <List sx={{ width: '100%', p: 0 }}>
-                {stats.recentPatients.length > 0 ? (
-                  stats.recentPatients.map((patient, index) => (
+                            {stats?.recentPatients?.length > 0 ? (
+              stats.recentPatients.map((patient, index) => (
                     <React.Fragment key={patient.id}>
                       <ListItem
                         alignItems="flex-start"
@@ -429,7 +430,7 @@ const Dashboard = () => {
                           }
                         />
                       </ListItem>
-                      {index < stats.recentPatients.length - 1 && <Divider variant="inset" component="li" />}
+                      {index < (stats?.recentPatients?.length || 0) - 1 && <Divider variant="inset" component="li" />}
                     </React.Fragment>
                   ))
                 ) : (
@@ -455,21 +456,23 @@ const Dashboard = () => {
           </Card>
         </Grid>
 
-        {/* Revenue Chart */}
-        <Grid item xs={12} lg={8}>
-          <Card sx={{ borderRadius: 2 }}>
-            <CardHeader title="Revenue Trend" />
-            <Divider />
-            <CardContent>
-              <Box sx={{ height: 300 }}>
-                <Bar data={revenueChartData} options={revenueChartOptions} />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+        {/* Revenue Chart - Only visible to admin and manager */}
+        {(user?.role === 'admin' || user?.role === 'manager') && (
+          <Grid item xs={12} lg={8}>
+            <Card sx={{ borderRadius: 2 }}>
+              <CardHeader title="Revenue Trend" />
+              <Divider />
+              <CardContent>
+                <Box sx={{ height: 300 }}>
+                  <Bar data={revenueChartData} options={revenueChartOptions} />
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        )}
 
         {/* Upcoming Appointments */}
-        <Grid item xs={12} md={6} lg={4}>
+        <Grid item xs={12} md={6} lg={(user?.role === 'admin' || user?.role === 'manager') ? 4 : 6}>
           <Card sx={{ height: '100%', borderRadius: 2 }}>
             <CardHeader 
               title="Upcoming Appointments" 
@@ -486,8 +489,8 @@ const Dashboard = () => {
             <Divider />
             <CardContent sx={{ p: 0 }}>
               <List sx={{ width: '100%', p: 0 }}>
-                {stats.upcomingAppointments.length > 0 ? (
-                  stats.upcomingAppointments.map((appointment, index) => (
+                            {stats?.upcomingAppointments?.length > 0 ? (
+              stats.upcomingAppointments.map((appointment, index) => (
                     <React.Fragment key={appointment.id}>
                       <ListItem
                         alignItems="flex-start"
@@ -515,7 +518,7 @@ const Dashboard = () => {
                           }
                         />
                       </ListItem>
-                      {index < stats.upcomingAppointments.length - 1 && <Divider variant="inset" component="li" />}
+                      {index < (stats?.upcomingAppointments?.length || 0) - 1 && <Divider variant="inset" component="li" />}
                     </React.Fragment>
                   ))
                 ) : (

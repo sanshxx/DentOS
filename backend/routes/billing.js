@@ -7,7 +7,9 @@ const {
   createInvoice,
   updateInvoice,
   deleteInvoice,
-  addPayment
+  addPayment,
+  updatePayment,
+  deletePayment
 } = require('../controllers/billing');
 
 // @route   GET api/billing
@@ -39,5 +41,15 @@ router.delete('/:id', protect, deleteInvoice);
 // @desc    Add payment to invoice
 // @access  Private
 router.post('/:id/payment', protect, addPayment);
+
+// @route   PUT api/billing/:id/payment/:paymentId
+// @desc    Update payment in invoice
+// @access  Private
+router.put('/:id/payment/:paymentId', protect, updatePayment);
+
+// @route   DELETE api/billing/:id/payment/:paymentId
+// @desc    Delete payment from invoice
+// @access  Private
+router.delete('/:id/payment/:paymentId', protect, deletePayment);
 
 module.exports = router;

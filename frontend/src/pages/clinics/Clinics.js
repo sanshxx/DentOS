@@ -24,6 +24,9 @@ import {
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
+// Get API URL from environment variables
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const Clinics = () => {
   const navigate = useNavigate();
   const [clinics, setClinics] = useState([]);
@@ -40,6 +43,7 @@ const Clinics = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
+    branchCode: '',
     address: '',
     city: '',
     state: '',
@@ -47,10 +51,10 @@ const Clinics = () => {
     phone: '',
     email: '',
     type: '',
-    status: 'Active',
+    status: 'active',
     openingHours: '',
     facilities: [],
-    staffCount: 0,
+    staffCount: 1,
     establishedDate: '',
     description: '',
     imageUrl: ''
@@ -67,115 +71,17 @@ const Clinics = () => {
     setError(null);
     
     try {
-      // In a real app, we would fetch from the API
-      // For now, we'll simulate an API call
-      setTimeout(() => {
-        // Mock API call
-        const mockResponse = {
-          success: true,
-          count: 5,
-          data: [
-            {
-              _id: '60d21b4667d0d8992e610c10',
-              name: 'Main Clinic',
-              address: '123 Dental Street',
-              city: 'Mumbai',
-              state: 'Maharashtra',
-              zipCode: '400001',
-              phone: '022-12345678',
-              email: 'main@dentalcrm.com',
-              type: 'Main Branch',
-              status: 'Active',
-              openingHours: 'Mon-Sat: 9:00 AM - 7:00 PM',
-              facilities: ['X-Ray', 'Root Canal', 'Orthodontics', 'Cosmetic Dentistry'],
-              staffCount: 15,
-              establishedDate: '2018-01-15',
-              description: 'Our flagship dental clinic with state-of-the-art facilities and experienced staff.',
-              imageUrl: 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8ZGVudGFsJTIwY2xpbmljfGVufDB8fDB8fA%3D%3D&auto=format&fit=crop&w=800&q=60',
-              rating: 4.8
-            },
-            {
-              _id: '60d21b4667d0d8992e610c11',
-              name: 'South Delhi Branch',
-              address: '456 Dental Avenue',
-              city: 'Delhi',
-              state: 'Delhi',
-              zipCode: '110001',
-              phone: '011-87654321',
-              email: 'delhi@dentalcrm.com',
-              type: 'Branch',
-              status: 'Active',
-              openingHours: 'Mon-Sat: 10:00 AM - 8:00 PM',
-              facilities: ['X-Ray', 'Root Canal', 'Pediatric Dentistry'],
-              staffCount: 10,
-              establishedDate: '2019-05-20',
-              description: 'Conveniently located in South Delhi with a focus on family dental care.',
-              imageUrl: 'https://images.unsplash.com/photo-1606811971618-4486d14f3f99?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8NXx8ZGVudGFsJTIwY2xpbmljfGVufDB8fDB8fA%3D%3D&auto=format&fit=crop&w=800&q=60',
-              rating: 4.5
-            },
-            {
-              _id: '60d21b4667d0d8992e610c12',
-              name: 'Bangalore Center',
-              address: '789 Dental Park',
-              city: 'Bangalore',
-              state: 'Karnataka',
-              zipCode: '560001',
-              phone: '080-23456789',
-              email: 'bangalore@dentalcrm.com',
-              type: 'Branch',
-              status: 'Active',
-              openingHours: 'Mon-Sun: 8:00 AM - 9:00 PM',
-              facilities: ['X-Ray', 'Root Canal', 'Implants', 'Cosmetic Dentistry', 'Laser Treatment'],
-              staffCount: 12,
-              establishedDate: '2020-02-10',
-              description: 'A modern dental clinic in the heart of Bangalore with extended working hours.',
-              imageUrl: 'https://images.unsplash.com/photo-1629909615184-74f495363b67?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8OHx8ZGVudGFsJTIwY2xpbmljfGVufDB8fDB8fA%3D%3D&auto=format&fit=crop&w=800&q=60',
-              rating: 4.7
-            },
-            {
-              _id: '60d21b4667d0d8992e610c13',
-              name: 'Pune Express Clinic',
-              address: '101 Quick Dental Road',
-              city: 'Pune',
-              state: 'Maharashtra',
-              zipCode: '411001',
-              phone: '020-34567890',
-              email: 'pune@dentalcrm.com',
-              type: 'Express',
-              status: 'Active',
-              openingHours: 'Mon-Sat: 8:00 AM - 6:00 PM',
-              facilities: ['X-Ray', 'Emergency Care', 'Basic Treatments'],
-              staffCount: 6,
-              establishedDate: '2021-03-15',
-              description: 'Specializing in quick dental procedures and emergency dental care.',
-              imageUrl: 'https://images.unsplash.com/photo-1598256989800-fe5f95da9787?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8MTB8fGRlbnRhbCUyMGNsaW5pY3xlbnwwfHwwfHw%3D&auto=format&fit=crop&w=800&q=60',
-              rating: 4.2
-            },
-            {
-              _id: '60d21b4667d0d8992e610c14',
-              name: 'Chennai Dental Hub',
-              address: '202 Dental Complex',
-              city: 'Chennai',
-              state: 'Tamil Nadu',
-              zipCode: '600001',
-              phone: '044-45678901',
-              email: 'chennai@dentalcrm.com',
-              type: 'Branch',
-              status: 'Under Renovation',
-              openingHours: 'Temporarily Closed',
-              facilities: ['X-Ray', 'Root Canal', 'Orthodontics', 'Pediatric Dentistry'],
-              staffCount: 8,
-              establishedDate: '2019-11-05',
-              description: 'Currently undergoing renovation to enhance patient experience and services.',
-              imageUrl: 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8MTJ8fGRlbnRhbCUyMGNsaW5pY3xlbnwwfHwwfHw%3D&auto=format&fit=crop&w=800&q=60',
-              rating: 4.4
-            }
-          ]
-        };
-        
-        setClinics(mockResponse.data);
-        setLoading(false);
-      }, 1000); // Simulate loading delay
+      // Fetch clinics from the API
+      const response = await axios.get(`${API_URL}/clinics`, {
+        params: {
+          // Add any query parameters if needed
+          search: searchTerm || undefined,
+          sort: '-createdAt'
+        }
+      });
+      
+      setClinics(response.data.data);
+      setLoading(false);
     } catch (err) {
       console.error('Error fetching clinics:', err);
       setError('Failed to load clinic data. Please try again.');
@@ -220,6 +126,7 @@ const Clinics = () => {
     } else {
       setFormData({
         name: '',
+        branchCode: '',
         address: '',
         city: '',
         state: '',
@@ -227,10 +134,10 @@ const Clinics = () => {
         phone: '',
         email: '',
         type: '',
-        status: 'Active',
+        status: 'active',
         openingHours: '',
         facilities: [],
-        staffCount: 0,
+        staffCount: 1,
         establishedDate: new Date().toISOString().split('T')[0],
         description: '',
         imageUrl: ''
@@ -262,16 +169,25 @@ const Clinics = () => {
     }
   };
 
-  const handleFormSubmit = () => {
+  const handleFormSubmit = async () => {
     // Basic validation
     const errors = {};
     if (!formData.name) errors.name = 'Clinic name is required';
+    if (!formData.branchCode) errors.branchCode = 'Branch code is required';
     if (!formData.address) errors.address = 'Address is required';
     if (!formData.city) errors.city = 'City is required';
     if (!formData.state) errors.state = 'State is required';
+    if (!formData.zipCode) errors.zipCode = 'Pincode is required';
     if (!formData.phone) errors.phone = 'Phone number is required';
     if (!formData.email) errors.email = 'Email is required';
     if (!formData.type) errors.type = 'Clinic type is required';
+    if (!formData.staffCount) errors.staffCount = 'Number of chairs is required';
+    
+    // Pincode validation
+    const pincodeRegex = /^[0-9]{6}$/;
+    if (formData.zipCode && !pincodeRegex.test(formData.zipCode)) {
+      errors.zipCode = 'Please enter a valid 6-digit pincode';
+    }
     
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -290,39 +206,81 @@ const Clinics = () => {
       return;
     }
     
-    // In a real app, we would call the API to create/update the clinic
-    if (isEditing) {
-      // Update existing clinic
-      const updatedClinics = clinics.map(clinic => {
-        if (clinic._id === formData._id) {
-          return formData;
-        }
-        return clinic;
-      });
-      
-      setClinics(updatedClinics);
-      toast.success(`${formData.name} updated successfully`);
-    } else {
-      // Create new clinic
-      const newClinic = {
-        ...formData,
-        _id: `new-${Date.now()}`,
-        rating: 0 // New clinics start with 0 rating
+    try {
+      // Prepare clinic data in the format expected by the backend
+      const clinicData = {
+        name: formData.name,
+        branchCode: formData.branchCode || `BR-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
+        type: formData.type,
+        address: {
+          street: formData.address || 'Default Street Address',
+          city: formData.city || 'Default City',
+          state: formData.state || 'Default State',
+          pincode: formData.zipCode || '123456',
+          country: 'India'
+        },
+        contactNumbers: [formData.phone || '1234567890'],
+        email: formData.email || 'default@example.com',
+        status: formData.status ? formData.status.toLowerCase() : 'active',
+        operatingHours: {
+          monday: {
+            isOpen: true,
+            openTime: '09:00',
+            closeTime: '18:00'
+          }
+        },
+        facilities: formData.facilities || [],
+        numberOfChairs: formData.staffCount || 1,
+        description: formData.description,
+        imageUrl: formData.imageUrl
       };
       
-      setClinics([...clinics, newClinic]);
-      toast.success(`${formData.name} added successfully`);
+      // Validate required fields
+      if (!formData.name || !formData.phone || !formData.email) {
+        toast.error('Please fill in all required fields (Name, Phone, Email)');
+        return;
+      }
+      
+      if (isEditing) {
+        // Update existing clinic
+        const response = await axios.put(`${API_URL}/clinics/${formData._id}`, clinicData);
+        
+        // Update the local state with the updated clinic
+        const updatedClinics = clinics.map(clinic => 
+          clinic._id === formData._id ? response.data.data : clinic
+        );
+        setClinics(updatedClinics);
+        toast.success(`${formData.name} updated successfully`);
+      } else {
+        // Create new clinic
+        const response = await axios.post(`${API_URL}/clinics`, clinicData);
+        
+        // Add the new clinic to the local state
+        setClinics([...clinics, response.data.data]);
+        toast.success(`${formData.name} added successfully`);
+      }
+      
+      handleCloseForm();
+    } catch (err) {
+      console.error('Error saving clinic:', err);
+      toast.error(err.response?.data?.message || 'Failed to save clinic');
     }
-    
-    handleCloseForm();
   };
 
-  const handleDeleteClinic = (id) => {
+  const handleDeleteClinic = async (id) => {
     if (window.confirm('Are you sure you want to delete this clinic?')) {
-      // In a real app, we would call the API to delete the clinic
-      const updatedClinics = clinics.filter(clinic => clinic._id !== id);
-      setClinics(updatedClinics);
-      toast.success('Clinic deleted successfully');
+      try {
+        // Call the API to delete the clinic
+        await axios.delete(`${API_URL}/clinics/${id}`);
+        
+        // Update the local state
+        const updatedClinics = clinics.filter(clinic => clinic._id !== id);
+        setClinics(updatedClinics);
+        toast.success('Clinic deleted successfully');
+      } catch (err) {
+        console.error('Error deleting clinic:', err);
+        toast.error(err.response?.data?.message || 'Failed to delete clinic');
+      }
     }
   };
 
@@ -528,7 +486,11 @@ const Clinics = () => {
                       <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1 }}>
                         <LocationIcon fontSize="small" sx={{ mr: 1, mt: 0.3, color: 'text.secondary' }} />
                         <Typography variant="body2" color="text.secondary">
-                          {clinic.address}, {clinic.city}, {clinic.state} - {clinic.zipCode}
+                          {clinic.address ? 
+                            (typeof clinic.address === 'string' ? clinic.address :
+                             `${clinic.address.street || ''}, ${clinic.address.city || ''}, ${clinic.address.state || ''} - ${clinic.address.pincode || ''}`) :
+                            `${clinic.city || ''}, ${clinic.state || ''} - ${clinic.zipCode || ''}`
+                          }
                         </Typography>
                       </Box>
                       
@@ -640,7 +602,11 @@ const Clinics = () => {
                           {clinic.city}, {clinic.state}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          {clinic.address}
+                          {clinic.address ? 
+                            (typeof clinic.address === 'string' ? clinic.address :
+                             `${clinic.address.street || ''}, ${clinic.address.city || ''}`) :
+                            'Address not available'
+                          }
                         </Typography>
                       </TableCell>
                       <TableCell>
@@ -724,6 +690,19 @@ const Clinics = () => {
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Branch Code"
+                  name="branchCode"
+                  value={formData.branchCode}
+                  onChange={handleFormChange}
+                  error={!!formErrors.branchCode}
+                  helperText={formErrors.branchCode || "Unique code for this clinic branch (required)"}
+                  margin="normal"
+                  required
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
                 <FormControl fullWidth margin="normal" required error={!!formErrors.type}>
                   <InputLabel>Clinic Type</InputLabel>
                   <Select
@@ -787,13 +766,15 @@ const Clinics = () => {
               <Grid item xs={12} sm={4}>
                 <TextField
                   fullWidth
-                  label="Zip Code"
+                  label="Pincode"
                   name="zipCode"
                   value={formData.zipCode}
                   onChange={handleFormChange}
                   error={!!formErrors.zipCode}
-                  helperText={formErrors.zipCode}
+                  helperText={formErrors.zipCode || "Enter 6-digit pincode"}
                   margin="normal"
+                  required
+                  inputProps={{ maxLength: 6, pattern: "[0-9]{6}" }}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -843,9 +824,9 @@ const Clinics = () => {
                     onChange={handleFormChange}
                     label="Status"
                   >
-                    <MenuItem value="Active">Active</MenuItem>
-                    <MenuItem value="Under Renovation">Under Renovation</MenuItem>
-                    <MenuItem value="Closed">Closed</MenuItem>
+                    <MenuItem value="active">Active</MenuItem>
+                    <MenuItem value="under maintenance">Under Maintenance</MenuItem>
+                    <MenuItem value="inactive">Inactive</MenuItem>
                   </Select>
                 </FormControl>
               </Grid>
@@ -864,25 +845,43 @@ const Clinics = () => {
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label="Staff Count"
+                  label="Number of Chairs"
                   name="staffCount"
                   type="number"
                   value={formData.staffCount}
                   onChange={handleFormChange}
                   margin="normal"
-                  InputProps={{ inputProps: { min: 0 } }}
+                  required
+                  error={!!formErrors.staffCount}
+                  helperText={formErrors.staffCount || "Number of dental chairs in the clinic"}
+                  InputProps={{ inputProps: { min: 1 } }}
                 />
               </Grid>
               <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Facilities"
-                  name="facilities"
-                  value={formData.facilities ? formData.facilities.join(', ') : ''}
-                  onChange={handleFormChange}
-                  margin="normal"
-                  helperText="Enter facilities separated by commas (e.g. X-Ray, Root Canal, Orthodontics)"
-                />
+                <FormControl fullWidth margin="normal">
+                  <InputLabel>Facilities</InputLabel>
+                  <Select
+                    name="facilities"
+                    multiple
+                    value={formData.facilities || []}
+                    onChange={(e) => setFormData({...formData, facilities: e.target.value})}
+                    label="Facilities"
+                    renderValue={(selected) => selected.join(', ')}
+                  >
+                    <MenuItem value="X-Ray">X-Ray</MenuItem>
+                    <MenuItem value="OPG">OPG</MenuItem>
+                    <MenuItem value="CBCT">CBCT</MenuItem>
+                    <MenuItem value="Implant Center">Implant Center</MenuItem>
+                    <MenuItem value="Root Canal Specialist">Root Canal Specialist</MenuItem>
+                    <MenuItem value="Orthodontics">Orthodontics</MenuItem>
+                    <MenuItem value="Pediatric Dentistry">Pediatric Dentistry</MenuItem>
+                    <MenuItem value="Laser Dentistry">Laser Dentistry</MenuItem>
+                    <MenuItem value="Cosmetic Dentistry">Cosmetic Dentistry</MenuItem>
+                  </Select>
+                  <Typography variant="caption" color="textSecondary">
+                    Select all available facilities at this clinic
+                  </Typography>
+                </FormControl>
               </Grid>
               <Grid item xs={12}>
                 <TextField

@@ -63,251 +63,62 @@ import {
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { toast } from 'react-toastify';
+import axios from 'axios';
+import { checkTokenValidity, forceTokenRefresh } from '../../utils/tokenRefresh';
 
-// Mock data for a patient
-const MOCK_PATIENT = {
-  id: '123456',
-  firstName: 'Rahul',
-  lastName: 'Sharma',
-  email: 'rahul.sharma@example.com',
-  phone: '9876543210',
-  gender: 'male',
-  dateOfBirth: '1985-06-15',
-  age: 38,
-  address: '123 Main Street, Bandra West',
-  city: 'Mumbai',
-  state: 'Maharashtra',
-  pincode: '400050',
-  bloodGroup: 'O+',
-  allergies: 'Penicillin',
-  medicalHistory: 'Hypertension, Diabetes Type 2',
-  emergencyContactName: 'Priya Sharma',
-  emergencyContactPhone: '9876543211',
-  clinic: { id: 1, name: 'Dental Care - Bandra' },
-  registrationDate: '2022-03-10',
-  occupation: 'Software Engineer',
-  referredBy: 'Dr. Patel',
+// Get API URL from environment variables
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+// All patient data will be fetched from API
+
+
+
+
+
+
+
+
+// Communications will be fetched from API
+
+// Helper function to safely format dates
+const safeFormatDate = (dateValue, formatString = 'dd MMM yyyy') => {
+  if (!dateValue) return 'Not available';
+  try {
+    const date = new Date(dateValue);
+    if (isNaN(date.getTime())) return 'Invalid date';
+    return format(date, formatString);
+  } catch (error) {
+    return 'Invalid date';
+  }
 };
 
-// Mock data for appointments
-const MOCK_APPOINTMENTS = [
-  {
-    id: 'apt1',
-    date: '2023-06-10',
-    time: '10:00 AM',
-    dentist: 'Dr. Mehta',
-    type: 'Check-up',
-    status: 'completed',
-    notes: 'Regular check-up, no issues found',
-  },
-  {
-    id: 'apt2',
-    date: '2023-07-15',
-    time: '11:30 AM',
-    dentist: 'Dr. Mehta',
-    type: 'Cleaning',
-    status: 'completed',
-    notes: 'Routine cleaning performed',
-  },
-  {
-    id: 'apt3',
-    date: '2023-09-05',
-    time: '09:15 AM',
-    dentist: 'Dr. Singh',
-    type: 'Filling',
-    status: 'completed',
-    notes: 'Filled cavity in lower right molar',
-  },
-  {
-    id: 'apt4',
-    date: '2023-12-20',
-    time: '02:00 PM',
-    dentist: 'Dr. Mehta',
-    type: 'Check-up',
-    status: 'scheduled',
-    notes: 'Regular 6-month check-up',
-  },
-];
+// Helper function to format medical history
+const formatMedicalHistory = (medicalHistory) => {
+  if (!medicalHistory) return 'No medical history available';
 
-// Mock data for treatments
-const MOCK_TREATMENTS = [
-  {
-    id: 'trt1',
-    name: 'Root Canal',
-    tooth: '16',
-    startDate: '2023-06-10',
-    endDate: '2023-06-24',
-    dentist: 'Dr. Singh',
-    status: 'completed',
-    notes: 'Root canal treatment for upper right molar',
-  },
-  {
-    id: 'trt2',
-    name: 'Dental Crown',
-    tooth: '16',
-    startDate: '2023-07-01',
-    endDate: '2023-07-15',
-    dentist: 'Dr. Singh',
-    status: 'completed',
-    notes: 'Crown placed on tooth after root canal',
-  },
-  {
-    id: 'trt3',
-    name: 'Teeth Whitening',
-    tooth: 'All',
-    startDate: '2023-09-05',
-    endDate: '2023-09-05',
-    dentist: 'Dr. Mehta',
-    status: 'completed',
-    notes: 'Professional whitening treatment',
-  },
-];
+  const conditions = [];
+  
+  // Add boolean conditions
+  if (medicalHistory.diabetic) conditions.push('Diabetic');
+  if (medicalHistory.hypertension) conditions.push('Hypertension');
+  if (medicalHistory.pregnant) conditions.push('Pregnant');
+  
+  // Add array items
+  if (medicalHistory.allergies?.length > 0) {
+    conditions.push(`Allergies: ${medicalHistory.allergies.join(', ')}`);
+  }
+  if (medicalHistory.currentMedications?.length > 0) {
+    conditions.push(`Current Medications: ${medicalHistory.currentMedications.join(', ')}`);
+  }
+  if (medicalHistory.pastIllnesses?.length > 0) {
+    conditions.push(`Past Illnesses: ${medicalHistory.pastIllnesses.join(', ')}`);
+  }
+  if (medicalHistory.surgeries?.length > 0) {
+    conditions.push(`Surgeries: ${medicalHistory.surgeries.join(', ')}`);
+  }
 
-// Mock data for invoices
-const MOCK_INVOICES = [
-  {
-    id: 'inv1',
-    date: '2023-06-24',
-    amount: 12000,
-    status: 'paid',
-    items: [
-      { name: 'Root Canal', price: 8000 },
-      { name: 'Consultation', price: 500 },
-      { name: 'X-Ray', price: 1500 },
-      { name: 'Medication', price: 2000 },
-    ],
-  },
-  {
-    id: 'inv2',
-    date: '2023-07-15',
-    amount: 15000,
-    status: 'paid',
-    items: [
-      { name: 'Dental Crown', price: 12000 },
-      { name: 'Consultation', price: 500 },
-      { name: 'X-Ray', price: 1500 },
-      { name: 'Temporary Crown', price: 1000 },
-    ],
-  },
-  {
-    id: 'inv3',
-    date: '2023-09-05',
-    amount: 5000,
-    status: 'pending',
-    items: [
-      { name: 'Teeth Whitening', price: 4500 },
-      { name: 'Consultation', price: 500 },
-    ],
-  },
-];
-
-// Mock data for patient documents
-const MOCK_DOCUMENTS = [
-  {
-    id: 'doc1',
-    fileName: 'dental_xray_20230610.jpg',
-    fileType: 'image/jpeg',
-    category: 'X-Ray (RVG/OPG)',
-    description: 'Full mouth X-ray before root canal treatment',
-    uploadDate: '2023-06-10',
-    uploadedBy: 'Dr. Singh',
-    size: '2.4 MB',
-    url: 'https://example.com/xray1.jpg',
-  },
-  {
-    id: 'doc2',
-    fileName: 'treatment_consent_form.pdf',
-    fileType: 'application/pdf',
-    category: 'Consent Form',
-    description: 'Signed consent for root canal procedure',
-    uploadDate: '2023-06-10',
-    uploadedBy: 'Receptionist',
-    size: '156 KB',
-    url: 'https://example.com/consent.pdf',
-  },
-  {
-    id: 'doc3',
-    fileName: 'prescription_20230624.pdf',
-    fileType: 'application/pdf',
-    category: 'Prescription',
-    description: 'Post-treatment medications',
-    uploadDate: '2023-06-24',
-    uploadedBy: 'Dr. Singh',
-    size: '98 KB',
-    url: 'https://example.com/prescription.pdf',
-  },
-  {
-    id: 'doc4',
-    fileName: 'insurance_claim_form.pdf',
-    fileType: 'application/pdf',
-    category: 'Insurance Document',
-    description: 'Insurance claim for root canal treatment',
-    uploadDate: '2023-06-25',
-    uploadedBy: 'Admin Staff',
-    size: '320 KB',
-    url: 'https://example.com/insurance.pdf',
-  },
-  {
-    id: 'doc5',
-    fileName: 'treatment_plan.pdf',
-    fileType: 'application/pdf',
-    category: 'Treatment Plan',
-    description: 'Comprehensive dental treatment plan',
-    uploadDate: '2023-06-10',
-    uploadedBy: 'Dr. Singh',
-    size: '450 KB',
-    url: 'https://example.com/treatment_plan.pdf',
-  },
-];
-
-// Mock data for communication history
-const MOCK_COMMUNICATIONS = [
-  {
-    id: 'comm1',
-    type: 'WhatsApp',
-    date: '2023-06-09',
-    time: '10:30 AM',
-    message: 'Reminder: Your dental appointment is scheduled for tomorrow at 10:00 AM with Dr. Singh.',
-    status: 'Delivered',
-    response: 'Confirmed',
-  },
-  {
-    id: 'comm2',
-    type: 'SMS',
-    date: '2023-06-23',
-    time: '09:15 AM',
-    message: 'Your prescription is ready for pickup at Smile Dental Care clinic.',
-    status: 'Delivered',
-    response: null,
-  },
-  {
-    id: 'comm3',
-    type: 'WhatsApp',
-    date: '2023-07-14',
-    time: '02:00 PM',
-    message: 'Reminder: Your follow-up appointment for crown fitting is scheduled for tomorrow at 11:30 AM.',
-    status: 'Delivered',
-    response: 'Confirmed',
-  },
-  {
-    id: 'comm4',
-    type: 'WhatsApp',
-    date: '2023-09-04',
-    time: '06:00 PM',
-    message: 'Reminder: Your teeth whitening appointment is scheduled for tomorrow at 09:15 AM with Dr. Mehta.',
-    status: 'Delivered',
-    response: 'Confirmed',
-  },
-  {
-    id: 'comm5',
-    type: 'SMS',
-    date: '2023-12-13',
-    time: '05:00 PM',
-    message: 'Reminder: Your regular dental check-up is scheduled for next week on Dec 20 at 02:00 PM.',
-    status: 'Delivered',
-    response: null,
-  },
-];
+  return conditions.length > 0 ? conditions.join('\n') : 'No significant medical history';
+};
 
 const PatientDetails = () => {
   const { id } = useParams();
@@ -348,24 +159,58 @@ const PatientDetails = () => {
         setLoading(true);
         setError(null);
 
-        // In a real app, these would be API calls
-        // const patientResponse = await axios.get(`/api/patients/${id}`);
-        // const appointmentsResponse = await axios.get(`/api/patients/${id}/appointments`);
-        // const treatmentsResponse = await axios.get(`/api/patients/${id}/treatments`);
-        // const invoicesResponse = await axios.get(`/api/patients/${id}/invoices`);
-        // const documentsResponse = await axios.get(`/api/patients/${id}/documents`);
-        // const communicationsResponse = await axios.get(`/api/patients/${id}/communications`);
-
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        // Set mock data
-        setPatient(MOCK_PATIENT);
-        setAppointments(MOCK_APPOINTMENTS);
-        setTreatments(MOCK_TREATMENTS);
-        setInvoices(MOCK_INVOICES);
-        setDocuments(MOCK_DOCUMENTS);
-        setCommunications(MOCK_COMMUNICATIONS);
+        // Get token from localStorage
+        const token = localStorage.getItem('token');
+        
+        // Make API calls to fetch patient data
+        const patientResponse = await axios.get(`${API_URL}/patients/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        // Set patient data from API response
+        setPatient(patientResponse.data.data);
+        
+        // Fetch patient appointments
+        const appointmentsResponse = await axios.get(`${API_URL}/appointments?patient=${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        setAppointments(appointmentsResponse.data.data || []);
+        
+        // Fetch patient treatments
+        const treatmentsResponse = await axios.get(`${API_URL}/treatments?patient=${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        setTreatments(treatmentsResponse.data.data || []);
+        
+        // Fetch patient invoices
+        const invoicesResponse = await axios.get(`${API_URL}/billing?patient=${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        setInvoices(invoicesResponse.data.data || []);
+        
+        // Fetch patient documents
+        const documentsResponse = await axios.get(`${API_URL}/patients/${id}/documents`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        setDocuments(documentsResponse.data.data || []);
+        
+        // Fetch patient communications
+        const communicationsResponse = await axios.get(`${API_URL}/patients/${id}/communications`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        setCommunications(communicationsResponse.data.data || []);
       } catch (err) {
         console.error('Error fetching patient data:', err);
         setError('Failed to load patient data. Please try again.');
@@ -389,11 +234,16 @@ const PatientDetails = () => {
   const handleDeleteConfirm = async () => {
     try {
       setLoading(true);
-      // In a real app, this would be an API call
-      // await axios.delete(`/api/patients/${id}`);
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      
+      // Delete patient via API
+      await axios.delete(`${API_URL}/patients/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       
       toast.success('Patient deleted successfully');
       navigate('/patients');
@@ -456,58 +306,53 @@ const PatientDetails = () => {
     }
 
     try {
-      // In a real app, this would be an API call with FormData
-      // const formData = new FormData();
-      // formData.append('file', newDocument.file);
-      // formData.append('category', newDocument.category);
-      // formData.append('description', newDocument.description);
-      // 
-      // const response = await axios.post(`/api/patients/${id}/documents`, formData, {
-      //   headers: {
-      //     'Content-Type': 'multipart/form-data'
-      //   },
-      //   onUploadProgress: (progressEvent) => {
-      //     const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-      //     setUploadProgress(percentCompleted);
-      //   }
-      // });
-
-      // Simulate upload progress
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('file', newDocument.file);
+      formData.append('category', newDocument.category);
+      formData.append('description', newDocument.description || '');
+      
       setUploadStatus('uploading');
-      let progress = 0;
-      const interval = setInterval(() => {
-        progress += 10;
-        setUploadProgress(progress);
-        if (progress >= 100) {
-          clearInterval(interval);
-          setUploadStatus('success');
-          
-          // Simulate API response with new document
-          const newDoc = {
-            id: `doc${documents.length + 1}`,
-            fileName: newDocument.file.name,
-            fileType: newDocument.file.type,
-            category: newDocument.category,
-            description: newDocument.description || 'No description provided',
-            uploadDate: new Date().toISOString().split('T')[0],
-            uploadedBy: 'Current User',
-            size: `${(newDocument.file.size / 1024).toFixed(0)} KB`,
-            url: URL.createObjectURL(newDocument.file)
-          };
-          
-          setDocuments([newDoc, ...documents]);
-          
-          setTimeout(() => {
-            handleUploadDialogClose();
-            showSnackbar('Document uploaded successfully', 'success');
-          }, 1000);
+      
+      // Upload document via API
+      const response = await axios.post(`${API_URL}/patients/${id}/documents`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${token}`
+        },
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          setUploadProgress(percentCompleted);
         }
-      }, 300);
+      });
+      
+      setUploadStatus('success');
+      
+      // Add the new document to the documents list
+      const newDoc = response.data.data;
+      setDocuments([newDoc, ...documents]);
+      
+      setTimeout(() => {
+        handleUploadDialogClose();
+        showSnackbar('Document uploaded successfully', 'success');
+      }, 1000);
       
     } catch (err) {
       console.error('Error uploading document:', err);
       setUploadStatus('error');
-      showSnackbar('Failed to upload document', 'error');
+      
+      // Provide more specific error messages
+      let errorMessage = 'Failed to upload document';
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      showSnackbar(errorMessage, 'error');
     }
   };
 
@@ -523,27 +368,139 @@ const PatientDetails = () => {
 
   const handleDeleteDocument = async (documentId) => {
     try {
-      // In a real app, this would be an API call
-      // await axios.delete(`/api/patients/${id}/documents/${documentId}`);
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Make API call to delete document
+      await axios.delete(`${API_URL}/patients/${id}/documents/${documentId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       
       // Update local state
-      setDocuments(documents.filter(doc => doc.id !== documentId));
+      setDocuments(documents.filter(doc => doc._id !== documentId));
       showSnackbar('Document deleted successfully', 'success');
     } catch (err) {
       console.error('Error deleting document:', err);
+      toast.error(err.response?.data?.message || 'Failed to delete document');
       showSnackbar('Failed to delete document', 'error');
     }
   };
 
-  const handleDownloadDocument = (document) => {
-    // In a real app, this would trigger a download from the actual URL
-    // window.open(document.url, '_blank');
-    
-    // For demo purposes, just show a snackbar
-    showSnackbar(`Downloading ${document.fileName}`, 'info');
+  const handleDownloadDocument = async (doc) => {
+    try {
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        showSnackbar('Please login again to download documents', 'error');
+        return;
+      }
+      
+      // Check token validity
+      if (!checkTokenValidity(token)) {
+        showSnackbar('Session invalid. Refreshing...', 'warning');
+        forceTokenRefresh();
+        return;
+      }
+      
+      // Show downloading message
+      showSnackbar(`Downloading ${doc.fileName}`, 'info');
+      
+      // Make API call to download document using the global axios instance
+      // This ensures we use the same configuration as other API calls
+      const response = await axios.get(`${API_URL}/patients/${id}/documents/${doc._id}/download`, {
+        responseType: 'blob',
+        timeout: 30000
+      });
+      
+      // Verify we got a successful response
+      if (response.status !== 200) {
+        throw new Error(`Download failed with status: ${response.status}`);
+      }
+      
+      // Verify we got blob data
+      if (!response.data || response.data.size === 0) {
+        throw new Error('Download returned empty file');
+      }
+      
+      // Create a blob URL and trigger download
+      const blob = new Blob([response.data], { 
+        type: response.headers['content-type'] || 'application/octet-stream' 
+      });
+      
+      // Check if we're in a browser environment
+      if (typeof window === 'undefined' || typeof window.document === 'undefined') {
+        throw new Error('Not in a browser environment');
+      }
+      
+      // Use a more reliable download method
+      try {
+        // Method 1: Create and click a link
+        const url = window.URL.createObjectURL(blob);
+        const link = window.document.createElement('a');
+        link.href = url;
+        link.download = doc.fileName;
+        link.style.display = 'none';
+        
+        // Add to DOM, click, and cleanup
+        window.document.body.appendChild(link);
+        link.click();
+        
+        // Cleanup
+        setTimeout(() => {
+          try {
+            if (window.document.body.contains(link)) {
+              window.document.body.removeChild(link);
+            }
+          } catch (cleanupError) {
+            console.warn('Cleanup error:', cleanupError);
+          }
+          window.URL.revokeObjectURL(url);
+        }, 100);
+        
+      } catch (domError) {
+        console.warn('DOM method failed, trying alternative download method:', domError);
+        
+        // Method 2: Use window.open as fallback
+        try {
+          const url = window.URL.createObjectURL(blob);
+          window.open(url, '_blank');
+          
+          // Cleanup after a delay
+          setTimeout(() => {
+            window.URL.revokeObjectURL(url);
+          }, 1000);
+          
+        } catch (fallbackError) {
+          console.error('All download methods failed:', fallbackError);
+          throw new Error('Unable to trigger download in this browser');
+        }
+      }
+      
+              showSnackbar(`${doc.fileName} downloaded successfully`, 'success');
+      
+    } catch (err) {
+      console.error('Download error:', err);
+      
+      // Handle specific error cases
+      if (err.response?.status === 401) {
+        showSnackbar('Session expired. Please login again.', 'error');
+        // Redirect to login after a short delay
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 2000);
+      } else if (err.response?.status === 404) {
+        showSnackbar('Document not found on server', 'error');
+      } else if (err.code === 'ECONNABORTED') {
+        showSnackbar('Download timeout. Please try again.', 'error');
+      } else {
+        showSnackbar(`Download failed: ${err.message}`, 'error');
+      }
+    }
   };
 
   // Communication functions
@@ -575,23 +532,18 @@ const PatientDetails = () => {
     }
 
     try {
-      // In a real app, this would be an API call
-      // await axios.post(`/api/patients/${id}/communications`, newMessage);
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Send message via API
+      const response = await axios.post(`${API_URL}/patients/${id}/communications`, newMessage, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       
-      // Create new communication record
-      const now = new Date();
-      const newComm = {
-        id: `comm${communications.length + 1}`,
-        type: newMessage.type,
-        date: now.toISOString().split('T')[0],
-        time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        message: newMessage.message,
-        status: 'Sent',
-        response: null
-      };
+      // Add the new communication to the list
+      const newComm = response.data;
       
       // Update local state
       setCommunications([newComm, ...communications]);
@@ -725,12 +677,12 @@ const PatientDetails = () => {
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
             <Typography variant="body2" color="textSecondary">
-              Patient ID: {patient.id}
+              Patient ID: {patient.patientId || patient._id}
             </Typography>
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
             <Typography variant="body2" color="textSecondary">
-              Registered: {format(new Date(patient.registrationDate), 'dd MMM yyyy')}
+              Registered: {safeFormatDate(patient.createdAt)}
             </Typography>
           </Grid>
         </Grid>
@@ -763,12 +715,12 @@ const PatientDetails = () => {
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
                     <Typography variant="subtitle2" color="textSecondary">Full Name</Typography>
-                    <Typography variant="body1">{patient.firstName} {patient.lastName}</Typography>
+                    <Typography variant="body1">{patient.name}</Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <Typography variant="subtitle2" color="textSecondary">Date of Birth</Typography>
                     <Typography variant="body1">
-                      {format(new Date(patient.dateOfBirth), 'dd MMM yyyy')} ({patient.age} years)
+                      {safeFormatDate(patient.dateOfBirth)} ({patient.age} years)
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -804,7 +756,7 @@ const PatientDetails = () => {
                   <Grid item xs={12}>
                     <Typography variant="subtitle2" color="textSecondary">Address</Typography>
                     <Typography variant="body1">
-                      {patient.address}, {patient.city}, {patient.state} - {patient.pincode}
+                      {patient.address?.street || ''}, {patient.address?.city || ''}, {patient.address?.state || ''} - {patient.address?.pincode || ''}
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -833,13 +785,11 @@ const PatientDetails = () => {
                 </Typography>
                 <Divider sx={{ mb: 2 }} />
                 <Grid container spacing={3}>
-                  <Grid item xs={12} md={6}>
-                    <Typography variant="subtitle2" color="textSecondary">Allergies</Typography>
-                    <Typography variant="body1">{patient.allergies || 'None'}</Typography>
-                  </Grid>
-                  <Grid item xs={12} md={6}>
+                  <Grid item xs={12}>
                     <Typography variant="subtitle2" color="textSecondary">Medical History</Typography>
-                    <Typography variant="body1">{patient.medicalHistory || 'None'}</Typography>
+                    <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
+                      {formatMedicalHistory(patient.medicalHistory)}
+                    </Typography>
                   </Grid>
                 </Grid>
               </Paper>
@@ -855,12 +805,12 @@ const PatientDetails = () => {
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
                     <Typography variant="subtitle2" color="textSecondary">Primary Clinic</Typography>
-                    <Typography variant="body1">{patient.clinic.name}</Typography>
+                    <Typography variant="body1">{patient.registeredClinic?.name || 'Not assigned'}</Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <Typography variant="subtitle2" color="textSecondary">Registration Date</Typography>
                     <Typography variant="body1">
-                      {format(new Date(patient.registrationDate), 'dd MMM yyyy')}
+                      {safeFormatDate(patient.createdAt)}
                     </Typography>
                   </Grid>
                 </Grid>
@@ -900,16 +850,18 @@ const PatientDetails = () => {
                           <Grid item xs={12} sm={3}>
                             <Typography variant="subtitle2" color="textSecondary">Date & Time</Typography>
                             <Typography variant="body1">
-                              {format(new Date(appointment.date), 'dd MMM yyyy')} at {appointment.time}
+                              {safeFormatDate(appointment.appointmentDate, 'dd MMM yyyy HH:mm')}
                             </Typography>
                           </Grid>
                           <Grid item xs={12} sm={2}>
                             <Typography variant="subtitle2" color="textSecondary">Type</Typography>
-                            <Typography variant="body1">{appointment.type}</Typography>
+                            <Typography variant="body1">{appointment.appointmentType}</Typography>
                           </Grid>
                           <Grid item xs={12} sm={2}>
                             <Typography variant="subtitle2" color="textSecondary">Dentist</Typography>
-                            <Typography variant="body1">{appointment.dentist}</Typography>
+                            <Typography variant="body1">
+                              {appointment.dentist?.firstName} {appointment.dentist?.lastName}
+                            </Typography>
                           </Grid>
                           <Grid item xs={12} sm={3}>
                             <Typography variant="subtitle2" color="textSecondary">Status</Typography>
@@ -981,27 +933,16 @@ const PatientDetails = () => {
                             <Typography variant="body1">{treatment.name}</Typography>
                           </Grid>
                           <Grid item xs={12} sm={2}>
-                            <Typography variant="subtitle2" color="textSecondary">Tooth</Typography>
-                            <Typography variant="body1">{treatment.tooth}</Typography>
+                            <Typography variant="subtitle2" color="textSecondary">Category</Typography>
+                            <Typography variant="body1">{treatment.category}</Typography>
                           </Grid>
                           <Grid item xs={12} sm={3}>
-                            <Typography variant="subtitle2" color="textSecondary">Period</Typography>
-                            <Typography variant="body1">
-                              {format(new Date(treatment.startDate), 'dd MMM yyyy')} - 
-                              {format(new Date(treatment.endDate), 'dd MMM yyyy')}
-                            </Typography>
+                            <Typography variant="subtitle2" color="textSecondary">Duration</Typography>
+                            <Typography variant="body1">{treatment.duration} minutes</Typography>
                           </Grid>
                           <Grid item xs={12} sm={2}>
-                            <Typography variant="subtitle2" color="textSecondary">Status</Typography>
-                            <Chip
-                              label={treatment.status}
-                              color={
-                                treatment.status === 'completed' ? 'success' :
-                                treatment.status === 'in-progress' ? 'warning' :
-                                treatment.status === 'planned' ? 'info' : 'default'
-                              }
-                              size="small"
-                            />
+                            <Typography variant="subtitle2" color="textSecondary">Price</Typography>
+                            <Typography variant="body1">₹{treatment.price}</Typography>
                           </Grid>
                           <Grid item xs={12} sm={2} sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
                             <Button
@@ -1037,7 +978,7 @@ const PatientDetails = () => {
                 variant="contained"
                 color="primary"
                 startIcon={<AddIcon />}
-                onClick={() => navigate(`/invoices/create?patientId=${id}`)}
+                onClick={() => navigate(`/billing/create?patientId=${id}`)}
               >
                 New Invoice
               </Button>
@@ -1059,23 +1000,23 @@ const PatientDetails = () => {
                           <Grid item xs={12} sm={3}>
                             <Typography variant="subtitle2" color="textSecondary">Invoice Date</Typography>
                             <Typography variant="body1">
-                              {format(new Date(invoice.date), 'dd MMM yyyy')}
+                              {safeFormatDate(invoice.invoiceDate)}
                             </Typography>
                           </Grid>
                           <Grid item xs={12} sm={3}>
                             <Typography variant="subtitle2" color="textSecondary">Amount</Typography>
                             <Typography variant="body1">
-                              ₹{invoice.amount.toLocaleString('en-IN')}
+                              ₹{(invoice.totalAmount || 0).toLocaleString('en-IN')}
                             </Typography>
                           </Grid>
                           <Grid item xs={12} sm={4}>
                             <Typography variant="subtitle2" color="textSecondary">Status</Typography>
                             <Chip
-                              label={invoice.status}
+                              label={invoice.paymentStatus}
                               color={
-                                invoice.status === 'paid' ? 'success' :
-                                invoice.status === 'pending' ? 'warning' :
-                                invoice.status === 'overdue' ? 'error' : 'default'
+                                invoice.paymentStatus === 'paid' ? 'success' :
+                                invoice.paymentStatus === 'pending' ? 'warning' :
+                                invoice.paymentStatus === 'overdue' ? 'error' : 'default'
                               }
                               size="small"
                             />
@@ -1095,8 +1036,8 @@ const PatientDetails = () => {
                               {invoice.items.map((item, index) => (
                                 <ListItem key={index} disableGutters>
                                   <ListItemText
-                                    primary={item.name}
-                                    secondary={`₹${item.price.toLocaleString('en-IN')}`}
+                                    primary={item.description}
+                                    secondary={`₹${(item.amount || 0).toLocaleString('en-IN')}`}
                                   />
                                 </ListItem>
                               ))}
@@ -1117,14 +1058,24 @@ const PatientDetails = () => {
           <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Typography variant="h6">Documents & Images</Typography>
-              <Button
-                variant="contained"
-                color="primary"
-                startIcon={<CloudUploadIcon />}
-                onClick={handleUploadDialogOpen}
-              >
-                Upload Document
-              </Button>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={forceTokenRefresh}
+                  sx={{ fontSize: '0.75rem' }}
+                >
+                  Refresh Session
+                </Button>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={<CloudUploadIcon />}
+                  onClick={handleUploadDialogOpen}
+                >
+                  Upload Document
+                </Button>
+              </Box>
             </Box>
 
             {documents.length === 0 ? (
@@ -1159,7 +1110,7 @@ const PatientDetails = () => {
                   </TableHead>
                   <TableBody>
                     {documents.map((document) => (
-                      <TableRow key={document.id}>
+                      <TableRow key={document._id}>
                         <TableCell>
                           <Box sx={{ display: 'flex', alignItems: 'center' }}>
                             {getFileIcon(document.fileType)}
@@ -1171,9 +1122,9 @@ const PatientDetails = () => {
                         <TableCell>
                           <Chip label={document.category} size="small" />
                         </TableCell>
-                        <TableCell>{document.description}</TableCell>
-                        <TableCell>{format(new Date(document.uploadDate), 'dd MMM yyyy')}</TableCell>
-                        <TableCell>{document.size}</TableCell>
+                        <TableCell>{document.description || '-'}</TableCell>
+                        <TableCell>{safeFormatDate(document.uploadedAt)}</TableCell>
+                        <TableCell>{document.fileSize ? `${(document.fileSize / 1024).toFixed(1)} KB` : '-'}</TableCell>
                         <TableCell align="right">
                           <Tooltip title="View">
                             <IconButton onClick={() => handleViewDocument(document)} size="small">
@@ -1187,7 +1138,7 @@ const PatientDetails = () => {
                           </Tooltip>
                           <Tooltip title="Delete">
                             <IconButton 
-                              onClick={() => handleDeleteDocument(document.id)} 
+                              onClick={() => handleDeleteDocument(document._id)} 
                               size="small" 
                               color="error"
                             >
@@ -1252,7 +1203,7 @@ const PatientDetails = () => {
                     {communications.map((comm) => (
                       <TableRow key={comm.id}>
                         <TableCell>
-                          {format(new Date(comm.date), 'dd MMM yyyy')}, {comm.time}
+                          {safeFormatDate(comm.date)}, {comm.time}
                         </TableCell>
                         <TableCell>
                           <Chip 
@@ -1440,17 +1391,26 @@ const PatientDetails = () => {
                   {currentDocument.description}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  Uploaded on {format(new Date(currentDocument.uploadDate), 'dd MMM yyyy')} by {currentDocument.uploadedBy}
+                  Uploaded on {safeFormatDate(currentDocument.uploadedAt)} by {currentDocument.uploadedBy?.name || 'Unknown User'}
                 </Typography>
               </Box>
               <Divider sx={{ mb: 2 }} />
               <Box sx={{ height: '60vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                 {currentDocument.fileType.startsWith('image/') ? (
-                  <img 
-                    src={currentDocument.url} 
-                    alt={currentDocument.fileName} 
-                    style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} 
-                  />
+                  <Box sx={{ width: '100%', height: '100%', bgcolor: '#f5f5f5', borderRadius: 1, p: 2, textAlign: 'center' }}>
+                    <ImageIcon sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
+                    <Typography variant="body1">
+                      Image preview would be integrated here in a production environment.
+                    </Typography>
+                    <Button 
+                      variant="outlined" 
+                      startIcon={<DownloadIcon />} 
+                      sx={{ mt: 2 }}
+                      onClick={() => handleDownloadDocument(currentDocument)}
+                    >
+                      Download Image
+                    </Button>
+                  </Box>
                 ) : currentDocument.fileType === 'application/pdf' ? (
                   <Box sx={{ width: '100%', height: '100%', bgcolor: '#f5f5f5', borderRadius: 1, p: 2, textAlign: 'center' }}>
                     <PdfIcon sx={{ fontSize: 60, color: 'error.main', mb: 2 }} />

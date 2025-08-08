@@ -1,372 +1,537 @@
 const asyncHandler = require('../middleware/async');
 const Invoice = require('../models/Invoice');
+const Patient = require('../models/Patient');
+const Clinic = require('../models/Clinic');
+const User = require('../models/User');
 
-// Mock data for invoices
-const mockInvoices = [
-  {
-    _id: '60d21b4667d0d8992e610c85',
-    invoiceNumber: 'INV-202301-0001',
-    patient: {
-      _id: '60d21b4667d0d8992e610c01',
-      name: 'John Doe',
-      email: 'john@example.com',
-      phone: '9876543210'
-    },
-    clinic: {
-      _id: '60d21b4667d0d8992e610c10',
-      name: 'Main Clinic'
-    },
-    invoiceDate: '2023-01-15T10:00:00.000Z',
-    dueDate: '2023-02-15T10:00:00.000Z',
-    items: [
-      {
-        description: 'Dental Cleaning',
-        quantity: 1,
-        unitPrice: 2000,
-        discount: 0,
-        tax: 18,
-        amount: 2360
-      },
-      {
-        description: 'X-Ray',
-        quantity: 1,
-        unitPrice: 1500,
-        discount: 0,
-        tax: 18,
-        amount: 1770
-      }
-    ],
-    subtotal: 3500,
-    taxAmount: 630,
-    discountAmount: 0,
-    totalAmount: 4130,
-    amountPaid: 4130,
-    balanceAmount: 0,
-    paymentStatus: 'paid',
-    payments: [
-      {
-        amount: 4130,
-        paymentDate: '2023-01-15T10:30:00.000Z',
-        paymentMethod: 'credit card',
-        transactionId: 'TXN123456',
-        receivedBy: '60d21b4667d0d8992e610c20'
-      }
-    ],
-    createdAt: '2023-01-15T10:00:00.000Z',
-    updatedAt: '2023-01-15T10:30:00.000Z'
-  },
-  {
-    _id: '60d21b4667d0d8992e610c86',
-    invoiceNumber: 'INV-202302-0001',
-    patient: {
-      _id: '60d21b4667d0d8992e610c02',
-      name: 'Jane Smith',
-      email: 'jane@example.com',
-      phone: '9876543211'
-    },
-    clinic: {
-      _id: '60d21b4667d0d8992e610c11',
-      name: 'North Branch'
-    },
-    invoiceDate: '2023-02-10T11:00:00.000Z',
-    dueDate: '2023-03-10T11:00:00.000Z',
-    items: [
-      {
-        description: 'Root Canal Treatment',
-        quantity: 1,
-        unitPrice: 8000,
-        discount: 500,
-        tax: 18,
-        amount: 8850
-      }
-    ],
-    subtotal: 8000,
-    taxAmount: 1350,
-    discountAmount: 500,
-    totalAmount: 8850,
-    amountPaid: 4000,
-    balanceAmount: 4850,
-    paymentStatus: 'partially paid',
-    payments: [
-      {
-        amount: 4000,
-        paymentDate: '2023-02-10T11:30:00.000Z',
-        paymentMethod: 'cash',
-        receivedBy: '60d21b4667d0d8992e610c21'
-      }
-    ],
-    createdAt: '2023-02-10T11:00:00.000Z',
-    updatedAt: '2023-02-10T11:30:00.000Z'
-  },
-  {
-    _id: '60d21b4667d0d8992e610c87',
-    invoiceNumber: 'INV-202303-0001',
-    patient: {
-      _id: '60d21b4667d0d8992e610c03',
-      name: 'Robert Johnson',
-      email: 'robert@example.com',
-      phone: '9876543212'
-    },
-    clinic: {
-      _id: '60d21b4667d0d8992e610c12',
-      name: 'South Branch'
-    },
-    invoiceDate: '2023-03-05T09:00:00.000Z',
-    dueDate: '2023-04-05T09:00:00.000Z',
-    items: [
-      {
-        description: 'Dental Crown',
-        quantity: 2,
-        unitPrice: 5000,
-        discount: 1000,
-        tax: 18,
-        amount: 10620
-      },
-      {
-        description: 'Consultation',
-        quantity: 1,
-        unitPrice: 500,
-        discount: 0,
-        tax: 18,
-        amount: 590
-      }
-    ],
-    subtotal: 10500,
-    taxAmount: 1710,
-    discountAmount: 1000,
-    totalAmount: 11210,
-    amountPaid: 0,
-    balanceAmount: 11210,
-    paymentStatus: 'unpaid',
-    payments: [],
-    createdAt: '2023-03-05T09:00:00.000Z',
-    updatedAt: '2023-03-05T09:00:00.000Z'
-  },
-  {
-    _id: '60d21b4667d0d8992e610c88',
-    invoiceNumber: 'INV-202304-0001',
-    patient: {
-      _id: '60d21b4667d0d8992e610c04',
-      name: 'Emily Davis',
-      email: 'emily@example.com',
-      phone: '9876543213'
-    },
-    clinic: {
-      _id: '60d21b4667d0d8992e610c10',
-      name: 'Main Clinic'
-    },
-    invoiceDate: '2023-04-20T14:00:00.000Z',
-    dueDate: '2023-05-20T14:00:00.000Z',
-    items: [
-      {
-        description: 'Teeth Whitening',
-        quantity: 1,
-        unitPrice: 4000,
-        discount: 400,
-        tax: 18,
-        amount: 4248
-      }
-    ],
-    subtotal: 4000,
-    taxAmount: 648,
-    discountAmount: 400,
-    totalAmount: 4248,
-    amountPaid: 4248,
-    balanceAmount: 0,
-    paymentStatus: 'paid',
-    payments: [
-      {
-        amount: 4248,
-        paymentDate: '2023-04-20T14:30:00.000Z',
-        paymentMethod: 'upi',
-        transactionId: 'UPI123456',
-        receivedBy: '60d21b4667d0d8992e610c22'
-      }
-    ],
-    createdAt: '2023-04-20T14:00:00.000Z',
-    updatedAt: '2023-04-20T14:30:00.000Z'
-  },
-  {
-    _id: '60d21b4667d0d8992e610c89',
-    invoiceNumber: 'INV-202305-0001',
-    patient: {
-      _id: '60d21b4667d0d8992e610c05',
-      name: 'Michael Wilson',
-      email: 'michael@example.com',
-      phone: '9876543214'
-    },
-    clinic: {
-      _id: '60d21b4667d0d8992e610c11',
-      name: 'North Branch'
-    },
-    invoiceDate: '2023-05-12T13:00:00.000Z',
-    dueDate: '2023-06-12T13:00:00.000Z',
-    items: [
-      {
-        description: 'Dental Implant',
-        quantity: 1,
-        unitPrice: 25000,
-        discount: 2000,
-        tax: 18,
-        amount: 27140
-      },
-      {
-        description: 'X-Ray',
-        quantity: 1,
-        unitPrice: 1500,
-        discount: 0,
-        tax: 18,
-        amount: 1770
-      }
-    ],
-    subtotal: 26500,
-    taxAmount: 4410,
-    discountAmount: 2000,
-    totalAmount: 28910,
-    amountPaid: 10000,
-    balanceAmount: 18910,
-    paymentStatus: 'partially paid',
-    payments: [
-      {
-        amount: 10000,
-        paymentDate: '2023-05-12T13:30:00.000Z',
-        paymentMethod: 'credit card',
-        transactionId: 'TXN789012',
-        receivedBy: '60d21b4667d0d8992e610c23'
-      }
-    ],
-    createdAt: '2023-05-12T13:00:00.000Z',
-    updatedAt: '2023-05-12T13:30:00.000Z'
-  }
-];
 
 // @desc    Get all invoices
 // @route   GET /api/billing
 // @access  Private
+// @desc    Get all invoices
+// @route   GET /api/billing
+// @access  Private
 exports.getInvoices = asyncHandler(async (req, res, next) => {
-  // In a real app, we would query the database
-  // For now, we'll just return the mock data
-  
-  res.status(200).json({
-    success: true,
-    count: mockInvoices.length,
-    data: mockInvoices
-  });
+  try {
+    let query;
+
+    // Copy req.query
+    const reqQuery = { ...req.query };
+
+    // Fields to exclude
+    const removeFields = ['select', 'sort', 'page', 'limit', 'search'];
+
+    // Loop over removeFields and delete them from reqQuery
+    removeFields.forEach(param => delete reqQuery[param]);
+
+    // Create query string
+    let queryStr = JSON.stringify(reqQuery);
+
+    // Create operators ($gt, $gte, etc)
+    queryStr = queryStr.replace(/\b(gt|gte|lt|lte|in)\b/g, match => `$${match}`);
+
+    // Finding resource - filter by organization
+    const baseQuery = { organization: req.user.organization, ...JSON.parse(queryStr) };
+    query = Invoice.find(baseQuery);
+
+    // Handle search
+    if (req.query.search) {
+      // Get patients matching the search (filtered by organization)
+      const patients = await Patient.find({
+        organization: req.user.organization,
+        $or: [
+          { name: { $regex: req.query.search, $options: 'i' } },
+          { phone: { $regex: req.query.search, $options: 'i' } },
+          { patientId: { $regex: req.query.search, $options: 'i' } }
+        ]
+      }).select('_id');
+
+      const patientIds = patients.map(patient => patient._id);
+
+      // Add to query
+      query = query.or([
+        { patient: { $in: patientIds } },
+        { invoiceNumber: { $regex: req.query.search, $options: 'i' } }
+      ]);
+    }
+
+    // Select Fields
+    if (req.query.select) {
+      const fields = req.query.select.split(',').join(' ');
+      query = query.select(fields);
+    }
+
+    // Sort
+    if (req.query.sort) {
+      const sortBy = req.query.sort.split(',').join(' ');
+      query = query.sort(sortBy);
+    } else {
+      query = query.sort('-invoiceDate');
+    }
+
+    // Pagination
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 25;
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+    const total = await Invoice.countDocuments(query);
+
+    query = query.skip(startIndex).limit(limit);
+
+    // Populate
+    query = query.populate([
+      { path: 'patient', select: 'name phone patientId' },
+      { path: 'clinic', select: 'name branchCode' }
+    ]);
+
+    // Executing query
+    const invoices = await query;
+
+    // Pagination result
+    const pagination = {};
+
+    if (endIndex < total) {
+      pagination.next = {
+        page: page + 1,
+        limit
+      };
+    }
+
+    if (startIndex > 0) {
+      pagination.prev = {
+        page: page - 1,
+        limit
+      };
+    }
+
+    res.status(200).json({
+      success: true,
+      count: invoices.length,
+      pagination,
+      total,
+      data: invoices
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      message: 'Server Error'
+    });
+  }
 });
 
 // @desc    Get single invoice
 // @route   GET /api/billing/:id
 // @access  Private
 exports.getInvoice = asyncHandler(async (req, res, next) => {
-  const invoice = mockInvoices.find(inv => inv._id === req.params.id);
-  
-  if (!invoice) {
-    return res.status(404).json({
+  try {
+    const invoice = await Invoice.findById(req.params.id).populate([
+      { path: 'patient', select: 'name phone patientId email' },
+      { path: 'clinic', select: 'name branchCode address' }
+    ]);
+    
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        message: 'Invoice not found'
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      data: invoice
+    });
+  } catch (err) {
+    console.error(err);
+    if (err.kind === 'ObjectId') {
+      return res.status(404).json({
+        success: false,
+        message: 'Invoice not found'
+      });
+    }
+    res.status(500).json({
       success: false,
-      message: 'Invoice not found'
+      message: 'Server Error'
     });
   }
-  
-  res.status(200).json({
-    success: true,
-    data: invoice
-  });
 });
 
 // @desc    Create new invoice
 // @route   POST /api/billing
 // @access  Private
 exports.createInvoice = asyncHandler(async (req, res, next) => {
-  // In a real app, we would create a new invoice in the database
-  // For now, we'll just return a success message
-  
-  res.status(201).json({
-    success: true,
-    message: 'Invoice created successfully',
-    data: {
-      _id: '60d21b4667d0d8992e610c90',
-      invoiceNumber: 'INV-202306-0001',
-      ...req.body
+  try {
+    // Create invoice (let the model handle invoice number generation)
+    const invoice = await Invoice.create({
+      ...req.body,
+      organization: req.user.organization,
+      createdBy: req.user.id,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+
+    // Populate the created invoice with patient and clinic data
+    const populatedInvoice = await Invoice.findById(invoice._id).populate([
+      { path: 'patient', select: 'name phone patientId email' },
+      { path: 'clinic', select: 'name branchCode address' }
+    ]);
+    
+    res.status(201).json({
+      success: true,
+      message: 'Invoice created successfully',
+      data: populatedInvoice
+    });
+  } catch (err) {
+    console.error(err);
+    if (err.name === 'ValidationError') {
+      const messages = Object.values(err.errors).map(val => val.message);
+      return res.status(400).json({
+        success: false,
+        message: messages.join(', ')
+      });
     }
-  });
+    res.status(500).json({
+      success: false,
+      message: 'Server Error'
+    });
+  }
 });
 
 // @desc    Update invoice
 // @route   PUT /api/billing/:id
 // @access  Private
 exports.updateInvoice = asyncHandler(async (req, res, next) => {
-  const invoice = mockInvoices.find(inv => inv._id === req.params.id);
-  
-  if (!invoice) {
-    return res.status(404).json({
+  try {
+    let invoice = await Invoice.findById(req.params.id);
+    
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        message: 'Invoice not found'
+      });
+    }
+    
+    // Update invoice
+    invoice = await Invoice.findByIdAndUpdate(
+      req.params.id, 
+      { ...req.body, updatedAt: new Date() }, 
+      { new: true, runValidators: true }
+    ).populate([
+      { path: 'patient', select: 'name phone patientId email' },
+      { path: 'clinic', select: 'name branchCode address' }
+    ]);
+    
+    res.status(200).json({
+      success: true,
+      message: 'Invoice updated successfully',
+      data: invoice
+    });
+  } catch (err) {
+    console.error(err);
+    if (err.name === 'ValidationError') {
+      const messages = Object.values(err.errors).map(val => val.message);
+      return res.status(400).json({
+        success: false,
+        message: messages.join(', ')
+      });
+    }
+    if (err.kind === 'ObjectId') {
+      return res.status(404).json({
+        success: false,
+        message: 'Invoice not found'
+      });
+    }
+    res.status(500).json({
       success: false,
-      message: 'Invoice not found'
+      message: 'Server Error'
     });
   }
-  
-  // In a real app, we would update the invoice in the database
-  // For now, we'll just return a success message
-  
-  res.status(200).json({
-    success: true,
-    message: 'Invoice updated successfully',
-    data: {
-      ...invoice,
-      ...req.body,
-      updatedAt: new Date().toISOString()
-    }
-  });
 });
 
 // @desc    Delete invoice
 // @route   DELETE /api/billing/:id
 // @access  Private
 exports.deleteInvoice = asyncHandler(async (req, res, next) => {
-  const invoice = mockInvoices.find(inv => inv._id === req.params.id);
-  
-  if (!invoice) {
-    return res.status(404).json({
+  try {
+    const invoice = await Invoice.findById(req.params.id);
+    
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        message: 'Invoice not found'
+      });
+    }
+    
+    await Invoice.findByIdAndDelete(req.params.id);
+    
+    res.status(200).json({
+      success: true,
+      message: 'Invoice deleted successfully',
+      data: {}
+    });
+  } catch (err) {
+    console.error(err);
+    if (err.kind === 'ObjectId') {
+      return res.status(404).json({
+        success: false,
+        message: 'Invoice not found'
+      });
+    }
+    res.status(500).json({
       success: false,
-      message: 'Invoice not found'
+      message: 'Server Error'
     });
   }
-  
-  // In a real app, we would delete the invoice from the database
-  // For now, we'll just return a success message
-  
-  res.status(200).json({
-    success: true,
-    message: 'Invoice deleted successfully',
-    data: {}
-  });
 });
 
 // @desc    Add payment to invoice
 // @route   POST /api/billing/:id/payment
 // @access  Private
 exports.addPayment = asyncHandler(async (req, res, next) => {
-  const invoice = mockInvoices.find(inv => inv._id === req.params.id);
-  
-  if (!invoice) {
-    return res.status(404).json({
+  try {
+    let invoice = await Invoice.findById(req.params.id);
+    
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        message: 'Invoice not found'
+      });
+    }
+    
+    // Calculate new amounts
+    const newAmountPaid = invoice.amountPaid + req.body.amount;
+    const newBalanceAmount = invoice.totalAmount - newAmountPaid;
+    let newPaymentStatus = invoice.paymentStatus;
+    
+    // Determine payment status
+    if (newBalanceAmount <= 0) {
+      newPaymentStatus = 'paid';
+    } else if (newAmountPaid > 0) {
+      newPaymentStatus = 'partially paid';
+    }
+    
+    // Prepare payment data with required fields
+    const paymentData = {
+      amount: req.body.amount,
+      paymentDate: new Date(),
+      paymentMethod: req.body.paymentMethod ? req.body.paymentMethod.toLowerCase() : 'cash',
+      transactionId: req.body.reference || req.body.transactionId,
+      notes: req.body.notes,
+      receivedBy: req.user.id // Use the authenticated user as the receiver
+    };
+
+    // Add payment and update invoice
+    invoice = await Invoice.findByIdAndUpdate(
+      req.params.id,
+      {
+        $push: { payments: paymentData },
+        amountPaid: newAmountPaid,
+        balanceAmount: newBalanceAmount,
+        paymentStatus: newPaymentStatus,
+        updatedAt: new Date()
+      },
+      { new: true, runValidators: true }
+    ).populate([
+      { path: 'patient', select: 'name phone patientId email' },
+      { path: 'clinic', select: 'name branchCode address' }
+    ]);
+    
+    res.status(200).json({
+      success: true,
+      message: 'Payment added successfully',
+      data: invoice
+    });
+  } catch (err) {
+    console.error(err);
+    if (err.name === 'ValidationError') {
+      const messages = Object.values(err.errors).map(val => val.message);
+      return res.status(400).json({
+        success: false,
+        message: messages.join(', ')
+      });
+    }
+    if (err.kind === 'ObjectId') {
+      return res.status(404).json({
+        success: false,
+        message: 'Invoice not found'
+      });
+    }
+    res.status(500).json({
       success: false,
-      message: 'Invoice not found'
+      message: 'Server Error'
     });
   }
-  
-  // In a real app, we would add the payment to the invoice in the database
-  // For now, we'll just return a success message
-  
-  res.status(200).json({
-    success: true,
-    message: 'Payment added successfully',
-    data: {
-      ...invoice,
-      payments: [...invoice.payments, req.body],
-      amountPaid: invoice.amountPaid + req.body.amount,
-      balanceAmount: invoice.totalAmount - (invoice.amountPaid + req.body.amount),
-      paymentStatus: invoice.totalAmount <= (invoice.amountPaid + req.body.amount) ? 'paid' : 'partially paid',
-      updatedAt: new Date().toISOString()
+});
+
+// @desc    Update payment in invoice
+// @route   PUT /api/billing/:id/payment/:paymentId
+// @access  Private
+exports.updatePayment = asyncHandler(async (req, res, next) => {
+  try {
+    let invoice = await Invoice.findById(req.params.id);
+    
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        message: 'Invoice not found'
+      });
     }
-  });
+
+    // Find the payment to update
+    const paymentIndex = invoice.payments.findIndex(
+      payment => payment._id.toString() === req.params.paymentId
+    );
+
+    if (paymentIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'Payment not found'
+      });
+    }
+
+    const oldPaymentAmount = invoice.payments[paymentIndex].amount;
+    const newPaymentAmount = req.body.amount;
+
+    // Calculate new amounts
+    const newAmountPaid = invoice.amountPaid - oldPaymentAmount + newPaymentAmount;
+    const newBalanceAmount = invoice.totalAmount - newAmountPaid;
+    let newPaymentStatus = invoice.paymentStatus;
+    
+    // Determine payment status
+    if (newBalanceAmount <= 0) {
+      newPaymentStatus = 'paid';
+    } else if (newAmountPaid > 0) {
+      newPaymentStatus = 'partially paid';
+    } else {
+      newPaymentStatus = 'unpaid';
+    }
+
+    // Update the payment
+    invoice.payments[paymentIndex] = {
+      ...invoice.payments[paymentIndex],
+      amount: newPaymentAmount,
+      paymentMethod: req.body.paymentMethod ? req.body.paymentMethod.toLowerCase() : invoice.payments[paymentIndex].paymentMethod,
+      transactionId: req.body.reference || req.body.transactionId || invoice.payments[paymentIndex].transactionId,
+      notes: req.body.notes || invoice.payments[paymentIndex].notes,
+      receivedBy: invoice.payments[paymentIndex].receivedBy // Keep the original receivedBy
+    };
+
+    // Update invoice totals
+    invoice.amountPaid = newAmountPaid;
+    invoice.balanceAmount = newBalanceAmount;
+    invoice.paymentStatus = newPaymentStatus;
+    invoice.updatedAt = new Date();
+
+    await invoice.save();
+
+    // Populate and return updated invoice
+    invoice = await Invoice.findById(req.params.id).populate([
+      { path: 'patient', select: 'name phone patientId email' },
+      { path: 'clinic', select: 'name branchCode address' }
+    ]);
+
+    res.status(200).json({
+      success: true,
+      message: 'Payment updated successfully',
+      data: invoice
+    });
+  } catch (err) {
+    console.error(err);
+    if (err.name === 'ValidationError') {
+      const messages = Object.values(err.errors).map(val => val.message);
+      return res.status(400).json({
+        success: false,
+        message: messages.join(', ')
+      });
+    }
+    if (err.kind === 'ObjectId') {
+      return res.status(404).json({
+        success: false,
+        message: 'Invoice or payment not found'
+      });
+    }
+    res.status(500).json({
+      success: false,
+      message: 'Server Error'
+    });
+  }
+});
+
+// @desc    Delete payment from invoice
+// @route   DELETE /api/billing/:id/payment/:paymentId
+// @access  Private
+exports.deletePayment = asyncHandler(async (req, res, next) => {
+  try {
+    let invoice = await Invoice.findById(req.params.id);
+    
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        message: 'Invoice not found'
+      });
+    }
+
+    // Find the payment to delete
+    const paymentIndex = invoice.payments.findIndex(
+      payment => payment._id.toString() === req.params.paymentId
+    );
+
+    if (paymentIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'Payment not found'
+      });
+    }
+
+    const paymentToDelete = invoice.payments[paymentIndex];
+
+    // Calculate new amounts
+    const newAmountPaid = invoice.amountPaid - paymentToDelete.amount;
+    const newBalanceAmount = invoice.totalAmount - newAmountPaid;
+    let newPaymentStatus = invoice.paymentStatus;
+    
+    // Determine payment status
+    if (newBalanceAmount <= 0) {
+      newPaymentStatus = 'paid';
+    } else if (newAmountPaid > 0) {
+      newPaymentStatus = 'partially paid';
+    } else {
+      newPaymentStatus = 'unpaid';
+    }
+
+    // Remove the payment
+    invoice.payments.splice(paymentIndex, 1);
+
+    // Update invoice totals
+    invoice.amountPaid = newAmountPaid;
+    invoice.balanceAmount = newBalanceAmount;
+    invoice.paymentStatus = newPaymentStatus;
+    invoice.updatedAt = new Date();
+
+    await invoice.save();
+
+    // Populate and return updated invoice
+    invoice = await Invoice.findById(req.params.id).populate([
+      { path: 'patient', select: 'name phone patientId email' },
+      { path: 'clinic', select: 'name branchCode address' }
+    ]);
+
+    res.status(200).json({
+      success: true,
+      message: 'Payment deleted successfully',
+      data: invoice
+    });
+  } catch (err) {
+    console.error(err);
+    if (err.kind === 'ObjectId') {
+      return res.status(404).json({
+        success: false,
+        message: 'Invoice or payment not found'
+      });
+    }
+    res.status(500).json({
+      success: false,
+      message: 'Server Error'
+    });
+  }
 });

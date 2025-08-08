@@ -6,35 +6,104 @@ const { validationResult } = require('express-validator');
 // @access  Private
 exports.getPatients = async (req, res) => {
   try {
-    let query;
-
-    // Copy req.query
-    const reqQuery = { ...req.query };
-
-    // Fields to exclude
-    const removeFields = ['select', 'sort', 'page', 'limit', 'search'];
-
-    // Loop over removeFields and delete them from reqQuery
-    removeFields.forEach(param => delete reqQuery[param]);
-
-    // Create query string
-    let queryStr = JSON.stringify(reqQuery);
-
-    // Create operators ($gt, $gte, etc)
-    queryStr = queryStr.replace(/\b(gt|gte|lt|lte|in)\b/g, match => `$${match}`);
-
-    // Finding resource
-    query = Patient.find(JSON.parse(queryStr));
+    // Build query conditions - filter by organization
+    const queryConditions = {
+      organization: req.user.organization
+    };
 
     // Handle search
     if (req.query.search) {
       const searchRegex = new RegExp(req.query.search, 'i');
-      query = query.or([
+      queryConditions.$or = [
         { name: searchRegex },
         { email: searchRegex },
         { phone: searchRegex },
         { patientId: searchRegex }
-      ]);
+      ];
+    }
+
+    // Handle filters
+    if (req.query.gender) {
+      queryConditions.gender = req.query.gender.toLowerCase();
+    }
+
+    if (req.query.ageGroup) {
+      let minAge, maxAge;
+      
+      switch (req.query.ageGroup) {
+        case 'below18':
+          minAge = 0;
+          maxAge = 17;
+          break;
+        case '18to30':
+          minAge = 18;
+          maxAge = 30;
+          break;
+        case '31to45':
+          minAge = 31;
+          maxAge = 45;
+          break;
+        case '46to60':
+          minAge = 46;
+          maxAge = 60;
+          break;
+        case 'above60':
+          minAge = 61;
+          maxAge = 120;
+          break;
+        default:
+          break;
+      }
+      
+      if (minAge !== undefined && maxAge !== undefined) {
+        queryConditions.age = { $gte: minAge, $lte: maxAge };
+      }
+    }
+
+    // Create the base query
+    let query = Patient.find(queryConditions);
+
+    // Handle clinic filter (post-query)
+    if (req.query.clinic) {
+      // Will be handled after query execution
+    }
+
+    if (req.query.ageGroup) {
+      let minAge, maxAge;
+      
+      switch (req.query.ageGroup) {
+        case 'below18':
+          minAge = 0;
+          maxAge = 17;
+          break;
+        case '18to30':
+          minAge = 18;
+          maxAge = 30;
+          break;
+        case '31to45':
+          minAge = 31;
+          maxAge = 45;
+          break;
+        case '46to60':
+          minAge = 46;
+          maxAge = 60;
+          break;
+        case 'above60':
+          minAge = 61;
+          maxAge = 120;
+          break;
+        default:
+          break;
+      }
+      
+      if (minAge !== undefined && maxAge !== undefined) {
+        // Use the age field directly for filtering
+        query = query.where('age', { $gte: minAge, $lte: maxAge });
+        console.log(`🔍 Age filter applied: ${minAge} <= age <= ${maxAge}`);
+        
+        // Debug: Let's also log the query to see what's happening
+        console.log(`🔍 Query conditions:`, JSON.stringify(query.getQuery()));
+      }
     }
 
     // Select Fields
@@ -56,15 +125,26 @@ exports.getPatients = async (req, res) => {
     const limit = parseInt(req.query.limit, 10) || 25;
     const startIndex = (page - 1) * limit;
     const endIndex = page * limit;
-    const total = await Patient.countDocuments(query);
+    
+    // Count total documents before applying pagination
+    const total = await Patient.countDocuments(query.getQuery());
 
     query = query.skip(startIndex).limit(limit);
 
-    // Populate
+    // Always populate clinic for consistent data structure
     query = query.populate('registeredClinic', 'name branchCode');
 
     // Executing query
-    const patients = await query;
+    let patients = await query;
+
+    // Post-query filtering for clinic
+    if (req.query.clinic) {
+      const beforeCount = patients.length;
+      patients = patients.filter(patient => 
+        patient.registeredClinic && 
+        patient.registeredClinic.name.toLowerCase().includes(req.query.clinic.toLowerCase())
+      );
+    }
 
     // Pagination result
     const pagination = {};
@@ -87,7 +167,7 @@ exports.getPatients = async (req, res) => {
       success: true,
       count: patients.length,
       pagination,
-      total,
+      total: patients.length, // Use filtered count
       data: patients
     });
   } catch (err) {
@@ -112,6 +192,14 @@ exports.getPatient = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'Patient not found'
+      });
+    }
+
+    // Check if patient belongs to user's organization
+    if (patient.organization.toString() !== req.user.organization.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to access this patient'
       });
     }
 
@@ -144,11 +232,15 @@ exports.createPatient = async (req, res) => {
       return res.status(400).json({ success: false, errors: errors.array() });
     }
 
-    // Add user to req.body
+    // Add user and organization to req.body
     req.body.createdBy = req.user.id;
+    req.body.organization = req.user.organization;
 
-    // Check for existing patient with same phone number
-    const existingPatient = await Patient.findOne({ phone: req.body.phone });
+    // Check for existing patient with same phone number in the same organization
+    const existingPatient = await Patient.findOne({ 
+      phone: req.body.phone,
+      organization: req.user.organization
+    });
     if (existingPatient) {
       return res.status(400).json({
         success: false,
@@ -182,6 +274,14 @@ exports.updatePatient = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'Patient not found'
+      });
+    }
+
+    // Check if patient belongs to user's organization
+    if (patient.organization.toString() !== req.user.organization.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to update this patient'
       });
     }
 
@@ -224,6 +324,14 @@ exports.deletePatient = async (req, res) => {
       });
     }
 
+    // Check if patient belongs to user's organization
+    if (patient.organization.toString() !== req.user.organization.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to delete this patient'
+      });
+    }
+
     // Check if user is admin or manager
     if (req.user.role !== 'admin' && req.user.role !== 'manager') {
       return res.status(403).json({
@@ -232,7 +340,7 @@ exports.deletePatient = async (req, res) => {
       });
     }
 
-    await patient.remove();
+    await patient.deleteOne();
 
     res.status(200).json({
       success: true,

@@ -76,7 +76,7 @@ const Sidebar = ({ open, handleDrawerClose, drawerWidth }) => {
     {
       text: 'Dashboard',
       icon: <DashboardIcon />,
-      path: '/',
+      path: '/dashboard',
       roles: ['admin', 'manager', 'dentist', 'receptionist', 'assistant']
     },
     {
@@ -164,6 +164,12 @@ const Sidebar = ({ open, handleDrawerClose, drawerWidth }) => {
       roles: ['admin', 'manager']
     },
     {
+      text: 'Team',
+      icon: <GroupIcon />,
+      path: '/team',
+      roles: ['admin']
+    },
+    {
       text: 'Reports',
       icon: <AssessmentIcon />,
       path: '/reports',
@@ -201,7 +207,7 @@ const Sidebar = ({ open, handleDrawerClose, drawerWidth }) => {
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <Avatar sx={{ bgcolor: 'primary.main', mr: 1 }}>D</Avatar>
           <Typography variant="h6" color="primary.main" fontWeight="bold">
-            Dental CRM
+            DentOS
           </Typography>
         </Box>
         <IconButton onClick={handleDrawerClose}>
@@ -339,7 +345,7 @@ const Sidebar = ({ open, handleDrawerClose, drawerWidth }) => {
       
       <Box sx={{ p: 2, borderTop: '1px solid rgba(0, 0, 0, 0.08)' }}>
         <Typography variant="caption" color="text.secondary" align="center" display="block">
-          Dental CRM v2.0 © {new Date().getFullYear()}
+          DentOS v2.0 © {new Date().getFullYear()}
         </Typography>
       </Box>
     </Drawer>

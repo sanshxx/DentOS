@@ -29,6 +29,7 @@ import {
   CreditCard as CreditCardIcon,
   Help as HelpIcon
 } from '@mui/icons-material';
+import ThemeToggle from '../../components/settings/ThemeToggle';
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -352,6 +353,10 @@ const Settings = () => {
                 </Button>
               </Box>
               <Divider sx={{ mb: 3 }} />
+              
+              {/* Theme Toggle */}
+              <ThemeToggle />
+              
               <Grid container spacing={3}>
                 <Grid item xs={12} md={6}>
                   <FormControl fullWidth margin="normal">

@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 
 const PatientSchema = new mongoose.Schema({
+  organization: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Organization',
+    required: true
+  },
   name: {
     type: String,
     required: [true, 'Please add patient name'],
@@ -88,8 +93,7 @@ const PatientSchema = new mongoose.Schema({
   },
   referredBy: String,
   patientId: {
-    type: String,
-    unique: true
+    type: String
   },
   status: {
     type: String,
@@ -156,5 +160,8 @@ PatientSchema.pre('save', async function(next) {
 PatientSchema.pre('findOneAndUpdate', function() {
   this.set({ updatedAt: new Date() });
 });
+
+// Create compound index for unique patientId per organization
+PatientSchema.index({ patientId: 1, organization: 1 }, { unique: true, sparse: true });
 
 module.exports = mongoose.model('Patient', PatientSchema);

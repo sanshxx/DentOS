@@ -2,14 +2,25 @@ import React, { useState, useEffect } from 'react';
 import {
   Container, Typography, Paper, Box, Button, Grid, Chip,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Divider, CircularProgress, Alert, IconButton
+  Divider, CircularProgress, Alert, IconButton, Dialog, DialogTitle,
+  DialogContent, DialogActions, TextField, FormControl, InputLabel,
+  Select, MenuItem, Snackbar, InputAdornment
 } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
+import axios from 'axios';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PrintIcon from '@mui/icons-material/Print';
 import DownloadIcon from '@mui/icons-material/Download';
 import EmailIcon from '@mui/icons-material/Email';
 import PaymentIcon from '@mui/icons-material/Payment';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import { formatAddress } from '../../utils/addressFormatter';
+import { printInvoice, downloadInvoicePDF, downloadInvoiceCSV } from '../../utils/invoiceUtils';
+
+// Get API URL from environment variables
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const ViewInvoice = () => {
   const navigate = useNavigate();
@@ -17,81 +28,53 @@ const ViewInvoice = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [invoice, setInvoice] = useState(null);
+  const [paymentDialog, setPaymentDialog] = useState(false);
+  const [paymentData, setPaymentData] = useState({
+    amount: 0,
+    method: 'cash',
+    reference: '',
+    notes: ''
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
+  const [editPaymentDialog, setEditPaymentDialog] = useState(false);
+  const [editingPayment, setEditingPayment] = useState(null);
+  const [editPaymentData, setEditPaymentData] = useState({
+    amount: 0,
+    method: 'cash',
+    reference: '',
+    notes: ''
+  });
+  const [downloadDialog, setDownloadDialog] = useState(false);
   
   useEffect(() => {
-    // In a real app, we would fetch from the API
-    // For now, we'll simulate an API call with mock data
-    setLoading(true);
-    setError(null);
-    
-    setTimeout(() => {
-      // Mock invoice data
-      const mockInvoice = {
-        _id: id,
-        invoiceNumber: 'INV-2023-001',
-        patient: {
-          _id: '60d21b4667d0d8992e610c01',
-          name: 'John Doe',
-          email: 'john@example.com',
-          phone: '9876543210',
-          address: '123 Main St, Anytown, AT 12345'
-        },
-        clinic: {
-          _id: '60d21b4667d0d8992e610c10',
-          name: 'Main Clinic',
-          address: '456 Clinic Ave, Medical City, MC 67890',
-          phone: '1234567890'
-        },
-        invoiceDate: new Date('2023-06-15'),
-        dueDate: new Date('2023-07-15'),
-        items: [
-          {
-            description: 'Dental Cleaning',
-            quantity: 1,
-            unitPrice: 2000,
-            discount: 0,
-            tax: 18,
-            amount: 2360
-          },
-          {
-            description: 'X-Ray',
-            quantity: 2,
-            unitPrice: 1500,
-            discount: 10,
-            tax: 18,
-            amount: 3186
-          }
-        ],
-        subtotal: 5000,
-        discountAmount: 300,
-        taxAmount: 846,
-        totalAmount: 5546,
-        paymentStatus: 'Paid',
-        paymentHistory: [
-          {
-            date: new Date('2023-06-15'),
-            amount: 5546,
-            method: 'Credit Card',
-            reference: 'TXREF123456'
-          }
-        ],
-        notes: 'Patient reported sensitivity in upper right molar.',
-        termsAndConditions: 'Payment is due within 30 days. Late payments are subject to a 2% monthly interest charge.',
-        isGstInvoice: true,
-        gstDetails: {
-          gstNumber: 'GST123456789',
-          cgst: 9,
-          sgst: 9,
-          igst: 0,
-          hsnCode: '998313'
-        },
-        createdAt: new Date('2023-06-15'),
-        updatedAt: new Date('2023-06-15')
-      };
+    const fetchInvoice = async () => {
+      setLoading(true);
+      setError(null);
       
-      setInvoice(mockInvoice);
-      setLoading(false);
-    }, 1000);
+      try {
+        // Get token from localStorage
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('Authentication token not found');
+        }
+
+        const response = await axios.get(`${API_URL}/billing/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        setInvoice(response.data.data);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching invoice:', err);
+        setError('Error fetching invoice. Please try again.');
+        setLoading(false);
+      }
+    };
+    
+    fetchInvoice();
   }, [id]);
   
   // Format currency
@@ -127,13 +110,39 @@ const ViewInvoice = () => {
     }
   };
   
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = async () => {
+    try {
+      await printInvoice(invoice);
+    } catch (error) {
+      console.error('Error printing invoice:', error);
+      setNotification({
+        open: true,
+        message: 'Failed to print invoice. Please try again.',
+        severity: 'error'
+      });
+    }
   };
   
-  const handleDownload = () => {
-    // In a real app, we would generate a PDF and download it
-    alert('PDF download functionality will be implemented in the future.');
+  const handleDownload = async () => {
+    setDownloadDialog(true);
+  };
+
+  const handleDownloadFormat = async (format) => {
+    try {
+      if (format === 'pdf') {
+        await downloadInvoicePDF(invoice);
+      } else {
+        downloadInvoiceCSV(invoice);
+      }
+      setDownloadDialog(false);
+    } catch (error) {
+      console.error('Error downloading invoice:', error);
+      setNotification({
+        open: true,
+        message: 'Failed to download invoice. Please try again.',
+        severity: 'error'
+      });
+    }
   };
   
   const handleSendEmail = () => {
@@ -142,8 +151,236 @@ const ViewInvoice = () => {
   };
   
   const handleRecordPayment = () => {
-    // In a real app, we would navigate to a payment form
-    navigate(`/billing/invoice/${id}/payment`);
+    setPaymentData({
+      amount: invoice.balanceAmount || invoice.totalAmount,
+      method: 'cash',
+      reference: '',
+      notes: ''
+    });
+    setPaymentDialog(true);
+  };
+
+  const handlePaymentInputChange = (e) => {
+    const { name, value } = e.target;
+    setPaymentData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handlePaymentSubmit = async () => {
+    if (paymentData.amount <= 0) {
+      setNotification({
+        open: true,
+        message: 'Payment amount must be greater than zero',
+        severity: 'error'
+      });
+      return;
+    }
+
+    if (paymentData.amount > (invoice.balanceAmount || invoice.totalAmount)) {
+      setNotification({
+        open: true,
+        message: 'Payment amount cannot exceed the balance due',
+        severity: 'error'
+      });
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      const response = await axios.post(`${API_URL}/billing/${id}/payment`, {
+        amount: paymentData.amount,
+        paymentMethod: paymentData.method,
+        reference: paymentData.reference,
+        notes: paymentData.notes
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      setNotification({
+        open: true,
+        message: 'Payment recorded successfully!',
+        severity: 'success'
+      });
+
+      // Refresh invoice data
+      const updatedResponse = await axios.get(`${API_URL}/billing/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      setInvoice(updatedResponse.data.data);
+
+      setPaymentDialog(false);
+    } catch (err) {
+      console.error('Error recording payment:', err);
+      setNotification({
+        open: true,
+        message: err.response?.data?.message || 'Error recording payment. Please try again.',
+        severity: 'error'
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleCloseNotification = () => {
+    setNotification(prev => ({ ...prev, open: false }));
+  };
+
+  const handleEditPayment = (payment) => {
+    setEditingPayment(payment);
+    setEditPaymentData({
+      amount: payment.amount,
+      method: payment.paymentMethod || 'cash',
+      reference: payment.transactionId || '',
+      notes: payment.notes || ''
+    });
+    setEditPaymentDialog(true);
+  };
+
+  const handleDeletePayment = async (payment) => {
+    if (!window.confirm('Are you sure you want to delete this payment? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      const response = await axios.delete(`${API_URL}/billing/${id}/payment/${payment._id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      setNotification({
+        open: true,
+        message: 'Payment deleted successfully!',
+        severity: 'success'
+      });
+
+      // Refresh invoice data
+      const updatedResponse = await axios.get(`${API_URL}/billing/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      setInvoice(updatedResponse.data.data);
+    } catch (err) {
+      console.error('Error deleting payment:', err);
+      setNotification({
+        open: true,
+        message: err.response?.data?.message || 'Error deleting payment. Please try again.',
+        severity: 'error'
+      });
+    }
+  };
+
+  const handleEditPaymentInputChange = (e) => {
+    const { name, value } = e.target;
+    setEditPaymentData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleEditPaymentSubmit = async () => {
+    if (editPaymentData.amount <= 0) {
+      setNotification({
+        open: true,
+        message: 'Payment amount must be greater than zero',
+        severity: 'error'
+      });
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      const response = await axios.put(`${API_URL}/billing/${id}/payment/${editingPayment._id}`, {
+        amount: editPaymentData.amount,
+        paymentMethod: editPaymentData.method,
+        reference: editPaymentData.reference,
+        notes: editPaymentData.notes
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      setNotification({
+        open: true,
+        message: 'Payment updated successfully!',
+        severity: 'success'
+      });
+
+      // Refresh invoice data
+      const updatedResponse = await axios.get(`${API_URL}/billing/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      setInvoice(updatedResponse.data.data);
+
+      setEditPaymentDialog(false);
+    } catch (err) {
+      console.error('Error updating payment:', err);
+      setNotification({
+        open: true,
+        message: err.response?.data?.message || 'Error updating payment. Please try again.',
+        severity: 'error'
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleEdit = () => {
+    navigate(`/billing/invoice/${id}/edit`);
+  };
+
+  const handleDelete = () => {
+    if (window.confirm('Are you sure you want to delete this invoice? This action cannot be undone.')) {
+      const deleteInvoice = async () => {
+        try {
+          const token = localStorage.getItem('token');
+          if (!token) {
+            throw new Error('Authentication token not found');
+          }
+
+          await axios.delete(`${API_URL}/billing/${id}`, {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
+
+          alert('Invoice deleted successfully');
+          navigate('/billing');
+        } catch (err) {
+          console.error('Error deleting invoice:', err);
+          alert('Error deleting invoice. Please try again.');
+        }
+      };
+
+      deleteInvoice();
+    }
   };
   
   if (loading) {
@@ -181,7 +418,7 @@ const ViewInvoice = () => {
       <Box sx={{ mt: 4, mb: 4 }}>
         <Grid container spacing={2} alignItems="center" sx={{ mb: 3 }}>
           <Grid item>
-            <IconButton onClick={() => navigate('/billing')}>
+                          <IconButton onClick={() => navigate('/billing')}>
               <ArrowBackIcon />
             </IconButton>
           </Grid>
@@ -218,28 +455,49 @@ const ViewInvoice = () => {
               Download
             </Button>
           </Grid>
-          <Grid item>
-            <Button 
-              startIcon={<EmailIcon />} 
-              variant="outlined" 
-              onClick={handleSendEmail}
-              sx={{ mr: 1 }}
-            >
-              Email
-            </Button>
-          </Grid>
-          {invoice.paymentStatus !== 'Paid' && (
-            <Grid item>
-              <Button 
-                startIcon={<PaymentIcon />} 
-                variant="contained" 
-                color="primary" 
-                onClick={handleRecordPayment}
-              >
-                Record Payment
-              </Button>
-            </Grid>
-          )}
+                     <Grid item>
+             <Button 
+               startIcon={<EmailIcon />} 
+               variant="outlined" 
+               onClick={handleSendEmail}
+               sx={{ mr: 1 }}
+             >
+               Email
+             </Button>
+           </Grid>
+           <Grid item>
+             <Button 
+               startIcon={<EditIcon />} 
+               variant="outlined" 
+               onClick={handleEdit}
+               sx={{ mr: 1 }}
+             >
+               Edit
+             </Button>
+           </Grid>
+           <Grid item>
+             <Button 
+               startIcon={<DeleteIcon />} 
+               variant="outlined" 
+               color="error" 
+               onClick={handleDelete}
+               sx={{ mr: 1 }}
+             >
+               Delete
+             </Button>
+           </Grid>
+           {invoice.paymentStatus !== 'Paid' && (
+             <Grid item>
+               <Button 
+                 startIcon={<PaymentIcon />} 
+                 variant="contained" 
+                 color="primary" 
+                 onClick={handleRecordPayment}
+               >
+                 Record Payment
+               </Button>
+             </Grid>
+           )}
         </Grid>
         
         <Paper sx={{ p: 4, mb: 3 }} className="invoice-paper">
@@ -253,7 +511,7 @@ const ViewInvoice = () => {
                 {invoice.clinic.name}
               </Typography>
               <Typography variant="body2">
-                {invoice.clinic.address}
+                {formatAddress(invoice.clinic.address)}
               </Typography>
               <Typography variant="body2">
                 Phone: {invoice.clinic.phone}
@@ -272,7 +530,7 @@ const ViewInvoice = () => {
                 {invoice.patient.name}
               </Typography>
               <Typography variant="body2">
-                {invoice.patient.address}
+                {formatAddress(invoice.patient.address)}
               </Typography>
               <Typography variant="body2">
                 Phone: {invoice.patient.phone}
@@ -441,63 +699,313 @@ const ViewInvoice = () => {
                     </Typography>
                   </Grid>
                   
-                  <Grid item xs={6}>
-                    <Typography variant="body2">
-                      Amount Paid:
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={6} sx={{ textAlign: 'right' }}>
-                    <Typography variant="body2">
-                      {formatCurrency(invoice.paymentHistory.reduce((sum, payment) => sum + payment.amount, 0))}
-                    </Typography>
-                  </Grid>
-                  
-                  <Grid item xs={6}>
-                    <Typography variant="body2" fontWeight="bold">
-                      Balance Due:
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={6} sx={{ textAlign: 'right' }}>
-                    <Typography variant="body2" fontWeight="bold">
-                      {formatCurrency(invoice.totalAmount - invoice.paymentHistory.reduce((sum, payment) => sum + payment.amount, 0))}
-                    </Typography>
-                  </Grid>
+                                     <Grid item xs={6}>
+                     <Typography variant="body2">
+                       Amount Paid:
+                     </Typography>
+                   </Grid>
+                   <Grid item xs={6} sx={{ textAlign: 'right' }}>
+                     <Typography variant="body2">
+                       {formatCurrency(invoice.amountPaid || 0)}
+                     </Typography>
+                   </Grid>
+                   
+                   <Grid item xs={6}>
+                     <Typography variant="body2" fontWeight="bold">
+                       Balance Due:
+                     </Typography>
+                   </Grid>
+                   <Grid item xs={6} sx={{ textAlign: 'right' }}>
+                     <Typography variant="body2" fontWeight="bold">
+                       {formatCurrency(invoice.balanceAmount || invoice.totalAmount)}
+                     </Typography>
+                   </Grid>
                 </Grid>
               </Box>
               
-              {invoice.paymentHistory.length > 0 && (
-                <Box sx={{ mt: 3 }}>
-                  <Typography variant="subtitle2" gutterBottom>
-                    Payment History
-                  </Typography>
-                  <TableContainer>
-                    <Table size="small">
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>Date</TableCell>
-                          <TableCell>Method</TableCell>
-                          <TableCell>Reference</TableCell>
-                          <TableCell align="right">Amount</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {invoice.paymentHistory.map((payment, index) => (
-                          <TableRow key={index}>
-                            <TableCell>{formatDate(payment.date)}</TableCell>
-                            <TableCell>{payment.method}</TableCell>
-                            <TableCell>{payment.reference}</TableCell>
-                            <TableCell align="right">{formatCurrency(payment.amount)}</TableCell>
+                             {(invoice.payments && invoice.payments.length > 0) && (
+                 <Box sx={{ mt: 3 }}>
+                   <Typography variant="subtitle2" gutterBottom>
+                     Payment History
+                   </Typography>
+                   <TableContainer>
+                     <Table size="small">
+                                               <TableHead>
+                          <TableRow>
+                            <TableCell>Date</TableCell>
+                            <TableCell>Method</TableCell>
+                            <TableCell>Reference</TableCell>
+                            <TableCell align="right">Amount</TableCell>
+                            <TableCell align="center">Actions</TableCell>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                </Box>
-              )}
+                        </TableHead>
+                        <TableBody>
+                          {invoice.payments.map((payment, index) => (
+                            <TableRow key={index}>
+                              <TableCell>{formatDate(payment.paymentDate || payment.date)}</TableCell>
+                              <TableCell>{payment.paymentMethod || payment.method}</TableCell>
+                              <TableCell>{payment.transactionId || payment.reference}</TableCell>
+                              <TableCell align="right">{formatCurrency(payment.amount)}</TableCell>
+                              <TableCell align="center">
+                                <IconButton 
+                                  size="small" 
+                                  color="primary" 
+                                  onClick={() => handleEditPayment(payment)}
+                                  title="Edit Payment"
+                                >
+                                  <EditIcon fontSize="small" />
+                                </IconButton>
+                                <IconButton 
+                                  size="small" 
+                                  color="error" 
+                                  onClick={() => handleDeletePayment(payment)}
+                                  title="Delete Payment"
+                                >
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                     </Table>
+                   </TableContainer>
+                 </Box>
+               )}
             </Grid>
           </Grid>
         </Paper>
       </Box>
+
+      {/* Payment Dialog */}
+      <Dialog open={paymentDialog} onClose={() => setPaymentDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Record Payment</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12}>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Invoice: {invoice?.invoiceNumber} | Balance Due: {formatCurrency(invoice?.balanceAmount || invoice?.totalAmount || 0)}
+              </Typography>
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Payment Amount *"
+                type="number"
+                name="amount"
+                value={paymentData.amount}
+                onChange={handlePaymentInputChange}
+                inputProps={{ min: 0, max: invoice?.balanceAmount || invoice?.totalAmount, step: 0.01 }}
+                InputProps={{
+                  startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+                }}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <FormControl fullWidth>
+                <InputLabel>Payment Method *</InputLabel>
+                <Select
+                  name="method"
+                  value={paymentData.method}
+                  label="Payment Method *"
+                  onChange={handlePaymentInputChange}
+                >
+                  <MenuItem value="cash">Cash</MenuItem>
+                  <MenuItem value="credit card">Credit Card</MenuItem>
+                  <MenuItem value="debit card">Debit Card</MenuItem>
+                  <MenuItem value="upi">UPI</MenuItem>
+                  <MenuItem value="bank transfer">Bank Transfer</MenuItem>
+                  <MenuItem value="cheque">Cheque</MenuItem>
+                  <MenuItem value="insurance">Insurance</MenuItem>
+                  <MenuItem value="other">Other</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Reference Number"
+                name="reference"
+                value={paymentData.reference}
+                onChange={handlePaymentInputChange}
+                placeholder="Transaction ID, Cheque Number, etc."
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Notes"
+                name="notes"
+                value={paymentData.notes}
+                onChange={handlePaymentInputChange}
+                multiline
+                rows={2}
+                placeholder="Additional notes about this payment"
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPaymentDialog(false)} disabled={submitting}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handlePaymentSubmit} 
+            variant="contained" 
+            disabled={submitting}
+          >
+            {submitting ? 'Recording...' : 'Record Payment'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Payment Edit Dialog */}
+      <Dialog open={editPaymentDialog} onClose={() => setEditPaymentDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Edit Payment</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12}>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Invoice: {invoice?.invoiceNumber} | Original Amount: {formatCurrency(editingPayment?.amount || 0)}
+              </Typography>
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Payment Amount *"
+                type="number"
+                name="amount"
+                value={editPaymentData.amount}
+                onChange={handleEditPaymentInputChange}
+                inputProps={{ min: 0, step: 0.01 }}
+                InputProps={{
+                  startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+                }}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <FormControl fullWidth>
+                <InputLabel>Payment Method *</InputLabel>
+                <Select
+                  name="method"
+                  value={editPaymentData.method}
+                  label="Payment Method *"
+                  onChange={handleEditPaymentInputChange}
+                >
+                  <MenuItem value="cash">Cash</MenuItem>
+                  <MenuItem value="credit card">Credit Card</MenuItem>
+                  <MenuItem value="debit card">Debit Card</MenuItem>
+                  <MenuItem value="upi">UPI</MenuItem>
+                  <MenuItem value="bank transfer">Bank Transfer</MenuItem>
+                  <MenuItem value="cheque">Cheque</MenuItem>
+                  <MenuItem value="insurance">Insurance</MenuItem>
+                  <MenuItem value="other">Other</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Reference Number"
+                name="reference"
+                value={editPaymentData.reference}
+                onChange={handleEditPaymentInputChange}
+                placeholder="Transaction ID, Cheque Number, etc."
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Notes"
+                name="notes"
+                value={editPaymentData.notes}
+                onChange={handleEditPaymentInputChange}
+                multiline
+                rows={2}
+                placeholder="Additional notes about this payment"
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditPaymentDialog(false)} disabled={submitting}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleEditPaymentSubmit} 
+            variant="contained" 
+            disabled={submitting}
+          >
+            {submitting ? 'Updating...' : 'Update Payment'}
+          </Button>
+        </DialogActions>
+             </Dialog>
+
+       {/* Download Format Dialog */}
+       <Dialog open={downloadDialog} onClose={() => setDownloadDialog(false)} maxWidth="sm" fullWidth>
+         <DialogTitle>Choose Download Format</DialogTitle>
+         <DialogContent>
+           <Typography variant="body1" sx={{ mb: 2 }}>
+             Select the format you would like to download the invoice:
+           </Typography>
+           <Grid container spacing={2}>
+             <Grid item xs={6}>
+               <Button
+                 fullWidth
+                 variant="outlined"
+                 size="large"
+                 onClick={() => handleDownloadFormat('pdf')}
+                 sx={{ 
+                   height: 80, 
+                   flexDirection: 'column',
+                   border: '2px solid #1976d2',
+                   '&:hover': { border: '2px solid #1565c0' }
+                 }}
+               >
+                 <Typography variant="h6" color="primary">PDF</Typography>
+                 <Typography variant="body2" color="text.secondary">
+                   Professional format
+                 </Typography>
+               </Button>
+             </Grid>
+             <Grid item xs={6}>
+               <Button
+                 fullWidth
+                 variant="outlined"
+                 size="large"
+                 onClick={() => handleDownloadFormat('csv')}
+                 sx={{ 
+                   height: 80, 
+                   flexDirection: 'column',
+                   border: '2px solid #2e7d32',
+                   '&:hover': { border: '2px solid #1b5e20' }
+                 }}
+               >
+                 <Typography variant="h6" color="success.main">CSV</Typography>
+                 <Typography variant="body2" color="text.secondary">
+                   Data analysis
+                 </Typography>
+               </Button>
+             </Grid>
+           </Grid>
+         </DialogContent>
+         <DialogActions>
+           <Button onClick={() => setDownloadDialog(false)}>
+             Cancel
+           </Button>
+         </DialogActions>
+       </Dialog>
+ 
+       {/* Notification Snackbar */}
+       <Snackbar
+        open={notification.open}
+        autoHideDuration={6000}
+        onClose={handleCloseNotification}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert onClose={handleCloseNotification} severity={notification.severity} sx={{ width: '100%' }}>
+          {notification.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

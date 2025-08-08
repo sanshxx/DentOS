@@ -20,6 +20,9 @@ import {
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
+// Get API URL from environment variables or use default
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const Inventory = () => {
   const navigate = useNavigate();
   const [inventory, setInventory] = useState([]);
@@ -70,146 +73,199 @@ const Inventory = () => {
     setError(null);
     
     try {
-      // In a real app, we would fetch from the API
-      // For now, we'll simulate an API call
-      setTimeout(() => {
-        // Mock API call
-        const mockResponse = {
-          success: true,
-          count: 5,
-          data: [
-            {
-              _id: '60d21b4667d0d8992e610c85',
-              itemName: 'Dental Floss',
-              itemCode: 'DF-001',
-              category: 'Consumables',
-              description: 'Waxed dental floss for patient use',
-              unit: 'Box',
-              unitPrice: 120,
-              currentStock: 45,
-              minimumStock: 10,
-              supplier: {
-                name: 'Dental Supplies Ltd',
-                contactPerson: 'Rajesh Kumar',
-                phone: '9876543210',
-                email: 'rajesh@dentalsupplies.com'
-              },
-              clinic: {
-                _id: '60d21b4667d0d8992e610c10',
-                name: 'Main Clinic'
-              },
-              expiryDate: '2024-06-30',
-              lastRestocked: '2023-01-10',
-              status: 'In Stock'
-            },
-            {
-              _id: '60d21b4667d0d8992e610c86',
-              itemName: 'Dental Mirrors',
-              itemCode: 'DM-002',
-              category: 'Instruments',
-              description: 'Stainless steel dental mirrors',
-              unit: 'Piece',
-              unitPrice: 250,
-              currentStock: 20,
-              minimumStock: 5,
-              supplier: {
-                name: 'Medical Instruments Inc',
-                contactPerson: 'Priya Sharma',
-                phone: '9876543211',
-                email: 'priya@medicalinstruments.com'
-              },
-              clinic: {
-                _id: '60d21b4667d0d8992e610c10',
-                name: 'Main Clinic'
-              },
-              expiryDate: null,
-              lastRestocked: '2023-02-15',
-              status: 'In Stock'
-            },
-            {
-              _id: '60d21b4667d0d8992e610c87',
-              itemName: 'Dental Anesthetic',
-              itemCode: 'DA-003',
-              category: 'Medicines',
-              description: 'Local anesthetic for dental procedures',
-              unit: 'Box',
-              unitPrice: 850,
-              currentStock: 8,
-              minimumStock: 5,
-              supplier: {
-                name: 'Pharma Distributors',
-                contactPerson: 'Amit Patel',
-                phone: '9876543212',
-                email: 'amit@pharmadist.com'
-              },
-              clinic: {
-                _id: '60d21b4667d0d8992e610c10',
-                name: 'Main Clinic'
-              },
-              expiryDate: '2023-12-31',
-              lastRestocked: '2023-03-05',
-              status: 'Low Stock'
-            },
-            {
-              _id: '60d21b4667d0d8992e610c88',
-              itemName: 'Dental Chair',
-              itemCode: 'DC-004',
-              category: 'Equipment',
-              description: 'Fully automatic dental chair with LED light',
-              unit: 'Piece',
-              unitPrice: 250000,
-              currentStock: 2,
-              minimumStock: 1,
-              supplier: {
-                name: 'Dental Equipment Co',
-                contactPerson: 'Vikram Mehta',
-                phone: '9876543213',
-                email: 'vikram@dentalequip.com'
-              },
-              clinic: {
-                _id: '60d21b4667d0d8992e610c10',
-                name: 'Main Clinic'
-              },
-              expiryDate: null,
-              lastRestocked: '2023-01-20',
-              status: 'In Stock'
-            },
-            {
-              _id: '60d21b4667d0d8992e610c89',
-              itemName: 'Dental Implants',
-              itemCode: 'DI-005',
-              category: 'Implants',
-              description: 'Titanium dental implants',
-              unit: 'Piece',
-              unitPrice: 3500,
-              currentStock: 0,
-              minimumStock: 5,
-              supplier: {
-                name: 'Implant Specialists',
-                contactPerson: 'Neha Gupta',
-                phone: '9876543214',
-                email: 'neha@implantspecialists.com'
-              },
-              clinic: {
-                _id: '60d21b4667d0d8992e610c10',
-                name: 'Main Clinic'
-              },
-              expiryDate: '2025-06-30',
-              lastRestocked: '2022-12-10',
-              status: 'Out of Stock'
-            }
-          ]
-        };
-        
-        setInventory(mockResponse.data);
-        setLoading(false);
-      }, 1000); // Simulate loading delay
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+      
+      // Build query parameters
+      let queryParams = new URLSearchParams();
+      if (searchTerm) queryParams.append('search', searchTerm);
+      if (categoryFilter && categoryFilter !== 'all') queryParams.append('category', categoryFilter);
+      if (statusFilter && statusFilter !== 'all') queryParams.append('status', statusFilter);
+      queryParams.append('page', page + 1);
+      queryParams.append('limit', rowsPerPage);
+      
+      // Make API call
+      const response = await axios.get(`${API_URL}/inventory?${queryParams.toString()}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      setInventory(response.data.data);
+      setLoading(false);
     } catch (err) {
       console.error('Error fetching inventory:', err);
-      setError('Failed to load inventory data. Please try again.');
+      setError(err.response?.data?.message || err.message || 'Failed to fetch inventory items');
       setLoading(false);
+      toast.error('Failed to fetch inventory items');
     }
   };
+
+  // Update useEffect to re-fetch when filters change
+  useEffect(() => {
+    fetchInventory();
+  }, [page, rowsPerPage, searchTerm, categoryFilter, statusFilter]);
+
+  const handleDeleteItem = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this item?')) {
+      return;
+    }
+    
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+      
+      await axios.delete(`${API_URL}/inventory/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      toast.success('Inventory item deleted successfully');
+      fetchInventory(); // Refresh the list
+    } catch (err) {
+      console.error('Error deleting inventory item:', err);
+      toast.error(err.response?.data?.message || 'Failed to delete inventory item');
+    }
+  };
+
+  const handleUpdateStock = async () => {
+    if (!currentItem || !stockUpdateAmount) {
+      setFormErrors({...formErrors, stockUpdateAmount: 'Please enter a valid amount'});
+      return;
+    }
+    
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+      
+      // Get the clinic ID from the current item
+      let clinicId;
+      if (currentItem.clinics && currentItem.clinics.length > 0 && currentItem.clinics[0].clinic) {
+        // Check if clinic is an object or a string ID
+        clinicId = typeof currentItem.clinics[0].clinic === 'object' 
+          ? currentItem.clinics[0].clinic._id 
+          : currentItem.clinics[0].clinic;
+      } else {
+        // Fallback clinic ID if none is found
+        clinicId = '60d21b4667d0d8992e610c10'; // Default clinic ID
+      }
+      
+      await axios.put(`${API_URL}/inventory/${currentItem._id}/stock`, {
+        updateAmount: parseInt(stockUpdateAmount, 10),
+        clinicId: clinicId
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      toast.success('Stock updated successfully');
+      setOpenDialog(false);
+      setStockUpdateAmount('');
+      fetchInventory(); // Refresh the list
+    } catch (err) {
+      console.error('Error updating stock:', err);
+      toast.error(err.response?.data?.message || 'Failed to update stock');
+    }
+  };
+
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Validate form
+    const errors = validateInventoryData();
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+    
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+      
+      // Prepare data for API - transform from form structure to backend model
+      const inventoryData = {
+        itemName: formData.itemName,
+        itemCode: formData.itemCode,
+        category: formData.category,
+        description: formData.description || '',
+        unit: formData.unit,
+        costPrice: parseFloat(formData.unitPrice), // Map unitPrice to costPrice
+        status: formData.status || 'active',
+        // Structure clinics as an array with clinic reference
+        clinics: [{
+          clinic: formData.clinic._id,
+          currentStock: parseInt(formData.currentStock, 10),
+          minStockLevel: parseInt(formData.minimumStock, 10),
+          location: formData.location || 'Main Storage'
+        }],
+        supplier: formData.supplier,
+        expiryDate: formData.expiryDate || null
+      };
+      
+      if (isEditing) {
+        // Update existing item
+        await axios.put(`${API_URL}/inventory/${formData._id}`, inventoryData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        toast.success('Inventory item updated successfully');
+      } else {
+        // Create new item
+        await axios.post(`${API_URL}/inventory`, inventoryData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        toast.success('Inventory item created successfully');
+      }
+      
+      setFormOpen(false);
+      // Reset form data
+      setFormData({
+        itemName: '',
+        itemCode: '',
+        category: '',
+        description: '',
+        unit: '',
+        unitPrice: '',
+        currentStock: '',
+        minimumStock: '',
+        supplier: {
+          name: '',
+          contactPerson: '',
+          phone: '',
+          email: ''
+        },
+        location: '',
+        status: 'active',
+        clinic: { 
+          _id: '60d21b4667d0d8992e610c10', 
+          name: 'Main Clinic' 
+        }
+      });
+      setFormErrors({});
+      setIsEditing(false);
+      fetchInventory(); // Refresh the list
+    } catch (err) {
+      console.error('Error saving inventory item:', err);
+      toast.error(err.response?.data?.message || 'Failed to save inventory item');
+    }
+  };
+  
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -239,6 +295,7 @@ const Inventory = () => {
     setCurrentItem(item);
     setStockUpdateAmount('');
     setOpenDialog(true);
+    setFormErrors({});
   };
 
   const handleCloseStockDialog = () => {
@@ -247,32 +304,78 @@ const Inventory = () => {
     setStockUpdateAmount('');
   };
 
-  const handleStockUpdate = () => {
-    // In a real app, we would call the API to update the stock
-    const newStock = parseInt(currentItem.currentStock) + parseInt(stockUpdateAmount);
-    
-    // Update the inventory state
-    const updatedInventory = inventory.map(item => {
-      if (item._id === currentItem._id) {
-        return {
-          ...item,
-          currentStock: newStock,
-          lastRestocked: new Date().toISOString().split('T')[0],
-          status: newStock <= 0 ? 'Out of Stock' : 
-                  newStock <= item.minimumStock ? 'Low Stock' : 'In Stock'
-        };
+  const handleStockUpdate = async () => {
+    try {
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
       }
-      return item;
-    });
-    
-    setInventory(updatedInventory);
-    toast.success(`Stock updated successfully for ${currentItem.itemName}`);
-    handleCloseStockDialog();
+      
+      const amount = parseInt(stockUpdateAmount);
+      
+      // Get the clinic ID from the current item
+      let clinicId;
+      if (currentItem.clinics && currentItem.clinics.length > 0 && currentItem.clinics[0].clinic) {
+        // Check if clinic is an object or a string ID
+        clinicId = typeof currentItem.clinics[0].clinic === 'object' 
+          ? currentItem.clinics[0].clinic._id 
+          : currentItem.clinics[0].clinic;
+      } else {
+        // Fallback clinic ID if none is found
+        clinicId = '60d21b4667d0d8992e610c10'; // Default clinic ID
+      }
+      
+      // Call API to update stock using the correct endpoint and data structure
+      await axios.put(`${API_URL}/inventory/${currentItem._id}/stock`, {
+        updateAmount: amount,
+        clinicId: clinicId
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      // Refresh inventory list to get updated data
+      fetchInventory();
+      
+      toast.success(`Stock updated successfully for ${currentItem.itemName}`);
+      handleCloseStockDialog();
+    } catch (err) {
+      console.error('Error updating stock:', err);
+      toast.error(err.response?.data?.message || 'Failed to update stock. Please try again.');
+    }
   };
 
   const handleOpenForm = (item = null) => {
     if (item) {
-      setFormData(item);
+      // Transform the item data to match the form structure
+      const transformedItem = {
+        ...item,
+        // Extract currentStock and minimumStock from the first clinic in the clinics array
+        currentStock: item.clinics && item.clinics.length > 0 ? item.clinics[0].currentStock : '',
+        minimumStock: item.clinics && item.clinics.length > 0 ? item.clinics[0].minStockLevel : '',
+        // Map costPrice to unitPrice for the form
+        unitPrice: item.costPrice || '',
+        // Ensure supplier object exists
+        supplier: item.supplier || {
+          name: '',
+          contactPerson: '',
+          phone: '',
+          email: ''
+        },
+        // Set clinic from the first clinic in the clinics array
+        clinic: item.clinics && item.clinics.length > 0 && item.clinics[0].clinic ? 
+          { 
+            _id: typeof item.clinics[0].clinic === 'object' ? item.clinics[0].clinic._id : item.clinics[0].clinic, 
+            name: typeof item.clinics[0].clinic === 'object' ? (item.clinics[0].clinic.name || 'Selected Clinic') : 'Selected Clinic' 
+          } : 
+          { _id: '', name: 'Main Clinic' },
+        // Set location from the first clinic in the clinics array
+        location: item.clinics && item.clinics.length > 0 ? item.clinics[0].location : 'Main Storage'
+      };
+      setFormData(transformedItem);
       setIsEditing(true);
     } else {
       setFormData({
@@ -281,7 +384,7 @@ const Inventory = () => {
         category: '',
         description: '',
         unit: '',
-        unitPrice: '',
+        unitPrice: '', // This will map to costPrice
         currentStock: '',
         minimumStock: '',
         supplier: {
@@ -295,7 +398,8 @@ const Inventory = () => {
           name: 'Main Clinic'
         },
         expiryDate: '',
-        status: ''
+        status: 'active',
+        location: 'Main Storage'
       });
       setIsEditing(false);
     }
@@ -327,8 +431,8 @@ const Inventory = () => {
     }
   };
 
-  const handleFormSubmit = () => {
-    // Basic validation
+  // Additional validation function
+  const validateInventoryData = () => {
     const errors = {};
     if (!formData.itemName) errors.itemName = 'Item name is required';
     if (!formData.itemCode) errors.itemCode = 'Item code is required';
@@ -338,89 +442,57 @@ const Inventory = () => {
     if (!formData.currentStock && formData.currentStock !== 0) errors.currentStock = 'Current stock is required';
     if (!formData.minimumStock && formData.minimumStock !== 0) errors.minimumStock = 'Minimum stock is required';
     
-    if (Object.keys(errors).length > 0) {
-      setFormErrors(errors);
-      return;
-    }
-    
-    // In a real app, we would call the API to create/update the item
-    if (isEditing) {
-      // Update existing item
-      const updatedInventory = inventory.map(item => {
-        if (item._id === formData._id) {
-          return formData;
-        }
-        return item;
-      });
-      
-      setInventory(updatedInventory);
-      toast.success(`${formData.itemName} updated successfully`);
-    } else {
-      // Create new item
-      const newItem = {
-        ...formData,
-        _id: `new-${Date.now()}`,
-        lastRestocked: new Date().toISOString().split('T')[0],
-        status: formData.currentStock <= 0 ? 'Out of Stock' : 
-                formData.currentStock <= formData.minimumStock ? 'Low Stock' : 'In Stock'
-      };
-      
-      setInventory([...inventory, newItem]);
-      toast.success(`${formData.itemName} added to inventory`);
-    }
-    
-    handleCloseForm();
+    return errors;
   };
+  
+  // This function has been removed as it was a duplicate of handleFormSubmit
 
-  const handleDeleteItem = (id) => {
-    if (window.confirm('Are you sure you want to delete this item?')) {
-      // In a real app, we would call the API to delete the item
-      const updatedInventory = inventory.filter(item => item._id !== id);
-      setInventory(updatedInventory);
-      toast.success('Item deleted successfully');
-    }
-  };
+  // Removed duplicate function
 
-  // Filter inventory based on search term and filters
-  const filteredInventory = inventory.filter(item => {
-    const matchesSearch = 
-      item.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.itemCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter;
-    const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
-    
-    return matchesSearch && matchesCategory && matchesStatus;
-  });
+  // We're using server-side filtering and pagination, so we don't need to filter the inventory here
+  // The API handles filtering and pagination based on the query parameters we send
 
-  // Pagination
-  const paginatedInventory = filteredInventory.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
-  );
-
-  // Get unique categories for filter
-  const categories = ['all', ...new Set(inventory.map(item => item.category))];
-  const statuses = ['all', ...new Set(inventory.map(item => item.status))];
+  // Define categories and statuses based on the backend model
+  const categories = [
+    'all',
+    'Consumables',
+    'Instruments',
+    'Equipment',
+    'Medicines',
+    'Implants',
+    'Orthodontic Supplies',
+    'Office Supplies',
+    'Others'
+  ];
+  
+  const statuses = [
+    'all',
+    'active',
+    'low stock',
+    'out of stock'
+  ];
 
   // Render status chip with appropriate color
   const renderStatusChip = (status) => {
     let color = 'default';
     let icon = null;
+    let label = status;
     
     switch (status) {
-      case 'In Stock':
+      case 'active':
         color = 'success';
         icon = <CheckCircleIcon fontSize="small" />;
+        label = 'In Stock';
         break;
-      case 'Low Stock':
+      case 'low stock':
         color = 'warning';
         icon = <WarningIcon fontSize="small" />;
+        label = 'Low Stock';
         break;
-      case 'Out of Stock':
+      case 'out of stock':
         color = 'error';
         icon = <ErrorIcon fontSize="small" />;
+        label = 'Out of Stock';
         break;
       default:
         color = 'default';
@@ -428,7 +500,7 @@ const Inventory = () => {
     
     return (
       <Chip 
-        label={status} 
+        label={label} 
         color={color} 
         size="small" 
         icon={icon}
@@ -559,22 +631,25 @@ const Inventory = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {paginatedInventory.length > 0 ? (
-                paginatedInventory.map((item) => (
+              {inventory.length > 0 ? (
+                inventory.map((item) => (
                   <TableRow key={item._id}>
                     <TableCell>{item.itemName}</TableCell>
                     <TableCell>{item.itemCode}</TableCell>
                     <TableCell>{item.category}</TableCell>
-                    <TableCell align="right">{formatCurrency(item.unitPrice)}</TableCell>
+                    <TableCell align="right">{formatCurrency(item.costPrice)}</TableCell>
                     <TableCell align="right">
-                      {item.currentStock} {item.unit}(s)
-                      {item.minimumStock && item.currentStock <= item.minimumStock && (
-                        <Typography variant="caption" color="error" display="block">
-                          Min: {item.minimumStock}
-                        </Typography>
+                      {item.clinics && item.clinics.length > 0 
+                        ? `${item.clinics[0].currentStock} ${item.unit || ''}` 
+                        : `0 ${item.unit || ''}`}
+                      {item.clinics && item.clinics.length > 0 && 
+                       item.clinics[0].currentStock <= item.clinics[0].minStockLevel && (
+                        <Tooltip title="Low Stock">
+                          <WarningIcon color="error" fontSize="small" style={{ marginLeft: '8px' }} />
+                        </Tooltip>
                       )}
                     </TableCell>
-                    <TableCell>{renderStatusChip(item.status)}</TableCell>
+                    <TableCell>{renderStatusChip(item.status || 'active')}</TableCell>
                     <TableCell align="center">
                       <Tooltip title="Update Stock">
                         <IconButton 
@@ -618,7 +693,7 @@ const Inventory = () => {
           <TablePagination
             rowsPerPageOptions={[5, 10, 25]}
             component="div"
-            count={filteredInventory.length}
+            count={inventory.length}
             rowsPerPage={rowsPerPage}
             page={page}
             onPageChange={handleChangePage}
@@ -636,7 +711,9 @@ const Inventory = () => {
               {currentItem?.itemName} ({currentItem?.itemCode})
             </Typography>
             <Typography variant="body2" gutterBottom>
-              Current Stock: {currentItem?.currentStock} {currentItem?.unit}(s)
+              Current Stock: {currentItem?.clinics && currentItem?.clinics.length > 0 
+                ? currentItem.clinics[0].currentStock 
+                : 0} {currentItem?.unit}(s)
             </Typography>
             <TextField
               autoFocus
@@ -648,7 +725,13 @@ const Inventory = () => {
               value={stockUpdateAmount}
               onChange={(e) => setStockUpdateAmount(e.target.value)}
               helperText="Use positive values to add stock, negative to remove"
+              error={!!formErrors.stockUpdateAmount}
             />
+            {formErrors.stockUpdateAmount && (
+              <Typography variant="caption" color="error">
+                {formErrors.stockUpdateAmount}
+              </Typography>
+            )}
           </Box>
         </DialogContent>
         <DialogActions>

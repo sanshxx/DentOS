@@ -32,7 +32,7 @@ const Register = () => {
   useEffect(() => {
     // Redirect if already authenticated
     if (isAuthenticated) {
-      navigate('/');
+      navigate('/dashboard');
     }
   }, [isAuthenticated, navigate]);
 
@@ -44,13 +44,12 @@ const Register = () => {
       password: '',
       confirmPassword: '',
       role: 'receptionist', // Default role
-      clinic: '64f5b3e745e0c00f8b88c80a', // Default clinic ID
     },
     validationSchema: Yup.object({
       name: Yup.string().required('Name is required'),
       email: Yup.string().email('Invalid email address').required('Email is required'),
       phone: Yup.string()
-        .matches(/^[6-9]\d{9}$/, 'Phone number must be a valid Indian number')
+        .matches(/^(\+91\s*)?[6-9]\d{9}$/, 'Phone number must be a valid Indian number')
         .required('Phone number is required'),
       password: Yup.string()
         .min(8, 'Password must be at least 8 characters')
@@ -63,11 +62,12 @@ const Register = () => {
         .oneOf([Yup.ref('password'), null], 'Passwords must match')
         .required('Confirm password is required'),
       role: Yup.string().required('Role is required'),
-      clinic: Yup.string().required('Clinic is required'),
     }),
     onSubmit: async (values) => {
-      const { name, email, phone, password, role, clinic } = values;
-      await register({ name, email, phone, password, role, clinic });
+      const { name, email, phone, password, role } = values;
+      // Remove +91 prefix if present and ensure 10 digits
+      const cleanPhone = phone.replace(/^\+91\s*/, '');
+      await register({ name, email, phone: cleanPhone, password, role });
     },
   });
 
@@ -101,7 +101,7 @@ const Register = () => {
             Register
           </Typography>
           <Typography variant="body2" color="textSecondary" align="center" sx={{ mb: 3 }}>
-            Create your account to access the Dental CRM system
+            Create your account to access the DentOS system
           </Typography>
 
           {error && (

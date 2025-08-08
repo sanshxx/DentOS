@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 
 const AppointmentSchema = new mongoose.Schema({
+  organization: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Organization',
+    required: true
+  },
   patient: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Patient',
@@ -13,7 +18,7 @@ const AppointmentSchema = new mongoose.Schema({
   },
   dentist: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: 'Staff',
     required: true
   },
   appointmentDate: {

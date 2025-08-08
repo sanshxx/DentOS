@@ -1,10 +1,10 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { ThemeProvider } from './context/ThemeContext';
 
 // Layout Components
 import Layout from './components/layout/Layout';
@@ -14,6 +14,10 @@ import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
+import OrganizationSetup from './pages/auth/OrganizationSetup';
+import OrganizationChoice from './pages/auth/OrganizationChoice';
+import JoinOrganization from './pages/auth/JoinOrganization';
+import ChangePassword from './pages/auth/ChangePassword';
 
 // Dashboard Components
 import Dashboard from './pages/dashboard/Dashboard';
@@ -36,11 +40,13 @@ import Treatments from './pages/treatments/Treatments';
 import TreatmentDetails from './pages/treatments/TreatmentDetails';
 import AddTreatment from './pages/treatments/AddTreatment';
 import EditTreatment from './pages/treatments/EditTreatment';
+import TreatmentPlans from './pages/treatments/TreatmentPlans';
 
 // Billing Components
 import Invoices from './pages/billing/Invoices';
 import CreateInvoice from './pages/billing/CreateInvoice';
 import ViewInvoice from './pages/billing/ViewInvoice';
+import EditInvoice from './pages/billing/EditInvoice';
 import RecordPayment from './pages/billing/RecordPayment';
 
 // Inventory Components
@@ -70,146 +76,220 @@ import NotFound from './pages/errors/NotFound';
 // Context
 import { AuthProvider } from './context/AuthContext';
 import PrivateRoute from './components/routing/PrivateRoute';
+import OrganizationCheck from './components/routing/OrganizationCheck';
+import RootRedirect from './components/routing/RootRedirect';
 
-// Create theme
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#1976d2',
-      light: '#42a5f5',
-      dark: '#1565c0',
-    },
-    secondary: {
-      main: '#9c27b0',
-      light: '#ba68c8',
-      dark: '#7b1fa2',
-    },
-    error: {
-      main: '#d32f2f',
-    },
-    warning: {
-      main: '#ed6c02',
-    },
-    info: {
-      main: '#0288d1',
-    },
-    success: {
-      main: '#2e7d32',
-    },
-    background: {
-      default: '#f5f5f5',
-    },
-  },
-  typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-    h1: {
-      fontSize: '2.5rem',
-      fontWeight: 500,
-    },
-    h2: {
-      fontSize: '2rem',
-      fontWeight: 500,
-    },
-    h3: {
-      fontSize: '1.75rem',
-      fontWeight: 500,
-    },
-    h4: {
-      fontSize: '1.5rem',
-      fontWeight: 500,
-    },
-    h5: {
-      fontSize: '1.25rem',
-      fontWeight: 500,
-    },
-    h6: {
-      fontSize: '1rem',
-      fontWeight: 500,
-    },
-  },
-  components: {
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          borderRadius: 8,
-          textTransform: 'none',
-        },
-      },
-    },
-    MuiCard: {
-      styleOverrides: {
-        root: {
-          borderRadius: 12,
-          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.08)',
-        },
-      },
-    },
-  },
-});
+// Team Components
+import Team from './pages/team/Team';
+
+// Theme is now handled by ThemeContext
+
+// Debug: Log the API URL being used
+console.log('🔍 Frontend Debug Info:');
+console.log('   REACT_APP_API_URL:', process.env.REACT_APP_API_URL);
+console.log('   NODE_ENV:', process.env.NODE_ENV);
+console.log('   Current URL:', window.location.href);
 
 function App() {
+  console.log('🔍 App.js Debug:');
+  console.log('   Current pathname:', window.location.pathname);
+  console.log('   Current search:', window.location.search);
+  
   return (
     <AuthProvider>
-      <ThemeProvider theme={theme}>
+      <ThemeProvider>
         <LocalizationProvider dateAdapter={AdapterDateFns}>
           <Router>
             <ToastContainer position="top-right" autoClose={5000} />
             <Routes>
+              {/* Default route - redirect based on authentication */}
+              <Route path="/" element={<RootRedirect />} />
+              
               {/* Auth Routes */}
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password/:resetToken" element={<ResetPassword />} />
+              <Route path="/organization-setup" element={
+                <PrivateRoute>
+                  <OrganizationSetup />
+                </PrivateRoute>
+              } />
+              <Route path="/organization-choice" element={
+                <PrivateRoute>
+                  <OrganizationChoice />
+                </PrivateRoute>
+              } />
+              <Route path="/join-organization" element={
+                <PrivateRoute>
+                  <JoinOrganization />
+                </PrivateRoute>
+              } />
+              <Route path="/change-password" element={
+                <PrivateRoute>
+                  <ChangePassword />
+                </PrivateRoute>
+              } />
               
-              {/* App Routes */}
-              <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
+              {/* Dashboard Route */}
+              <Route path="/dashboard" element={
+                <PrivateRoute>
+                  <OrganizationCheck>
+                    <Layout />
+                  </OrganizationCheck>
+                </PrivateRoute>
+              }>
                 <Route index element={<Dashboard />} />
-                
-                {/* Patient Routes */}
-                <Route path="patients" element={<Patients />} />
-                <Route path="patients/add" element={<AddPatient />} />
-                <Route path="patients/:id" element={<PatientDetails />} />
-                <Route path="patients/:id/edit" element={<EditPatient />} />
-                
-                {/* Appointment Routes */}
-                <Route path="appointments" element={<Appointments />} />
-                <Route path="appointments/add" element={<AddAppointment />} />
-                <Route path="appointments/:id" element={<AppointmentDetails />} />
-                <Route path="appointments/:id/edit" element={<EditAppointment />} />
-                <Route path="calendar" element={<Calendar />} />
-                
-                {/* Treatment Routes */}
-                <Route path="treatments" element={<Treatments />} />
-                <Route path="treatments/add" element={<AddTreatment />} />
-                <Route path="treatments/:id" element={<TreatmentDetails />} />
-                <Route path="treatments/:id/edit" element={<EditTreatment />} />
-                
-                {/* Billing Routes */}
-                <Route path="billing" element={<Invoices />} />
-                <Route path="billing/create" element={<CreateInvoice />} />
-                <Route path="billing/invoice/:id" element={<ViewInvoice />} />
-                <Route path="billing/invoice/:id/payment" element={<RecordPayment />} />
-                
-                {/* Inventory Routes */}
-                <Route path="inventory" element={<Inventory />} />
-                <Route path="inventory/add" element={<AddInventory />} />
-                <Route path="inventory/:id" element={<InventoryDetails />} />
-                <Route path="inventory/:id/edit" element={<EditInventory />} />
-                
-                {/* Clinic Routes */}
-                <Route path="clinics" element={<Clinics />} />
-                <Route path="clinics/:id" element={<ClinicDetails />} />
-                
-                {/* Staff Routes */}
-                <Route path="staff" element={<Staff />} />
-                <Route path="staff/:id" element={<StaffDetails />} />
-                
-                {/* Reports Routes */}
-                <Route path="reports" element={<Reports />} />
-                
-                {/* Settings Routes */}
-                <Route path="settings" element={<Settings />} />
-                <Route path="profile" element={<Profile />} />
+              </Route>
+              
+              {/* Patient Routes */}
+              <Route path="/patients" element={
+                <PrivateRoute>
+                  <OrganizationCheck>
+                    <Layout />
+                  </OrganizationCheck>
+                </PrivateRoute>
+              }>
+                <Route index element={<Patients />} />
+                <Route path="add" element={<AddPatient />} />
+                <Route path=":id" element={<PatientDetails />} />
+                <Route path=":id/edit" element={<EditPatient />} />
+              </Route>
+              
+              {/* Appointment Routes */}
+              <Route path="/appointments" element={
+                <PrivateRoute>
+                  <OrganizationCheck>
+                    <Layout />
+                  </OrganizationCheck>
+                </PrivateRoute>
+              }>
+                <Route index element={<Appointments />} />
+                <Route path="add" element={<AddAppointment />} />
+                <Route path=":id" element={<AppointmentDetails />} />
+                <Route path=":id/edit" element={<EditAppointment />} />
+              </Route>
+              
+              {/* Calendar Route */}
+              <Route path="/calendar" element={
+                <PrivateRoute>
+                  <OrganizationCheck>
+                    <Layout />
+                  </OrganizationCheck>
+                </PrivateRoute>
+              }>
+                <Route index element={<Calendar />} />
+              </Route>
+              
+              {/* Treatment Routes */}
+              <Route path="/treatments" element={
+                <PrivateRoute>
+                  <OrganizationCheck>
+                    <Layout />
+                  </OrganizationCheck>
+                </PrivateRoute>
+              }>
+                <Route index element={<Treatments />} />
+                <Route path="add" element={<AddTreatment />} />
+                <Route path=":id" element={<TreatmentDetails />} />
+                <Route path=":id/edit" element={<EditTreatment />} />
+                <Route path="plans" element={<TreatmentPlans />} />
+              </Route>
+              
+              {/* Billing Routes */}
+              <Route path="/billing" element={
+                <PrivateRoute>
+                  <OrganizationCheck>
+                    <Layout />
+                  </OrganizationCheck>
+                </PrivateRoute>
+              }>
+                <Route index element={<Invoices />} />
+                <Route path="create" element={<CreateInvoice />} />
+                <Route path="invoice/:id" element={<ViewInvoice />} />
+                <Route path="invoice/:id/edit" element={<EditInvoice />} />
+                <Route path="invoice/:id/payment" element={<RecordPayment />} />
+              </Route>
+              
+              {/* Inventory Routes */}
+              <Route path="/inventory" element={
+                <PrivateRoute>
+                  <OrganizationCheck>
+                    <Layout />
+                  </OrganizationCheck>
+                </PrivateRoute>
+              }>
+                <Route index element={<Inventory />} />
+                <Route path="add" element={<AddInventory />} />
+                <Route path=":id" element={<InventoryDetails />} />
+                <Route path=":id/edit" element={<EditInventory />} />
+              </Route>
+              
+              {/* Clinic Routes */}
+              <Route path="/clinics" element={
+                <PrivateRoute>
+                  <OrganizationCheck>
+                    <Layout />
+                  </OrganizationCheck>
+                </PrivateRoute>
+              }>
+                <Route index element={<Clinics />} />
+                <Route path=":id" element={<ClinicDetails />} />
+              </Route>
+              
+              {/* Staff Routes */}
+              <Route path="/staff" element={
+                <PrivateRoute>
+                  <OrganizationCheck>
+                    <Layout />
+                  </OrganizationCheck>
+                </PrivateRoute>
+              }>
+                <Route index element={<Staff />} />
+                <Route path=":id" element={<StaffDetails />} />
+              </Route>
+              
+              {/* Team Route */}
+              <Route path="/team" element={
+                <PrivateRoute>
+                  <OrganizationCheck>
+                    <Layout />
+                  </OrganizationCheck>
+                </PrivateRoute>
+              }>
+                <Route index element={<Team />} />
+              </Route>
+              
+              {/* Reports Route */}
+              <Route path="/reports" element={
+                <PrivateRoute>
+                  <OrganizationCheck>
+                    <Layout />
+                  </OrganizationCheck>
+                </PrivateRoute>
+              }>
+                <Route index element={<Reports />} />
+              </Route>
+              
+              {/* Settings Routes */}
+              <Route path="/settings" element={
+                <PrivateRoute>
+                  <OrganizationCheck>
+                    <Layout />
+                  </OrganizationCheck>
+                </PrivateRoute>
+              }>
+                <Route index element={<Settings />} />
+              </Route>
+              
+              <Route path="/profile" element={
+                <PrivateRoute>
+                  <OrganizationCheck>
+                    <Layout />
+                  </OrganizationCheck>
+                </PrivateRoute>
+              }>
+                <Route index element={<Profile />} />
               </Route>
               
               {/* 404 Route */}

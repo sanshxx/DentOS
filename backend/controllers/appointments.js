@@ -1,6 +1,7 @@
 const Appointment = require('../models/Appointment');
 const Patient = require('../models/Patient');
 const User = require('../models/User');
+const Staff = require('../models/Staff');
 const { validationResult } = require('express-validator');
 const sendSMS = require('../utils/sendSMS');
 const sendEmail = require('../utils/sendEmail');
@@ -27,13 +28,15 @@ exports.getAppointments = async (req, res) => {
     // Create operators ($gt, $gte, etc)
     queryStr = queryStr.replace(/\b(gt|gte|lt|lte|in)\b/g, match => `$${match}`);
 
-    // Finding resource
-    query = Appointment.find(JSON.parse(queryStr));
+    // Finding resource - filter by organization
+    const baseQuery = { organization: req.user.organization, ...JSON.parse(queryStr) };
+    query = Appointment.find(baseQuery);
 
     // Handle search
     if (req.query.search) {
-      // Get patients matching the search
+      // Get patients matching the search (filtered by organization)
       const patients = await Patient.find({
+        organization: req.user.organization,
         $or: [
           { name: { $regex: req.query.search, $options: 'i' } },
           { phone: { $regex: req.query.search, $options: 'i' } },
@@ -43,11 +46,17 @@ exports.getAppointments = async (req, res) => {
 
       const patientIds = patients.map(patient => patient._id);
 
-      // Get dentists matching the search
-      const dentists = await User.find({
+      // Get dentists matching the search (filtered by organization)
+      const dentists = await Staff.find({
+        organization: req.user.organization,
         $and: [
           { role: 'dentist' },
-          { name: { $regex: req.query.search, $options: 'i' } }
+          { 
+            $or: [
+              { firstName: { $regex: req.query.search, $options: 'i' } },
+              { lastName: { $regex: req.query.search, $options: 'i' } }
+            ]
+          }
         ]
       }).select('_id');
 
@@ -88,7 +97,7 @@ exports.getAppointments = async (req, res) => {
     // Populate
     query = query.populate([
       { path: 'patient', select: 'name phone patientId' },
-      { path: 'dentist', select: 'name' },
+      { path: 'dentist', select: 'firstName lastName specialization' },
       { path: 'clinic', select: 'name branchCode' }
     ]);
 
@@ -135,7 +144,7 @@ exports.getAppointment = async (req, res) => {
   try {
     const appointment = await Appointment.findById(req.params.id)
       .populate('patient', 'name phone email patientId')
-      .populate('dentist', 'name')
+      .populate('dentist', 'firstName lastName specialization')
       .populate('clinic', 'name branchCode address')
       .populate('createdBy', 'name');
 
@@ -175,8 +184,9 @@ exports.createAppointment = async (req, res) => {
       return res.status(400).json({ success: false, errors: errors.array() });
     }
 
-    // Add user to req.body
+    // Add user and organization to req.body
     req.body.createdBy = req.user.id;
+    req.body.organization = req.user.organization;
 
     // Check for conflicting appointments
     const { dentist, appointmentDate, duration } = req.body;
@@ -208,7 +218,7 @@ exports.createAppointment = async (req, res) => {
     // Populate the response
     const populatedAppointment = await Appointment.findById(appointment._id)
       .populate('patient', 'name phone email')
-      .populate('dentist', 'name')
+      .populate('dentist', 'firstName lastName specialization')
       .populate('clinic', 'name branchCode');
 
     // Send confirmation SMS if patient has phone number
@@ -250,7 +260,7 @@ exports.createAppointment = async (req, res) => {
         });
 
         const subject = 'Appointment Confirmation';
-        const message = `Dear ${populatedAppointment.patient.name},\n\nYour appointment is confirmed at ${populatedAppointment.clinic.name} on ${formattedDate} at ${formattedTime}.\n\nAppointment Details:\nDoctor: ${populatedAppointment.dentist.name}\nType: ${populatedAppointment.appointmentType}\nReason: ${populatedAppointment.reasonForVisit}\n\nFor any changes, please call us.\n\nThank you,\n${populatedAppointment.clinic.name}`;
+        const message = `Dear ${populatedAppointment.patient.name},\n\nYour appointment is confirmed at ${populatedAppointment.clinic.name} on ${formattedDate} at ${formattedTime}.\n\nAppointment Details:\nDoctor: ${populatedAppointment.dentist.firstName} ${populatedAppointment.dentist.lastName}\nType: ${populatedAppointment.appointmentType}\nReason: ${populatedAppointment.reasonForVisit}\n\nFor any changes, please call us.\n\nThank you,\n${populatedAppointment.clinic.name}`;
 
         await sendEmail({
           email: populatedAppointment.patient.email,
@@ -404,15 +414,15 @@ exports.deleteAppointment = async (req, res) => {
       });
     }
 
-    // Check if user is admin or manager
-    if (req.user.role !== 'admin' && req.user.role !== 'manager') {
+    // Check if user is admin, manager, or receptionist
+    if (!['admin', 'manager', 'receptionist'].includes(req.user.role)) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to delete appointments'
       });
     }
 
-    await appointment.remove();
+    await Appointment.findByIdAndDelete(req.params.id);
 
     res.status(200).json({
       success: true,

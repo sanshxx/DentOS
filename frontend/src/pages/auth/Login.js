@@ -41,7 +41,7 @@ const Login = () => {
   useEffect(() => {
     // If already authenticated, redirect to dashboard
     if (isAuthenticated) {
-      navigate('/');
+      navigate('/dashboard');
     }
   }, [isAuthenticated, navigate]);
 
@@ -82,7 +82,7 @@ const Login = () => {
           }}
         >
           <Typography component="h1" variant="h4" color="primary" fontWeight="bold" gutterBottom>
-            Dental CRM
+            DentOS
           </Typography>
           <Typography component="h2" variant="h5" gutterBottom>
             Sign In
@@ -181,7 +181,7 @@ const Login = () => {
 
         <Box mt={5}>
           <Typography variant="body2" color="text.secondary" align="center">
-            © {new Date().getFullYear()} Dental CRM. All rights reserved.
+            © {new Date().getFullYear()} DentOS. All rights reserved.
           </Typography>
         </Box>
       </Box>

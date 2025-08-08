@@ -1,8 +1,8 @@
-# Dental CRM - Beginner's Guide
+# DentOS - Beginner's Guide
 
 ## What is This Project?
 
-This is a Dental Clinic Management System (or "Dental CRM") that helps dental clinics manage their day-to-day operations. Think of it as a digital assistant that keeps track of patients, appointments, treatments, bills, and supplies all in one place!
+This is a Dental Clinic Management System (or "DentOS") that helps dental clinics manage their day-to-day operations. Think of it as a digital assistant that keeps track of patients, appointments, treatments, bills, and supplies all in one place!
 
 ## Project Structure Explained Simply
 
@@ -97,6 +97,23 @@ For example, when booking an appointment:
 5. Backend sends back a success message
 6. Frontend shows a success notification and updates the appointments list
 
+### New Features Overview
+
+#### Theme System
+- **Light/Dark Mode**: Users can switch between light and dark themes
+- **Automatic Adaptation**: All components automatically adapt to the selected theme
+- **Persistent Storage**: Theme preference is saved and remembered
+
+#### Notification System
+- **Real-time Alerts**: System shows notifications for important events
+- **Role-based Filtering**: Users see notifications relevant to their role
+- **Notification Bell**: Easy access to recent notifications in the header
+
+#### Document Management
+- **File Upload**: Users can upload patient documents (PDFs, images, etc.)
+- **Secure Storage**: Files are stored securely on the server
+- **Download System**: Users can download documents with proper access control
+
 ### User Authentication Flow
 
 1. You enter your username and password on the login screen
@@ -134,7 +151,7 @@ For example, when booking an appointment:
 - **Route**: Defines what happens when a specific endpoint is accessed.
 - **JWT (JSON Web Token)**: A secure way to transmit information between parties as a JSON object.
 
-### Dental CRM Specific Terms
+### DentOS Specific Terms
 
 - **CRM (Customer Relationship Management)**: Software that helps manage interactions with customers (in this case, patients).
 - **Invoice**: A bill for dental services provided to a patient.

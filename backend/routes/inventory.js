@@ -21,6 +21,6 @@ router.route('/:id')
   .delete(protect, deleteInventoryItem);
 
 router.route('/:id/stock')
-  .patch(protect, updateInventoryStock);
+  .put(protect, updateInventoryStock);
 
 module.exports = router;

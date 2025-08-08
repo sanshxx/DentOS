@@ -21,7 +21,7 @@ const PatientDocumentSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['X-Ray', 'Lab Report', 'Prescription', 'Medical History', 'Consent Form', 'Insurance', 'Treatment Plan', 'Other'],
+    enum: ['X-Ray (RVG/OPG)', 'Lab Report', 'Prescription', 'Medical History Record', 'Consent Form', 'Insurance Document', 'Treatment Plan', 'Other'],
     default: 'Other'
   },
   description: {
@@ -65,7 +65,7 @@ const PatientDocumentSchema = new mongoose.Schema({
     },
     action: {
       type: String,
-      enum: ['view', 'download', 'share', 'delete', 'update'],
+      enum: ['view', 'download', 'share', 'delete', 'update', 'upload'],
       required: true
     }
   }]
