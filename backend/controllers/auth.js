@@ -9,8 +9,20 @@ const sendEmail = require('../utils/sendEmail');
 // @route   POST /api/auth/register
 // @access  Public
 exports.register = async (req, res) => {
+  console.log('🔍 REGISTER DEBUG: Starting registration process...');
+  console.log('🔍 REGISTER DEBUG: Registration attempt with data:', {
+    name: req.body.name,
+    email: req.body.email,
+    phone: req.body.phone,
+    role: req.body.role,
+    password: req.body.password ? '[HIDDEN]' : 'MISSING',
+    clinic: req.body.clinic,
+    organization: req.body.organization
+  });
+  
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
+    console.log('🔍 REGISTER DEBUG: Validation errors:', errors.array());
     return res.status(400).json({ success: false, errors: errors.array() });
   }
 
@@ -25,30 +37,38 @@ exports.register = async (req, res) => {
   } = req.body;
 
   try {
+    console.log('🔍 REGISTER DEBUG: Step 1 - Checking if user already exists...');
     // 1. Check if user already exists
     let user = await User.findOne({ email });
+    console.log('🔍 REGISTER DEBUG: User exists check result:', user ? 'User found' : 'User not found');
 
     if (user) {
+      console.log('🔍 REGISTER DEBUG: User already exists, returning 400');
       return res.status(400).json({ 
         success: false, 
         errors: [{ msg: 'User already exists' }] 
       });
     }
 
+    console.log('🔍 REGISTER DEBUG: Step 2 - Handling organization assignment...');
     // 2. Handle organization assignment
     let organizationId = null;
     if (organization) {
+      console.log('🔍 REGISTER DEBUG: Organization provided, checking if slug exists...');
       const Organization = require('../models/Organization');
       
       // Check if organization slug already exists
       const existingOrg = await Organization.findOne({ slug: organization.slug });
+      console.log('🔍 REGISTER DEBUG: Existing organization check:', existingOrg ? 'Found' : 'Not found');
       if (existingOrg) {
+        console.log('🔍 REGISTER DEBUG: Organization slug already exists, returning 400');
         return res.status(400).json({
           success: false,
           errors: [{ msg: 'Organization slug already exists' }]
         });
       }
 
+      console.log('🔍 REGISTER DEBUG: Creating new organization...');
       // Create organization
       const newOrganization = await Organization.create({
         ...organization,
@@ -56,12 +76,16 @@ exports.register = async (req, res) => {
       });
       
       organizationId = newOrganization._id;
+      console.log('🔍 REGISTER DEBUG: New organization created with ID:', organizationId);
     } else {
+      console.log('🔍 REGISTER DEBUG: No organization provided, looking for default organization...');
       // If no organization provided, assign to default organization
       const Organization = require('../models/Organization');
       const defaultOrganization = await Organization.findOne({ slug: 'dentos-default' });
       
+      console.log('🔍 REGISTER DEBUG: Default organization check:', defaultOrganization ? 'Found' : 'Not found');
       if (!defaultOrganization) {
+        console.log('🔍 REGISTER DEBUG: Default organization not found, returning 500');
         return res.status(500).json({
           success: false,
           errors: [{ msg: 'Default organization not found. Please contact administrator.' }]
@@ -69,8 +93,11 @@ exports.register = async (req, res) => {
       }
       
       organizationId = defaultOrganization._id;
+      console.log('🔍 REGISTER DEBUG: Using default organization ID:', organizationId);
     }
 
+    console.log('🔍 REGISTER DEBUG: Step 3 - Creating new user instance...');
+    console.log('🔍 REGISTER DEBUG: About to hash password...');
     // 3. Create new user instance
     user = new User({
       name,
@@ -81,33 +108,63 @@ exports.register = async (req, res) => {
       organization: organizationId,
       clinic: clinic || null // Make clinic optional
     });
+    console.log('🔍 REGISTER DEBUG: New user object created:', {
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      organization: user.organization,
+      clinic: user.clinic
+    });
 
+    console.log('🔍 REGISTER DEBUG: Step 4 - Saving user to database...');
     // 4. Save the new user to the database
-    await user.save();
+    try {
+      await user.save();
+      console.log('🔍 REGISTER DEBUG: User saved successfully with ID:', user._id);
+    } catch (saveError) {
+      console.error('🔍 REGISTER DEBUG: ERROR saving user:', saveError);
+      console.error('🔍 REGISTER DEBUG: Error details:', {
+        name: saveError.name,
+        message: saveError.message,
+        code: saveError.code,
+        keyValue: saveError.keyValue
+      });
+      throw saveError;
+    }
 
+    console.log('🔍 REGISTER DEBUG: Step 5 - Updating organization with createdBy...');
     // 5. Update organization with createdBy if organization was created
     if (organizationId) {
       const Organization = require('../models/Organization');
       await Organization.findByIdAndUpdate(organizationId, {
         createdBy: user._id
       });
+      console.log('🔍 REGISTER DEBUG: Organization updated with createdBy:', user._id);
     }
 
+    console.log('🔍 REGISTER DEBUG: Step 6 - Creating JWT token...');
+    console.log('🔍 REGISTER DEBUG: Checking for JWT_SECRET:', process.env.JWT_SECRET ? 'Found' : 'MISSING!');
     // 6. Create JWT token
     const payload = {
       id: user.id,
       role: user.role,
       organization: user.organization
     };
+    console.log('🔍 REGISTER DEBUG: JWT payload:', payload);
 
     jwt.sign(
       payload,
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRE || '30d' },
       (err, token) => {
-        if (err) throw err;
+        if (err) {
+          console.log('🔍 REGISTER DEBUG: JWT signing error:', err.message);
+          throw err;
+        }
+        console.log('🔍 REGISTER DEBUG: JWT token created successfully');
         
         // 7. Send the token back to the client
+        console.log('🔍 REGISTER DEBUG: Step 7 - Sending registration response...');
         res.status(201).json({ 
           success: true, 
           token,
@@ -119,10 +176,13 @@ exports.register = async (req, res) => {
             organization: user.organization
           }
         });
+        console.log('🔍 REGISTER DEBUG: Registration response sent successfully');
       }
     );
 
   } catch (err) {
+    console.log('🔍 REGISTER DEBUG: ERROR in registration process:', err.message);
+    console.log('🔍 REGISTER DEBUG: Error stack:', err.stack);
     console.error('Registration error:', err);
     res.status(500).json({
       success: false,
