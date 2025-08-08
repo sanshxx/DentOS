@@ -6,6 +6,12 @@ const User = require('../models/User');
  * Verifies the JWT token and adds the user to the request object
  */
 exports.protect = async (req, res, next) => {
+  console.log('🔍 AUTH MIDDLEWARE DEBUG: Starting protect middleware...');
+  console.log('🔍 AUTH MIDDLEWARE DEBUG: Request headers:', {
+    authorization: req.headers.authorization ? 'Bearer [TOKEN]' : 'MISSING',
+    'content-type': req.headers['content-type']
+  });
+  
   let token;
 
   // Check if token exists in headers
@@ -15,10 +21,12 @@ exports.protect = async (req, res, next) => {
   ) {
     // Get token from header
     token = req.headers.authorization.split(' ')[1];
+    console.log('🔍 AUTH MIDDLEWARE DEBUG: Token extracted from header');
   }
 
   // Check if token exists
   if (!token) {
+    console.log('🔍 AUTH MIDDLEWARE DEBUG: No token found, returning 401');
     return res.status(401).json({
       success: false,
       message: 'Not authorized to access this route'
@@ -26,13 +34,20 @@ exports.protect = async (req, res, next) => {
   }
 
   try {
+    console.log('🔍 AUTH MIDDLEWARE DEBUG: Verifying JWT token...');
+    console.log('🔍 AUTH MIDDLEWARE DEBUG: JWT_SECRET available:', process.env.JWT_SECRET ? 'YES' : 'NO');
+    
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log('🔍 AUTH MIDDLEWARE DEBUG: Token decoded successfully:', { id: decoded.id, role: decoded.role });
 
     // Fetch the user from the database using the ID from the token
+    console.log('🔍 AUTH MIDDLEWARE DEBUG: Searching for user with ID:', decoded.id);
     const user = await User.findById(decoded.id);
+    console.log('🔍 AUTH MIDDLEWARE DEBUG: User found in database:', user ? { id: user._id, email: user.email, role: user.role } : 'NOT FOUND');
     
     if (!user) {
+      console.log('🔍 AUTH MIDDLEWARE DEBUG: User not found in database, returning 401');
       return res.status(401).json({
         success: false,
         message: 'User not found'
@@ -47,11 +62,12 @@ exports.protect = async (req, res, next) => {
       role: user.role,
       organization: user.organization
     };
-
-    // User is already added to req.user above
+    console.log('🔍 AUTH MIDDLEWARE DEBUG: User added to request object:', { id: req.user.id, email: req.user.email, role: req.user.role });
 
     next();
   } catch (err) {
+    console.log('🔍 AUTH MIDDLEWARE DEBUG: ERROR in protect middleware:', err.message);
+    console.log('🔍 AUTH MIDDLEWARE DEBUG: Error stack:', err.stack);
     console.error('Token verification failed:', err.message);
     return res.status(401).json({
       success: false,

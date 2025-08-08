@@ -36,6 +36,22 @@ app.use(cors({
 }));
 app.use(morgan('dev'));
 
+// Add request logging middleware
+app.use((req, res, next) => {
+  console.log('🌐 SERVER DEBUG: Incoming request:', {
+    method: req.method,
+    url: req.url,
+    path: req.path,
+    headers: {
+      'content-type': req.headers['content-type'],
+      'user-agent': req.headers['user-agent'],
+      origin: req.headers.origin
+    },
+    body: req.method === 'POST' ? { ...req.body, password: req.body.password ? '[HIDDEN]' : undefined } : undefined
+  });
+  next();
+});
+
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/dentos', {
   useNewUrlParser: true,
@@ -90,8 +106,19 @@ app.use('/api/patients/:patientId/communications', communicationRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Error details:', err);
-  console.error('Error stack:', err.stack);
+  console.log('🚨 ERROR HANDLER DEBUG: Error caught in middleware');
+  console.log('🚨 ERROR HANDLER DEBUG: Request details:', {
+    method: req.method,
+    url: req.url,
+    path: req.path,
+    body: req.body
+  });
+  console.log('🚨 ERROR HANDLER DEBUG: Error details:', {
+    name: err.name,
+    message: err.message,
+    statusCode: err.statusCode
+  });
+  console.log('🚨 ERROR HANDLER DEBUG: Error stack:', err.stack);
   
   let error = { ...err };
   error.message = err.message;

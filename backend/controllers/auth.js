@@ -137,43 +137,63 @@ exports.register = async (req, res) => {
 // @access  Public
 // --- THIS FUNCTION HAS BEEN REPLACED WITH REAL DATABASE LOGIC ---
 exports.login = async (req, res) => {
+  console.log('🔍 LOGIN DEBUG: Starting login process...');
+  console.log('🔍 LOGIN DEBUG: Request body:', { email: req.body.email, password: req.body.password ? '[HIDDEN]' : 'MISSING' });
+  
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
+    console.log('🔍 LOGIN DEBUG: Validation errors:', errors.array());
     return res.status(400).json({ errors: errors.array() });
   }
 
   const { email, password } = req.body;
+  console.log('🔍 LOGIN DEBUG: Login attempt received for:', email);
 
   try {
+    console.log('🔍 LOGIN DEBUG: Step 1 - Searching for user in database...');
     // 1. Find the user in the database by their email
     // We use .select('+password') because the password field is hidden by default in the User model
     let user = await User.findOne({ email }).select('+password');
+    console.log('🔍 LOGIN DEBUG: User found in database:', user ? { id: user._id, email: user.email, role: user.role } : 'NOT FOUND');
 
     if (!user) {
+      console.log('🔍 LOGIN DEBUG: User not found, returning 400');
       return res.status(400).json({ success: false, errors: [{ msg: 'Invalid credentials' }] });
     }
 
+    console.log('🔍 LOGIN DEBUG: Step 2 - Comparing passwords...');
     // 2. Compare the provided password with the hashed password in the database
     // Using the User model's matchPassword method
     const isMatch = await user.matchPassword(password);
+    console.log('🔍 LOGIN DEBUG: Password comparison result:', isMatch);
 
     if (!isMatch) {
+      console.log('🔍 LOGIN DEBUG: Password mismatch, returning 400');
       return res.status(400).json({ success: false, errors: [{ msg: 'Invalid credentials' }] });
     }
 
+    console.log('🔍 LOGIN DEBUG: Step 3 - Creating JWT token...');
+    console.log('🔍 LOGIN DEBUG: Checking for JWT_SECRET:', process.env.JWT_SECRET ? 'Found' : 'MISSING!');
+    console.log('🔍 LOGIN DEBUG: JWT_EXPIRE:', process.env.JWT_EXPIRE || '30d (default)');
+    
     // 3. If credentials are correct, create a real token
     const payload = {
       id: user.id,
       role: user.role,
       organization: user.organization
     };
+    console.log('🔍 LOGIN DEBUG: JWT payload:', payload);
 
     jwt.sign(
       payload,
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRE || '30d' },
       (err, token) => {
-        if (err) throw err;
+        if (err) {
+          console.log('🔍 LOGIN DEBUG: JWT signing error:', err.message);
+          throw err;
+        }
+        console.log('🔍 LOGIN DEBUG: JWT token created successfully');
         // 4. Send the token back to the client
         res.json({ 
           success: true, 
@@ -186,10 +206,13 @@ exports.login = async (req, res) => {
             organization: user.organization
           }
         });
+        console.log('🔍 LOGIN DEBUG: Login response sent successfully');
       }
     );
 
   } catch (err) {
+    console.log('🔍 LOGIN DEBUG: ERROR in login process:', err.message);
+    console.log('🔍 LOGIN DEBUG: Error stack:', err.stack);
     console.error(err.message);
     res.status(500).send('Server Error');
   }
@@ -201,15 +224,26 @@ exports.login = async (req, res) => {
 // @access  Private
 // --- THIS FUNCTION HAS BEEN UPDATED TO USE THE REAL DATABASE ---
 exports.getMe = async (req, res) => {
+  console.log('🔍 GETME DEBUG: Starting getMe process...');
+  console.log('🔍 GETME DEBUG: req.user:', req.user);
+  
   try {
     // The auth middleware should have added req.user
     // We find the user by the ID from the token, but exclude the password
+    console.log('🔍 GETME DEBUG: Searching for user with ID:', req.user.id);
     const user = await User.findById(req.user.id).select('-password');
+    console.log('🔍 GETME DEBUG: User found:', user ? { id: user._id, email: user.email, role: user.role } : 'NOT FOUND');
+    
     if (!user) {
+        console.log('🔍 GETME DEBUG: User not found, returning 404');
         return res.status(404).json({ success: false, message: 'User not found' });
     }
+    
+    console.log('🔍 GETME DEBUG: Sending user data successfully');
     res.status(200).json({ success: true, data: user });
   } catch (err) {
+    console.log('🔍 GETME DEBUG: ERROR in getMe process:', err.message);
+    console.log('🔍 GETME DEBUG: Error stack:', err.stack);
     console.error(err);
     res.status(500).json({ success: false, message: 'Server Error' });
   }
