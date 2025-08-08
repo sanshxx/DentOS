@@ -155,6 +155,8 @@ exports.login = async (req, res) => {
     // We use .select('+password') because the password field is hidden by default in the User model
     let user = await User.findOne({ email }).select('+password');
     console.log('🔍 LOGIN DEBUG: User found in database:', user ? { id: user._id, email: user.email, role: user.role } : 'NOT FOUND');
+    console.log('🔍 LOGIN DEBUG: Password field present:', user ? (user.password ? 'YES' : 'NO') : 'N/A');
+    console.log('🔍 LOGIN DEBUG: Password field type:', user ? typeof user.password : 'N/A');
 
     if (!user) {
       console.log('🔍 LOGIN DEBUG: User not found, returning 400');
