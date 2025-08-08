@@ -1,6 +1,8 @@
 // Centralized API Configuration
 // This ensures all API requests use the correct base URL with /api prefix
 
+import axios from 'axios';
+
 // Get the base URL from environment variable
 const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
@@ -14,7 +16,6 @@ console.log('   BASE_URL:', BASE_URL);
 console.log('   Final API_URL:', API_URL);
 
 // Create axios instance with default configuration
-import axios from 'axios';
 
 const apiClient = axios.create({
   baseURL: API_URL,
