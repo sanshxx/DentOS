@@ -2,14 +2,11 @@ import React, { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import jwt_decode from 'jwt-decode';
-
-  // Get API URL from environment variables or use default
-  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+import { API_URL } from '../utils/apiConfig';
 
 // Debug API URL
-console.log('🔍 API URL Debug:');
-console.log('   REACT_APP_API_URL env var:', process.env.REACT_APP_API_URL);
-console.log('   Final API_URL:', API_URL);
+console.log('🔍 AuthContext API URL Debug:');
+console.log('   Using centralized API_URL:', API_URL);
 
 const AuthContext = createContext();
 
@@ -70,7 +67,7 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
       
-      // Use API_URL variable instead of hardcoded URL
+      // Use centralized API configuration
       const res = await axios.get(`${API_URL}/auth/me`);
       setUser(res.data.data);
       setIsAuthenticated(true);
@@ -144,7 +141,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null); // Clear any previous errors
       
-      // Use API_URL variable instead of hardcoded URL
+      // Use centralized API configuration
       const res = await axios.post(`${API_URL}/auth/login`, { email, password });
       
       // Store the raw token (without Bearer prefix)

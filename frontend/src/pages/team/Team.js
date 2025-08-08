@@ -40,7 +40,7 @@ import {
 import { toast } from 'react-toastify';
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+import { API_URL } from '../../utils/apiConfig';
 
 const Team = () => {
   const [activeTab, setActiveTab] = useState(0);

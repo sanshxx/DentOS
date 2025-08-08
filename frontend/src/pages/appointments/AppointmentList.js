@@ -51,7 +51,7 @@ import { format, parseISO } from 'date-fns';
 import axios from 'axios';
 
 // Get API URL from environment variables
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+import { API_URL } from '../../utils/apiConfig';
 
 // Appointment types for filtering
 const APPOINTMENT_TYPES = [

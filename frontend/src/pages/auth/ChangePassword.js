@@ -16,7 +16,7 @@ import { Visibility, VisibilityOff, Lock } from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+import { API_URL } from '../../utils/apiConfig';
 
 const ChangePassword = () => {
   const navigate = useNavigate();

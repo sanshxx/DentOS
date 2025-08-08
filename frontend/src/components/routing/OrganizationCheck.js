@@ -5,7 +5,7 @@ import { Box, CircularProgress, Typography } from '@mui/material';
 import axios from 'axios';
 
 // Get API URL from environment variables or use default
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+import { API_URL } from '../../utils/apiConfig';
 
 const OrganizationCheck = ({ children }) => {
   const { user, token } = useAuth();

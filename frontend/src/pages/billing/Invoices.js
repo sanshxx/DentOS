@@ -19,7 +19,7 @@ import axios from 'axios';
 import { printInvoice, downloadInvoicePDF, downloadInvoiceCSV } from '../../utils/invoiceUtils';
 
 // Get API URL from environment variables
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+import { API_URL } from '../../utils/apiConfig';
 
 const Invoices = () => {
   const navigate = useNavigate();

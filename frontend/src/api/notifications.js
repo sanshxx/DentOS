@@ -1,6 +1,5 @@
 import axios from 'axios';
-
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+import { API_URL } from '../utils/apiConfig';
 
 // Get all notifications
 export const getNotifications = async (page = 1, limit = 20) => {
