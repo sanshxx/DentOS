@@ -79,7 +79,7 @@ exports.register = async (req, res) => {
       console.log('🔍 REGISTER DEBUG: New organization created with ID:', organizationId);
     } else {
       console.log('🔍 REGISTER DEBUG: No organization provided, looking for default organization...');
-      // If no organization provided, assign to default organization
+      // If no organization provided, assign to the default organization
       const Organization = require('../models/Organization');
       const defaultOrganization = await Organization.findOne({ slug: 'dentos-default' });
       
