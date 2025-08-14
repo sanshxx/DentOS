@@ -25,18 +25,46 @@ const apiClient = axios.create({
   },
 });
 
-// Request interceptor to add auth token
+// Request interceptor to add auth token and clinic scope
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    // Attach clinic scope if present
+    try {
+      const clinicScope = localStorage.getItem('clinicScope'); // 'all' or clinicId
+      if (clinicScope) {
+        config.headers['X-Clinic-Scope'] = clinicScope;
+      }
+    } catch (e) {}
     return config;
   },
   (error) => {
     return Promise.reject(error);
   }
+);
+
+// Ensure the global axios instance also carries the same headers,
+// because a number of screens use axios directly
+axios.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers = config.headers || {};
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    try {
+      const clinicScope = localStorage.getItem('clinicScope');
+      if (clinicScope) {
+        config.headers = config.headers || {};
+        config.headers['X-Clinic-Scope'] = clinicScope;
+      }
+    } catch (e) {}
+    return config;
+  },
+  (error) => Promise.reject(error)
 );
 
 // Response interceptor for error handling

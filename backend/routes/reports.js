@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/auth');
+const clinicScope = require('../middleware/clinicScope');
 const {
   getReports,
   getFinancialReports,
@@ -12,12 +13,12 @@ const {
 // @route   GET api/reports
 // @desc    Get all reports
 // @access  Private
-router.get('/', protect, getReports);
+router.get('/', protect, clinicScope, getReports);
 
 // @route   GET api/reports/financial
 // @desc    Get financial reports
 // @access  Private
-router.get('/financial', protect, getFinancialReports);
+router.get('/financial', protect, clinicScope, getFinancialReports);
 
 // @route   GET api/reports/patients
 // @desc    Get patient reports

@@ -1,5 +1,6 @@
 const asyncHandler = require('../middleware/async');
 const User = require('../models/User');
+const { body, validationResult } = require('express-validator');
 
 // @desc    Get all users in organization
 // @route   GET /api/users
@@ -13,6 +14,28 @@ exports.getUsers = asyncHandler(async (req, res) => {
     success: true,
     data: users
   });
+});
+
+// @desc    Update user clinic access (admin)
+// @route   PUT /api/users/:id/clinic-access
+// @access  Private (Admin only)
+exports.updateUserClinicAccess = asyncHandler(async (req, res) => {
+  const { type, clinics } = req.body;
+  const user = await User.findById(req.params.id);
+  if (!user) {
+    return res.status(404).json({ success: false, message: 'User not found' });
+  }
+  if (user.organization.toString() !== req.user.organization.toString()) {
+    return res.status(403).json({ success: false, message: 'Not authorized' });
+  }
+
+  user.clinicAccess = {
+    type: type === 'subset' ? 'subset' : 'all',
+    clinics: Array.isArray(clinics) ? clinics : []
+  };
+  await user.save();
+  const sanitized = await User.findById(user._id).select('-password');
+  res.status(200).json({ success: true, data: sanitized });
 });
 
 // @desc    Get single user

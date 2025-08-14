@@ -14,7 +14,10 @@ import {
   Divider,
   ListItemIcon,
   Tooltip,
-  Badge
+  Badge,
+  FormControl,
+  Select,
+  InputLabel
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -26,6 +29,7 @@ import {
 import Sidebar from './Sidebar';
 import AuthContext from '../../context/AuthContext';
 import NotificationBell from '../notifications/NotificationBell';
+import { useClinicScope } from '../../context/ClinicScopeContext';
 
 const drawerWidth = 280;
 
@@ -82,6 +86,7 @@ const Layout = () => {
   const [open, setOpen] = useState(true);
   const [anchorEl, setAnchorEl] = useState(null);
   const { user, logout } = useContext(AuthContext);
+  const { clinics, selected, setSelected } = useClinicScope();
   const navigate = useNavigate();
 
   const handleDrawerOpen = () => {
@@ -135,6 +140,32 @@ const Layout = () => {
 
           {/* Notifications */}
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            {/* Clinic Switcher */}
+            <FormControl size="small" sx={{ minWidth: 180, mr: 2 }}>
+              <InputLabel id="clinic-scope-label">Clinic</InputLabel>
+              <Select
+                labelId="clinic-scope-label"
+                label="Clinic"
+                value={selected}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  try {
+                    // Persist immediately to avoid losing selection on reload
+                    localStorage.setItem('clinicScope', val);
+                  } catch (err) {}
+                  setSelected(val);
+                  // Trigger a full reload to ensure all pages refetch with new scope
+                  setTimeout(() => {
+                    window.location.reload();
+                  }, 150);
+                }}
+              >
+                <MenuItem value="all">All clinics</MenuItem>
+                {clinics.map(c => (
+                  <MenuItem key={c._id} value={c._id}>{c.name}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             {/* Notification Bell */}
             <NotificationBell />
 

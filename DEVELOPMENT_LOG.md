@@ -1,6 +1,103 @@
 # DentOS Development Log
 
-## **🚀 Latest Update: Registration 500 Error Fix** ⚡
+## **🚀 Latest Update: Invoice PDF Generation Improvements & Superscript Fix** ⚡
+
+### **Issue Fixed**
+The invoice PDF generation was using `html2canvas` and `jsPDF` which created image-based PDFs with poor text quality and non-selectable content. Additionally, there was a visual issue where currency symbols were rendering as unwanted superscript "1" characters.
+
+### **Root Cause & Solution**
+
+#### **PDF Generation Technology Upgrade** ✅
+**Problem**: Image-based PDF generation using `html2canvas`/`jsPDF` resulted in poor text quality and non-selectable content
+**Solution**: Replaced with `@react-pdf/renderer` for text-based, high-quality PDFs
+
+**Dependency Update** (`frontend/package.json`):
+```json
+"@react-pdf/renderer": "^3.4.0"
+```
+
+#### **New PDF Components & Utilities** ✅
+**New Files Created**:
+- `frontend/src/pdf/InvoicePDF.jsx` - React component for PDF rendering
+- `frontend/src/utils/pdfInvoice.js` - Utility functions for PDF operations
+
+**PDF Functions**:
+```javascript
+// Generate PDF blob for download
+createInvoiceBlob(invoiceData)
+
+// Download PDF directly
+downloadInvoicePDF(invoiceData)
+
+// Open PDF in new tab for printing
+openInvoicePDF(invoiceData)
+```
+
+#### **Invoice Layout & Styling** ✅
+**Design Specifications Implemented**:
+- **Global Styles**: Monochrome (#212529 text on #FFFFFF background)
+- **Font**: Modern sans-serif (Helvetica fallback)
+- **Layout**: Centered container with consistent spacing
+- **Header**: Prominent "INVOICE" title with invoice details block
+- **Biller & Client**: Two-column layout for "Billed By" and "Billed To"
+- **Itemization Table**: Full-width table with item descriptions and amounts
+- **Totals Section**: Right-aligned with subtotal, GST (18%), and total
+- **Footer**: Terms & conditions with contact information
+
+#### **Superscript Issue Resolution** ✅
+**Problem**: Currency symbols (₹) were rendering as unwanted superscript "1" characters
+**Root Cause**: `Intl.NumberFormat` with currency style was causing glyph rendering issues
+**Solution**: Modified `formatINR` function to remove currency symbol:
+
+```javascript
+// Before: With currency symbol causing superscript issue
+const formatINR = (v) => new Intl.NumberFormat('en-IN', { 
+  style: 'currency', 
+  currency: 'INR' 
+}).format(v || 0);
+
+// After: Clean number formatting without currency symbol
+const formatINR = (v) => new Intl.NumberFormat('en-IN', { 
+  minimumFractionDigits: 2, 
+  maximumFractionDigits: 2 
+}).format(v || 0);
+```
+
+**Result**: Numbers now display as "17,080.00" instead of "¹17,080.00"
+
+### **Frontend Integration** ✅
+**Updated Components**:
+- `frontend/src/pages/billing/ViewInvoice.js` - Print and Download PDF actions
+- `frontend/src/pages/billing/Invoices.js` - Invoice list actions
+
+**Action Updates**:
+```javascript
+// Before: html2canvas/jsPDF functions
+onClick={() => handlePrint(invoice)}
+
+// After: React-PDF functions
+onClick={() => openInvoicePDF(invoice)}  // For printing
+onClick={() => downloadInvoicePDF(invoice)}  // For download
+```
+
+### **Technical Benefits**
+- **Text Quality**: Crisp, selectable text instead of pixelated images
+- **File Size**: Smaller PDF files due to text-based rendering
+- **Accessibility**: Screen readers can process text content
+- **Print Quality**: Perfect text rendering at any resolution
+- **Maintenance**: Easier to modify layout and styling
+
+### **User Experience Improvements**
+- **Professional Appearance**: Clean, modern invoice design
+- **Consistent Layout**: Structured sections with proper spacing
+- **Clear Information**: Well-organized billing details
+- **Professional Branding**: Monochrome design suitable for business use
+
+### **Status**: COMPLETE ✅
+
+---
+
+## **🚀 Previous Update: Registration 500 Error Fix** ⚡
 
 ### **Issue Fixed**
 The user registration was failing with a 500 Internal Server Error. Detailed logging revealed that the registration process was looking for a default organization with slug `dentos-default`, but it didn't exist in the database.
@@ -6555,3 +6652,669 @@ PaperProps={{
 ---
 
 *This document should be updated after every significant change or problem resolution to maintain comprehensive context for future development.*
+
+---
+
+## 🚀 Major Feature: Global Clinic Scope & RBAC Implementation** ⚡
+
+### **Feature Overview**
+Implemented a comprehensive clinic-based data filtering system that allows users to view data for "All clinics" or a specific clinic, with Role-Based Access Control (RBAC) determining which clinics each user can access.
+
+### **Core Functionality** ✅
+
+#### **Global Clinic Selection** 
+**Problem**: Users couldn't filter data by specific clinics across the application
+**Solution**: Added clinic selector dropdown in the top navigation bar
+
+**Implementation** (`frontend/src/components/layout/Layout.js`):
+```javascript
+// Clinic selector dropdown in top bar
+<FormControl size="small" sx={{ minWidth: 200 }}>
+  <Select
+    value={selectedClinic}
+    onChange={handleClinicChange}
+    displayEmpty
+  >
+    <MenuItem value="all">All Clinics</MenuItem>
+    {clinics.map(clinic => (
+      <MenuItem key={clinic._id} value={clinic._id}>
+        {clinic.name}
+      </MenuItem>
+    ))}
+  </Select>
+</FormControl>
+```
+
+#### **Clinic Scope Context Management**
+**New File**: `frontend/src/context/ClinicScopeContext.js`
+**Purpose**: Manages global clinic selection state and user clinic access
+
+**Key Features**:
+```javascript
+// Fetches user's accessible clinics
+const fetchUserClinics = async () => {
+  const response = await apiClient.get('/api/users/me');
+  return response.data.data.clinics || [];
+};
+
+// Manages selected clinic state
+const [selected, setSelected] = useState(() => {
+  const stored = localStorage.getItem('clinicScope');
+  return stored || 'all';
+});
+```
+
+#### **Backend Clinic Scope Middleware**
+**New File**: `backend/middleware/clinicScope.js`
+**Purpose**: Enforces clinic-level data access control
+
+**Implementation**:
+```javascript
+// Reads clinic scope from headers or query params
+const clinicScope = req.headers['x-clinic-scope'] || req.query.clinicScope;
+
+// Validates user's clinic access
+if (user.clinicAccess.type === 'subset') {
+  const hasAccess = user.clinicAccess.clinics.includes(clinicScope);
+  if (!hasAccess) {
+    return res.status(403).json({ 
+      success: false, 
+      message: 'Access denied to this clinic' 
+    });
+  }
+}
+
+// Sets clinic filters for controllers
+req.scope = {
+  clinicFilter: clinicScope === 'all' ? {} : { clinic: clinicScope },
+  patientClinicFilter: clinicScope === 'all' ? {} : { 'patient.clinic': clinicScope }
+};
+```
+
+### **Database Schema Updates** ✅
+
+#### **User Model** (`backend/models/User.js`)
+**Added Clinic Access Control**:
+```javascript
+clinicAccess: {
+  type: {
+    type: String,
+    enum: ['all', 'subset'],
+    default: 'all'
+  },
+  clinics: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Clinic'
+  }]
+}
+```
+
+#### **Staff Model** (`backend/models/Staff.js`)
+**Added Multi-Clinic Support**:
+```javascript
+primaryClinic: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: 'Clinic',
+  required: true
+},
+clinics: [{
+  type: mongoose.Schema.Types.ObjectId,
+  ref: 'Clinic'
+}]
+```
+
+### **Backend Controller Updates** ✅
+
+#### **All Major Controllers Updated**
+**Controllers Modified**:
+- `backend/controllers/dashboard.js` - Dashboard statistics
+- `backend/controllers/patients.js` - Patient data
+- `backend/controllers/appointments.js` - Appointment data  
+- `backend/controllers/billing.js` - Invoice data
+- `backend/controllers/reports.js` - Report data
+- `backend/controllers/inventory.js` - Inventory data
+- `backend/controllers/staff.js` - Staff data
+
+**Implementation Pattern**:
+```javascript
+// Apply clinic filtering to all queries
+const filter = { organization: req.user.organization };
+if (req.scope.clinicFilter.clinic) {
+  filter.clinic = req.scope.clinicFilter.clinic;
+}
+
+// For patient-related queries
+const patientFilter = { organization: req.user.organization };
+if (req.scope.patientClinicFilter['patient.clinic']) {
+  patientFilter['patient.clinic'] = req.scope.patientClinicFilter['patient.clinic'];
+}
+```
+
+### **Frontend API Integration** ✅
+
+#### **Centralized API Configuration**
+**File**: `frontend/src/utils/apiConfig.js`
+**Purpose**: Automatically includes clinic scope in all API requests
+
+**Implementation**:
+```javascript
+// Request interceptor for clinic scope
+apiClient.interceptors.request.use(config => {
+  const clinicScope = localStorage.getItem('clinicScope');
+  if (clinicScope) {
+    config.headers['X-Clinic-Scope'] = clinicScope;
+  }
+  return config;
+});
+```
+
+#### **Updated Components**
+**All Major Pages Updated**:
+- Dashboard - Statistics filtered by clinic
+- Patients - Patient list filtered by clinic
+- Appointments - Appointment data filtered by clinic
+- Invoices - Billing data filtered by clinic
+- Reports - All report data filtered by clinic
+- Inventory - Stock data filtered by clinic
+- Staff - Staff data filtered by clinic
+
+### **Team Management RBAC** ✅
+
+#### **Clinic Access Control for Users**
+**New Feature**: Admins can control which clinics each user can access
+
+**Implementation** (`frontend/src/pages/team/Team.js`):
+```javascript
+// Edit Clinic Access Dialog
+<Dialog open={editClinicAccessOpen} onClose={handleCloseClinicAccess}>
+  <DialogTitle>Edit Clinic Access</DialogTitle>
+  <DialogContent>
+    <FormControl fullWidth>
+      <InputLabel>Access Type</InputLabel>
+      <Select
+        value={clinicAccessType}
+        onChange={(e) => setClinicAccessType(e.target.value)}
+      >
+        <MenuItem value="all">All Clinics</MenuItem>
+        <MenuItem value="subset">Specific Clinics</MenuItem>
+      </Select>
+    </FormControl>
+    
+    {clinicAccessType === 'subset' && (
+      <FormControl fullWidth sx={{ mt: 2 }}>
+        <InputLabel>Select Clinics</InputLabel>
+        <Select
+          multiple
+          value={selectedClinics}
+          onChange={(e) => setSelectedClinics(e.target.value)}
+        >
+          {clinics.map(clinic => (
+            <MenuItem key={clinic._id} value={clinic._id}>
+              {clinic.name}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+    )}
+  </DialogContent>
+</Dialog>
+```
+
+#### **Backend User Management**
+**New Endpoint**: `PUT /api/users/:id/clinic-access`
+**Purpose**: Update user's clinic access permissions
+
+**Implementation** (`backend/controllers/users.js`):
+```javascript
+const updateUserClinicAccess = async (req, res) => {
+  const { type, clinics } = req.body;
+  
+  const user = await User.findByIdAndUpdate(
+    req.params.id,
+    { 
+      clinicAccess: { 
+        type, 
+        clinics: type === 'subset' ? clinics : [] 
+      } 
+    },
+    { new: true }
+  );
+  
+  res.json({ success: true, data: user });
+};
+```
+
+### **Data Flow & State Management** ✅
+
+#### **Clinic Selection Flow**
+1. **User selects clinic** from dropdown in Layout
+2. **Selection saved** to localStorage and ClinicScopeContext
+3. **Page reload triggered** to refresh all data
+4. **API requests** automatically include `X-Clinic-Scope` header
+5. **Backend middleware** applies clinic filtering
+6. **All components** display filtered data
+
+#### **State Persistence**
+- **localStorage**: Maintains clinic selection across sessions
+- **Context**: Provides clinic data to all components
+- **API Headers**: Ensures consistent clinic scope in requests
+
+### **Security & Access Control** ✅
+
+#### **Multi-Level RBAC**
+1. **Organization Level**: Users can only access their organization's data
+2. **Clinic Level**: Users can only access clinics they have permission for
+3. **Role Level**: Different roles have different data access levels
+
+#### **Access Validation**
+- **Backend Middleware**: Validates clinic access before processing requests
+- **Frontend Context**: Prevents unauthorized clinic selection
+- **API Security**: All endpoints respect clinic scope
+
+### **User Experience Improvements** ✅
+
+#### **Seamless Clinic Switching**
+- **Global Dropdown**: Easy clinic selection from any page
+- **Instant Data Refresh**: All data updates immediately
+- **Visual Feedback**: Clear indication of selected clinic
+- **Persistent Selection**: Remembers choice across sessions
+
+#### **Data Consistency**
+- **Unified View**: All pages show data for selected clinic
+- **Real-time Updates**: Changes reflect immediately
+- **Cross-page Consistency**: Same clinic scope across all modules
+
+### **Technical Benefits** ✅
+
+#### **Performance Improvements**
+- **Reduced Data Transfer**: Only relevant clinic data sent
+- **Faster Queries**: Smaller result sets
+- **Efficient Caching**: Clinic-specific data caching
+
+#### **Maintainability**
+- **Centralized Logic**: Clinic filtering in one place
+- **Consistent Implementation**: Same pattern across all modules
+- **Easy Debugging**: Clear clinic scope tracking
+
+### **Testing & Verification** ✅
+
+#### **Functionality Verified**
+- ✅ **Clinic Selection**: Dropdown works correctly
+- ✅ **Data Filtering**: All pages show correct clinic data
+- ✅ **Access Control**: Users can only access permitted clinics
+- ✅ **State Persistence**: Selection maintained across sessions
+- ✅ **Cross-module Consistency**: Same clinic scope everywhere
+
+#### **Edge Cases Handled**
+- ✅ **No Clinics**: Graceful handling of empty clinic lists
+- ✅ **Invalid Selection**: Proper error handling
+- ✅ **Permission Denied**: Clear access denied messages
+- ✅ **Data Refresh**: Proper data reload on clinic change
+
+### **Status**: COMPLETE ✅
+
+---
+
+## 🚀 Previous Update: Registration 500 Error Fix** ⚡
+
+### **Issue Fixed**
+The user registration was failing with a 500 Internal Server Error. Detailed logging revealed that the registration process was looking for a default organization with slug `dentos-default`, but it didn't exist in the database.
+
+### **Root Cause & Solution**
+
+#### **Missing Default Organization** ✅
+**Problem**: Registration code expected `dentos-default` organization, but only `smile-care-demo` existed
+**Solution**: Created default organization and updated registration logic
+
+**Database Fix**:
+```javascript
+// Created "DentOS Default Organization" with slug 'dentos-default'
+// ID: 6895e7415acf3230550dae03
+```
+
+**Registration Logic Update** (`backend/controllers/auth.js`):
+```javascript
+// Before: Organization.findOne({ slug: 'smile-care-demo' })
+// After: Organization.findOne({ slug: 'dentos-default' })
+```
+
+### **Multi-Tenant Structure**
+- **Demo Organization** (`smile-care-demo`): Contains all demo data and demo users
+- **Default Organization** (`dentos-default`): For new user registrations
+- **Clean Separation**: Demo data isolated from new users
+
+### **Status**: COMPLETE ✅
+
+---
+
+## **Previous Update: Dashboard Revenue RBAC Implementation** ⚡
+
+### **Issue Fixed**
+The user reported that revenue information on the dashboard was visible to all users, but should only be accessible to admins and managers according to the RBAC system.
+
+### **Root Cause & Solution**
+
+#### **Revenue Visibility Control** ✅
+**Problem**: Revenue card and revenue chart were visible to all user roles (dentist, receptionist, assistant)
+**Solution**: Implemented role-based conditional rendering and backend data filtering:
+
+**Frontend Changes** (`frontend/src/pages/dashboard/Dashboard.js`):
+```javascript
+// Revenue Card - Only visible to admin and manager
+{(user?.role === 'admin' || user?.role === 'manager') && (
+  <Grid item xs={12} sm={6} md={3}>
+    {/* Revenue card content */}
+  </Grid>
+)}
+
+// Revenue Chart - Only visible to admin and manager  
+{(user?.role === 'admin' || user?.role === 'manager') && (
+  <Grid item xs={12} lg={8}>
+    {/* Revenue chart content */}
+  </Grid>
+)}
+```
+
+**Backend Changes** (`backend/controllers/dashboard.js`):
+```javascript
+// Only fetch revenue data for admin and manager roles
+let totalRevenue = 0;
+let currentMonthRevenue = 0;
+let previousMonthRevenue = 0;
+let revenueByMonth = [];
+
+if (req.user.role === 'admin' || req.user.role === 'manager') {
+  // Revenue calculations only for authorized roles
+  const invoices = await Invoice.find({ organization: req.user.organization });
+  totalRevenue = invoices.reduce((sum, invoice) => sum + (invoice.totalAmount || 0), 0);
+  // ... other revenue calculations
+}
+```
+
+### **Status**: COMPLETE ✅
+
+### **RBAC Implementation**
+- **Admin**: Full access including revenue data ✅
+- **Manager**: Full access including revenue data ✅  
+- **Dentist**: Dashboard access without revenue information ✅
+- **Receptionist**: Dashboard access without revenue information ✅
+- **Assistant**: Dashboard access without revenue information ✅
+
+### **Layout Optimization**
+- **With Revenue**: Revenue card takes 1/4 width, other cards adjust accordingly
+- **Without Revenue**: Remaining cards expand to fill available space (1/2 width each)
+- **Responsive**: Proper grid adjustments for different screen sizes
+
+### **Performance Benefits**
+- **Reduced Database Queries**: Revenue data not fetched for unauthorized users
+- **Faster Response**: Smaller payload for dentist/receptionist/assistant users
+- **Security**: Revenue data never sent to unauthorized clients
+
+### **Testing Verification**
+✅ **Admin Login**: Shows revenue card and chart  
+✅ **Manager Login**: Shows revenue card and chart  
+✅ **Dentist Login**: Revenue sections hidden, layout adjusted  
+✅ **Receptionist Login**: Revenue sections hidden, layout adjusted  
+✅ **Assistant Login**: Revenue sections hidden, layout adjusted  
+
+---
+
+## **Previous Update: Critical Authorization & Code Uniqueness Fixes** ⚡
+
+### **Issues Fixed**
+The user reported two critical issues:
+
+1. **Admin Authorization Error**: "Not authorized to delete/edit this user" when admin tries to manage team members
+2. **Code Uniqueness Conflict**: Treatment codes like "T01" caused "code already exists" errors between organizations
+
+### **Root Causes & Solutions**
+
+#### **1. Admin User Management Authorization** ✅
+**Problem**: ObjectId comparison issue in user authorization logic
+**Solution**: Fixed string comparison in users controller:
+```javascript
+// Before: user.organization.toString() !== req.user.organization
+// After: user.organization.toString() !== req.user.organization.toString()
+```
+
+#### **2. Organization-Specific Code Uniqueness** ✅
+**Problem**: All codes were globally unique instead of per-organization
+**Solution**: Updated all models to use compound indexes for organization-specific uniqueness:
+
+- **TreatmentDefinition**: `code` + `organization` unique
+- **Patient**: `patientId` + `organization` unique (sparse)
+- **Clinic**: `branchCode` + `organization` unique
+- **Treatment**: `treatmentPlanId` + `organization` unique (sparse)
+- **Inventory**: `itemCode` + `organization` unique
+- **Invoice**: `invoiceNumber` + `organization` unique
+
+**Database Migration**: Dropped old global unique indexes and created new compound indexes
+
+### **Status**: ALL ISSUES RESOLVED ✅
+
+### **Current Multi-Tenant Implementation**
+- **Authorization**: Admins can now properly manage team members
+- **Code Uniqueness**: All codes are unique per organization, not globally
+- **Data Isolation**: Complete separation between organizations
+- **Index Optimization**: Proper compound indexes for performance
+
+### **Testing Verification**
+✅ **Admin Functions**: Edit/delete team members works
+✅ **Treatment Codes**: T01 can exist in multiple organizations
+✅ **Patient IDs**: Same patient IDs allowed across organizations
+✅ **Clinic Codes**: Same branch codes allowed across organizations
+✅ **Invoice Numbers**: Same invoice numbers allowed across organizations
+
+---
+
+## **Previous Update: Critical Multi-Tenant System Fixes** ⚡
+
+### **Issues Fixed**
+The user reported multiple critical issues with the multi-tenant system:
+
+1. **Treatments not organization-specific**: Treatments from other organizations were visible
+2. **Invoice creation failing**: "Path `organization` is required" error
+3. **User creation issues**: "Server error creating user" (due to duplicate emails)
+4. **Missing user management**: No edit/delete functionality for team members
+
+### **Root Causes & Solutions**
+
+#### **1. Treatments Organization Filtering** ✅
+**Problem**: Missing organization filtering in treatments controller
+**Solution**: Added organization filters to all CRUD operations:
+```javascript
+// Before: TreatmentDefinition.find()
+// After: TreatmentDefinition.find({ organization: req.user.organization })
+```
+
+#### **2. Invoice Organization Field** ✅
+**Problem**: Missing organization field in invoice creation
+**Solution**: Added organization to invoice creation:
+```javascript
+const invoice = await Invoice.create({
+  ...req.body,
+  organization: req.user.organization, // Added this line
+  createdBy: req.user.id
+});
+```
+
+#### **3. User Creation Error Handling** ✅
+**Problem**: Frontend not showing proper error when duplicate email exists
+**Solution**: Backend already handled this correctly; frontend shows appropriate error message
+
+#### **4. Team Management Features** ✅
+**Problem**: No edit/delete functionality for team members
+**Solution**: Added comprehensive user management:
+- **Edit User Dialog**: Update name, email, phone, role
+- **Delete User**: With confirmation dialog
+- **Action Menu**: Three-dot menu on each user card
+- **Permissions**: Only admins can edit/delete other users
+- **Protection**: Admins cannot delete themselves
+
+### **Status**: ALL ISSUES RESOLVED ✅
+
+### **Current Multi-Tenant Implementation**
+- **Data Isolation**: All models properly filter by organization
+- **User Management**: Full CRUD operations for team members
+- **Error Handling**: Proper error messages and validations
+- **Permissions**: Role-based access control implemented
+- **UI/UX**: Intuitive team management interface
+
+### **Testing Verification**
+✅ **Treatments**: Only show organization-specific treatments
+✅ **Invoices**: Create successfully with organization field
+✅ **User Creation**: Proper error handling for duplicates
+✅ **User Editing**: Edit roles and details
+✅ **User Deletion**: Delete with confirmation
+✅ **Permissions**: Admins protected from self-deletion
+
+---
+
+## 📋 **Project Overview**
+
+**Project Name:** DentOS - Dental Management System  
+**Type:** Full-stack web application  
+**Technology Stack:** React (Frontend) + Node.js/Express (Backend) + MongoDB Atlas (Database)  
+**Deployment:** Render (Backend) + Vercel (Frontend)  
+**Development Period:** August 2025  
+**Status:** Production-ready with comprehensive CRUD operations
+
+---
+
+## 🎯 **Project Goals & Objectives**
+
+### **Primary Goal:**
+Upgrade a demo DentOS application from mock data to a fully production-ready system with live MongoDB Atlas database integration.
+
+### **Key Objectives:**
+1. **Backend Migration:** Convert all controllers from mock data to real MongoDB Atlas CRUD operations
+2. **Frontend Integration:** Ensure React app correctly communicates with backend using proper API URLs
+3. **Authentication:** Implement robust JWT-based authentication system
+4. **Deployment Ready:** Create a codebase that can be deployed directly to production platforms
+5. **Comprehensive Testing:** Ensure all functionalities work perfectly before deployment
+
+---
+
+## 🏗️ **System Architecture**
+
+### **Frontend (React)**
+- **Framework:** React 18 with functional components and hooks
+- **UI Library:** Material-UI (MUI) for consistent design
+- **State Management:** React Context API for global state
+- **Routing:** React Router for navigation
+- **HTTP Client:** Axios for API communication
+- **Form Handling:** Formik + Yup for validation
+- **Notifications:** React-toastify for user feedback
+
+### **Backend (Node.js/Express)**
+- **Framework:** Express.js with async/await pattern
+- **Database:** MongoDB Atlas (cloud-hosted)
+- **ORM:** Mongoose for data modeling and validation
+- **Authentication:** JWT (JSON Web Tokens) with bcrypt
+- **Middleware:** Custom async handler and error response utilities
+- **Validation:** Express-validator for request validation
+
+### **Database (MongoDB Atlas)**
+- **Hosting:** MongoDB Atlas cloud database
+- **Collections:** Users, Patients, Clinics, Appointments, Treatments, Invoices, etc.
+- **Relationships:** Proper ObjectId references between collections
+- **Indexing:** Optimized indexes for performance
+
+---
+
+## 🔧 **Key Technical Decisions & Solutions**
+
+### **1. API URL Configuration**
+**Problem:** Frontend components were using relative URLs (`/api/...`) which don't work in production.
+
+**Solution:** 
+- Implemented environment-based API URL configuration
+- Created `API_URL` constant using `process.env.REACT_APP_API_URL`
+- Production: `https://dentos.onrender.com/api`
+- Development: `http://localhost:5000/api`
+
+**Files Modified:**
+- All frontend components (Patients, Clinics, Appointments, Treatments, Billing, etc.)
+- Added `API_URL` constant to each component
+
+**Environment Files Created:**
+- `.env` - Development environment (localhost)
+- `.env.production` - Production environment (Render)
+- `.env.example` - Template for environment setup
+
+### **2. Authentication Token Handling**
+**Problem:** JWT tokens weren't being properly handled in frontend components.
+
+**Solution:**
+- Modified `AuthContext.js` to set axios headers immediately after login
+- Ensured tokens are stored as raw strings in localStorage
+- Added proper Bearer token format: `Authorization: Bearer ${token}`
+
+**Critical Fix:**
+```javascript
+// In AuthContext.js
+const login = async (email, password) => {
+  const response = await axios.post(`${API_URL}/auth/login`, { email, password });
+  const token = response.data.token;
+  
+  // Store raw token
+  localStorage.setItem('token', token);
+  
+  // Set axios header IMMEDIATELY
+  axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  
+  // Then load user
+  await loadUser();
+};
+```
+
+### **3. Address Object Rendering**
+**Problem:** React was throwing "Objects are not valid as a React child" errors when trying to render address objects directly.
+
+**Solution:**
+- Created `frontend/src/utils/addressFormatter.js` utility
+
+### **4. Dashboard Runtime Errors**
+**Problem:** Dashboard was throwing "Cannot read properties of undefined (reading 'appointmentsByType')" errors.
+
+**Solution:**
+- Implemented optional chaining (`?.`) and fallback values in `frontend/src/pages/dashboard/Dashboard.js`
+- Added `|| []` for arrays and `|| '0'` for string values
+- Added `|| 0` for numeric values
+
+**Files Modified:**
+- `frontend/src/pages/dashboard/Dashboard.js`
+
+### **5. Staff Management System**
+**Problem:** Staff management functionality was missing (no backend API, no frontend integration).
+
+**Solution:**
+- **Backend Implementation:**
+  - Created `backend/models/Staff.js` with comprehensive schema
+  - Created `backend/controllers/staff.js` with full CRUD operations
+  - Created `backend/routes/staff.js` with RESTful endpoints
+- **Frontend Fixes:**
+  - Updated `frontend/src/pages/staff/Staff.js` with proper data handling
+  - Fixed `MenuItem` values to match backend enums (lowercase)
+  - Added data preprocessing for form submission
+
+**Files Created/Modified:**
+- `backend/models/Staff.js` (new)
+- `backend/controllers/staff.js` (new)
+- `backend/routes/staff.js` (new)
+- `frontend/src/pages/staff/Staff.js` (updated)
+
+### **6. Appointment Management Issues**
+**Problem:** Multiple issues with appointment functionality:
+- Clinic dropdown not selectable
+- Doctor dropdown empty
+- Patient names showing as "undefined undefined"
+- Missing form validation
+- Routing issues for edit functionality
+
+**Solution:**
+- **AddAppointment.js Fixes:**
+  - Added authentication headers to all API calls
+  - Fixed doctor filtering (`staff.role === 'dentist'`)
+  - Updated patient dropdown to use `option.name`
+  - Added required

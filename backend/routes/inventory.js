@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/auth');
+const clinicScope = require('../middleware/clinicScope');
 const {
   getInventoryItems,
   getInventoryItem,
@@ -12,15 +13,15 @@ const {
 
 // Inventory routes
 router.route('/')
-  .get(protect, getInventoryItems)
-  .post(protect, createInventoryItem);
+  .get(protect, clinicScope, getInventoryItems)
+  .post(protect, clinicScope, createInventoryItem);
 
 router.route('/:id')
-  .get(protect, getInventoryItem)
-  .put(protect, updateInventoryItem)
-  .delete(protect, deleteInventoryItem);
+  .get(protect, clinicScope, getInventoryItem)
+  .put(protect, clinicScope, updateInventoryItem)
+  .delete(protect, clinicScope, deleteInventoryItem);
 
 router.route('/:id/stock')
-  .put(protect, updateInventoryStock);
+  .put(protect, clinicScope, updateInventoryStock);
 
 module.exports = router;

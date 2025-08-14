@@ -60,8 +60,14 @@ exports.getPatients = async (req, res) => {
       }
     }
 
+    // Apply clinic scope if provided
+    let scopedConditions = { ...queryConditions };
+    if (req.scope && req.scope.patientClinicFilter) {
+      scopedConditions = { ...scopedConditions, ...req.scope.patientClinicFilter };
+    }
+
     // Create the base query
-    let query = Patient.find(queryConditions);
+    let query = Patient.find(scopedConditions);
 
     // Handle clinic filter (post-query)
     if (req.query.clinic) {

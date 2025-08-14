@@ -30,13 +30,14 @@ const OrganizationCheck = ({ children }) => {
       try {
         console.log('   Making organization and user checks...');
         // Check if user has an organization and if they need to change password
+        // Ensure every call carries clinic scope even if some pages use bare axios
+        const commonHeaders = {
+          Authorization: `Bearer ${token}`,
+          'X-Clinic-Scope': localStorage.getItem('clinicScope') || 'all'
+        };
         const [orgResponse, userResponse] = await Promise.all([
-          axios.get(`${API_URL}/organizations/my`, {
-            headers: { Authorization: `Bearer ${token}` }
-          }),
-          axios.get(`${API_URL}/auth/me`, {
-            headers: { Authorization: `Bearer ${token}` }
-          })
+          axios.get(`${API_URL}/organizations/my`, { headers: commonHeaders }),
+          axios.get(`${API_URL}/auth/me`, { headers: commonHeaders })
         ]);
 
         console.log('   Organization response:', orgResponse.data);

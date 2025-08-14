@@ -30,7 +30,9 @@ exports.getAppointments = async (req, res) => {
 
     // Finding resource - filter by organization
     const baseQuery = { organization: req.user.organization, ...JSON.parse(queryStr) };
-    query = Appointment.find(baseQuery);
+    // Apply clinic scope if present
+    const scopedBase = req.scope && req.scope.clinicFilter ? { ...baseQuery, ...req.scope.clinicFilter } : baseQuery;
+    query = Appointment.find(scopedBase);
 
     // Handle search
     if (req.query.search) {

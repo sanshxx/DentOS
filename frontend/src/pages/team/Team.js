@@ -70,6 +70,11 @@ const Team = () => {
   // Menu state
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedUserId, setSelectedUserId] = useState(null);
+  // Clinic Access edit dialog
+  const [clinics, setClinics] = useState([]);
+  const [clinicAccessDialog, setClinicAccessDialog] = useState(false);
+  const [clinicAccessForm, setClinicAccessForm] = useState({ type: 'all', clinics: [] });
+  const [clinicAccessUser, setClinicAccessUser] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -88,11 +93,14 @@ const Team = () => {
         setOrganization(orgResponse.data.data);
         
         // Get users and join requests
-        const [usersResponse, requestsResponse] = await Promise.all([
+        const [usersResponse, requestsResponse, clinicsResponse] = await Promise.all([
           axios.get(`${API_URL}/users`, {
             headers: { Authorization: `Bearer ${token}` }
           }),
           axios.get(`${API_URL}/organizations/${orgResponse.data.data._id}/join-requests`, {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          axios.get(`${API_URL}/clinics`, {
             headers: { Authorization: `Bearer ${token}` }
           })
         ]);
@@ -103,6 +111,10 @@ const Team = () => {
 
         if (requestsResponse.data.success) {
           setJoinRequests(requestsResponse.data.data);
+        }
+
+        if (clinicsResponse.data.success) {
+          setClinics(clinicsResponse.data.data || []);
         }
       }
     } catch (error) {
@@ -181,6 +193,33 @@ const Team = () => {
     });
     setEditUserDialog(true);
     handleMenuClose();
+  };
+
+  const openClinicAccessDialog = (user) => {
+    setClinicAccessUser(user);
+    const current = user.clinicAccess || { type: 'all', clinics: [] };
+    setClinicAccessForm({ type: current.type || 'all', clinics: (current.clinics || []).map(c => (typeof c === 'string' ? c : c?._id)) });
+    setClinicAccessDialog(true);
+    handleMenuClose();
+  };
+
+  const saveClinicAccess = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const payload = { type: clinicAccessForm.type, clinics: clinicAccessForm.type === 'subset' ? clinicAccessForm.clinics : [] };
+      const res = await axios.put(`${API_URL}/users/${clinicAccessUser._id}/clinic-access`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.data.success) {
+        toast.success('Clinic access updated');
+        setClinicAccessDialog(false);
+        setClinicAccessUser(null);
+        fetchData();
+      }
+    } catch (error) {
+      console.error('Error updating clinic access:', error);
+      toast.error(error.response?.data?.message || 'Failed to update clinic access');
+    }
   };
 
   const handleUpdateUser = async () => {
@@ -452,6 +491,15 @@ const Team = () => {
           Edit User
         </MenuItemComponent>
         <MenuItemComponent
+          onClick={() => {
+            const user = users.find(u => u._id === selectedUserId);
+            openClinicAccessDialog(user);
+          }}
+        >
+          <BusinessIcon sx={{ mr: 1 }} />
+          Edit Clinic Access
+        </MenuItemComponent>
+        <MenuItemComponent
           onClick={() => handleDeleteUser(selectedUserId)}
           sx={{ color: 'error.main' }}
         >
@@ -509,6 +557,53 @@ const Team = () => {
           <Button onClick={handleUpdateUser} variant="contained">
             Update User
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit Clinic Access Dialog */}
+      <Dialog open={clinicAccessDialog} onClose={() => setClinicAccessDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Edit Clinic Access</DialogTitle>
+        <DialogContent>
+          <Box sx={{ mt: 1 }}>
+            <FormControl fullWidth margin="normal">
+              <InputLabel>Access Type</InputLabel>
+              <Select
+                value={clinicAccessForm.type}
+                label="Access Type"
+                onChange={(e) => setClinicAccessForm((p) => ({ ...p, type: e.target.value }))}
+              >
+                <MenuItem value="all">All clinics</MenuItem>
+                <MenuItem value="subset">Specific clinics</MenuItem>
+              </Select>
+            </FormControl>
+            {clinicAccessForm.type === 'subset' && (
+              <FormControl fullWidth margin="normal">
+                <InputLabel>Clinics</InputLabel>
+                <Select
+                  multiple
+                  value={clinicAccessForm.clinics}
+                  label="Clinics"
+                  onChange={(e) => setClinicAccessForm((p) => ({ ...p, clinics: e.target.value }))}
+                  renderValue={(selected) => (
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      {selected.map((id) => {
+                        const c = clinics.find(cl => cl._id === id);
+                        return <Chip key={id} label={c ? c.name : id} />;
+                      })}
+                    </Box>
+                  )}
+                >
+                  {clinics.map((c) => (
+                    <MenuItem key={c._id} value={c._id}>{c.name}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setClinicAccessDialog(false)}>Cancel</Button>
+          <Button variant="contained" onClick={saveClinicAccess}>Save</Button>
         </DialogActions>
       </Dialog>
     </Box>

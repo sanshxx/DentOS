@@ -4,8 +4,10 @@ const {
   getUsers,
   getUser,
   updateUser,
-  deleteUser
+  deleteUser,
+  updateUserClinicAccess
 } = require('../controllers/users');
+const clinicScope = require('../middleware/clinicScope');
 const { protect, authorize } = require('../middleware/auth');
 
 const router = express.Router();
@@ -14,7 +16,7 @@ const router = express.Router();
 router.use(protect);
 
 // Get all users (admin only)
-router.get('/', authorize('admin'), getUsers);
+router.get('/', authorize('admin'), clinicScope, getUsers);
 
 // Get single user
 router.get('/:id', getUser);
@@ -28,5 +30,8 @@ router.put('/:id', [
 
 // Delete user (admin only)
 router.delete('/:id', authorize('admin'), deleteUser);
+
+// Update clinic access (admin only)
+router.put('/:id/clinic-access', authorize('admin'), updateUserClinicAccess);
 
 module.exports = router; 

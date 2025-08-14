@@ -10,11 +10,12 @@ const {
   sendReminders
 } = require('../controllers/appointments');
 const { protect, authorize } = require('../middleware/auth');
+const clinicScope = require('../middleware/clinicScope');
 
 const router = express.Router();
 
-// Apply protection to all routes
-router.use(protect);
+// Apply protection and clinic scope to all routes
+router.use(protect, clinicScope);
 
 // Get calendar appointments
 router.get('/calendar', getCalendarAppointments);

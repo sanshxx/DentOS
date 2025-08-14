@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/auth');
+const clinicScope = require('../middleware/clinicScope');
 const {
   getStaff,
   getStaffMember,
@@ -13,18 +14,18 @@ const {
 
 // Staff routes
 router.route('/')
-  .get(protect, getStaff)
-  .post(protect, createStaff);
+  .get(protect, clinicScope, getStaff)
+  .post(protect, clinicScope, createStaff);
 
 router.route('/:id')
-  .get(protect, getStaffMember)
-  .put(protect, updateStaff)
-  .delete(protect, deleteStaff);
+  .get(protect, clinicScope, getStaffMember)
+  .put(protect, clinicScope, updateStaff)
+  .delete(protect, clinicScope, deleteStaff);
 
 router.route('/role/:role')
-  .get(protect, getStaffByRole);
+  .get(protect, clinicScope, getStaffByRole);
 
 router.route('/stats')
-  .get(protect, getStaffStats);
+  .get(protect, clinicScope, getStaffStats);
 
 module.exports = router;

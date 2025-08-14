@@ -13,7 +13,7 @@ const User = require('../models/User');
 exports.getReports = asyncHandler(async (req, res, next) => {
   try {
     // Get query parameters for filtering
-    const { startDate, endDate, clinicId } = req.query;
+    const { startDate, endDate, clinicId: clinicIdQuery } = req.query;
     
     // Build date filter
     const dateFilter = {};
@@ -37,8 +37,10 @@ exports.getReports = asyncHandler(async (req, res, next) => {
     }
     
     // Build clinic filter
-    const clinicFilter = clinicId ? { clinic: new mongoose.Types.ObjectId(clinicId) } : {};
-    const patientClinicFilter = clinicId ? { registeredClinic: new mongoose.Types.ObjectId(clinicId) } : {};
+    // Prefer enforced scope; fall back to query param for compatibility
+    const scopedClinicId = (req.scope && req.scope.clinicFilter && req.scope.clinicFilter.clinic) || clinicIdQuery || null;
+    const clinicFilter = scopedClinicId ? { clinic: new mongoose.Types.ObjectId(scopedClinicId) } : {};
+    const patientClinicFilter = scopedClinicId ? { registeredClinic: new mongoose.Types.ObjectId(scopedClinicId) } : {};
     
     // Combine filters with organization
     const filter = { organization: req.user.organization, ...dateFilter, ...clinicFilter };
@@ -184,7 +186,7 @@ exports.getReports = asyncHandler(async (req, res, next) => {
     // Get clinic data
     const clinicData = await Clinic.aggregate([
       // If a specific clinic is selected, filter by that clinic
-      ...(clinicId ? [{ $match: { _id: clinicId } }] : []),
+      ...(scopedClinicId ? [{ $match: { _id: new mongoose.Types.ObjectId(scopedClinicId) } }] : []),
       {
         $lookup: {
           from: 'patients',
@@ -236,13 +238,13 @@ exports.getReports = asyncHandler(async (req, res, next) => {
         }
       },
       // Filter appointments by clinic if clinic is selected
-      ...(clinicId ? [{
+      ...(scopedClinicId ? [{
         $addFields: {
           appointments: {
             $filter: {
               input: '$appointments',
               as: 'appointment',
-              cond: { $eq: ['$$appointment.clinic', clinicId] }
+              cond: { $eq: ['$$appointment.clinic', new mongoose.Types.ObjectId(scopedClinicId) ] }
             }
           }
         }

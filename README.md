@@ -92,6 +92,38 @@ Five distinct user roles with varying access levels:
 - ✅ **Document Management** with file uploads and downloads
 - ✅ **Communication System** with SMS and email tracking
 
+### 🔐 User Roles & Access Levels
+
+#### 👑 **Admin** - Full System Access
+- **Financial Access**: Revenue, invoices, payments, financial reports
+- **User Management**: Add/edit/delete users, manage team permissions
+- **System Configuration**: Clinics, treatments, inventory, settings
+- **All Data**: Complete access to all modules and information
+
+#### 👨‍💼 **Manager** - Business Operations
+- **Financial Oversight**: Revenue reports, payment tracking, analytics
+- **Staff Coordination**: Appointments, schedules, staff management
+- **Business Reports**: Comprehensive operational and financial reports
+- **Limited Access**: Cannot manage users or system configuration
+
+#### 🦷 **Dentist** - Clinical Focus
+- **Patient Care**: Full patient records, medical history, treatments
+- **Treatment Planning**: Create and manage treatment plans
+- **Appointments**: Schedule and manage clinical appointments
+- **Clinical Data**: Access to patient and treatment information only
+
+#### 📞 **Receptionist** - Front Desk Operations
+- **Appointments**: Schedule, reschedule, and manage appointments
+- **Patient Check-in**: Handle patient arrivals and basic information
+- **Communication**: Send reminders and notifications
+- **Limited Access**: Basic patient info, no financial or clinical data
+
+#### 🤝 **Assistant** - Clinical Support
+- **Patient Support**: View patient information during procedures
+- **Appointment Assistance**: Help prepare for appointments
+- **Inventory Check**: View clinical supplies and inventory
+- **Minimal Access**: Limited to support functions only
+
 ### 💻 Local Development Setup
 
 #### Prerequisites
@@ -99,125 +131,168 @@ Five distinct user roles with varying access levels:
 - npm or yarn
 - MongoDB Atlas account (or local MongoDB)
 
-#### Installation
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd DentOS
+#### Backend Setup
+```bash
+cd backend
+npm install
+# Create .env file with your MongoDB connection string
+npm start
+```
+
+#### Frontend Setup
+```bash
+cd frontend
+npm install
+# Create .env file with your backend API URL
+npm start
+```
+
+### 🚀 Production Deployment
+
+#### Backend Deployment (Render)
+1. **Environment Variables**:
+   ```
+   NODE_ENV=production
+   MONGODB_URI=your-mongodb-atlas-connection
+   JWT_SECRET=your-secure-jwt-secret
+   JWT_EXPIRE=30d
    ```
 
-2. **Backend Setup**
-   ```bash
-   cd backend
-   npm install
-   cp .env.example .env
-   # Configure your MongoDB URI and other settings
-   npm run dev
+2. **Deploy to Render**:
+   - Connect your GitHub repository
+   - Set build command: `npm install`
+   - Set start command: `node server.js`
+   - Add environment variables
+
+#### Frontend Deployment (Vercel)
+1. **Environment Variables**:
+   ```
+   REACT_APP_API_URL=https://your-backend-url.onrender.com/api
    ```
 
-3. **Frontend Setup**
-   ```bash
-   cd frontend
-   npm install
-   cp .env.example .env
-   # Configure REACT_APP_API_URL
-   npm start
-   ```
+2. **Deploy to Vercel**:
+   - Connect your GitHub repository
+   - Set build command: `npm run build`
+   - Set output directory: `build`
+   - Add environment variables
 
-4. **Create Demo Data** (Optional)
-   ```bash
-   cd backend
-   node create-demo-organization.js
-   ```
+#### Current Deployments
+- **Backend**: https://dentos.onrender.com
+- **Frontend**: https://dent-os.vercel.app
 
 ## 📁 Project Structure
 
+### Frontend (React)
+```
+frontend/
+├── src/
+│   ├── components/     # Reusable UI components
+│   ├── pages/         # Main application pages
+│   ├── context/       # Global state management
+│   ├── utils/         # Utility functions
+│   └── pdf/           # PDF generation components
+```
+
+### Backend (Node.js/Express)
+```
+backend/
+├── controllers/        # Business logic handlers
+├── models/            # Database schemas
+├── routes/            # API endpoints
+├── middleware/        # Request processing
+└── utils/             # Helper functions
+```
+
+## 🎯 Key Features
+
+### **Multi-Tenant Architecture**
+- **Complete Data Isolation**: Each organization's data is completely separate
+- **Organization-Level Security**: All data is organization-specific
+- **User Collaboration**: Role-based access within organizations
+
+### **Clinic Management**
+- **Multi-Clinic Support**: Manage multiple clinic branches
+- **Clinic-Specific Data**: Filter all data by selected clinic
+- **Staff Assignment**: Assign staff to specific clinics
+
+### **Advanced RBAC**
+- **Role-Based Access**: 5 distinct user roles with specific permissions
+- **Clinic Access Control**: Admins can limit user access to specific clinics
+- **Data Filtering**: Users only see data they're authorized to access
+
+### **Professional Features**
+- **Invoice Generation**: Professional PDF invoices with GST compliance
+- **Document Management**: File upload/download with secure storage
+- **Theme System**: Light/Dark mode with theme-aware components
+- **Real-time Notifications**: Role-based alerts and updates
+
+## �� Documentation
+
+### **Essential Files**
+- **`README.md`** - This comprehensive guide (installation, features, user roles, deployment)
+- **`DEVELOPMENT_LOG.md`** - Complete development history and technical fixes
+- **`TECHNICAL_DOCUMENTATION.md`** - Detailed technical architecture and API documentation
+
+### **Project Cleanup** ✅
+We've cleaned up the project by removing redundant documentation and development files:
+
+**Removed Redundant Documentation:**
+- Multiple deployment guides (consolidated into README.md)
+- Multiple setup guides (consolidated into README.md)
+- Fix summaries (already documented in DEVELOPMENT_LOG.md)
+- Migration guides (already documented in DEVELOPMENT_LOG.md)
+- Demo credentials (already in README.md)
+
+**Removed Development Scripts:**
+- Backend cleanup/migration scripts (no longer needed)
+- Frontend update scripts (no longer needed)
+- Debug scripts (no longer needed)
+- Test scripts (no longer needed)
+
+**Current Clean Structure:**
 ```
 DentOS/
-├── backend/                    # Node.js Express API Server
-│   ├── controllers/           # Business logic & API handlers
-│   │   ├── auth.js           # Authentication & user management
-│   │   ├── organizations.js  # Multi-tenant organization logic
-│   │   ├── patients.js       # Patient management
-│   │   ├── appointments.js   # Appointment scheduling
-│   │   ├── treatments.js     # Treatment definitions & plans
-│   │   ├── billing.js        # Invoice & payment management
-│   │   ├── inventory.js      # Stock & supply management
-│   │   ├── staff.js          # Staff & clinic management
-│   │   └── dashboard.js      # Analytics & reporting
-│   ├── models/               # MongoDB Mongoose schemas
-│   │   ├── Organization.js   # Multi-tenant organization model
-│   │   ├── User.js          # User accounts with RBAC
-│   │   ├── Patient.js       # Patient records
-│   │   ├── Appointment.js   # Appointment scheduling
-│   │   ├── Treatment.js     # Treatment plans
-│   │   ├── Invoice.js       # Billing & invoices
-│   │   ├── Inventory.js     # Inventory management
-│   │   ├── Staff.js         # Staff profiles
-│   │   └── Clinic.js        # Clinic locations
-│   ├── routes/              # API route definitions
-│   ├── middleware/          # Authentication & validation
-│   ├── utils/              # Helper functions & utilities
-│   └── server.js           # Express server entry point
-│
-├── frontend/                   # React.js Client Application
-│   ├── src/
-│   │   ├── components/        # Reusable UI components
-│   │   │   ├── layout/       # Layout components (Sidebar, Header)
-│   │   │   └── routing/      # Route protection & organization checks
-│   │   ├── pages/            # Main application pages
-│   │   │   ├── auth/         # Login, Register, Organization setup
-│   │   │   ├── dashboard/    # Role-based dashboard
-│   │   │   ├── patients/     # Patient management
-│   │   │   ├── appointments/ # Appointment scheduling
-│   │   │   ├── treatments/   # Treatment management
-│   │   │   ├── billing/      # Invoice & payment management
-│   │   │   ├── inventory/    # Stock management
-│   │   │   ├── staff/        # Staff management
-│   │   │   ├── team/         # User & organization management
-│   │   │   └── reports/      # Analytics & reporting
-│   │   ├── context/          # React Context (Authentication)
-│   │   ├── utils/           # Helper functions (PDF generation, etc.)
-│   │   └── App.js           # Main application component
-│   └── public/              # Static assets
-│
-└── Documentation/             # Comprehensive documentation
-    ├── DEVELOPMENT_LOG.md    # Development progress & fixes
-    ├── ORGANIZATION_SETUP_GUIDE.md # Multi-tenant setup guide
-    ├── TECHNICAL_DOCUMENTATION.md  # Technical architecture
-    └── USER_GUIDE.md        # End-user documentation
+├── README.md                    # Comprehensive project guide
+├── DEVELOPMENT_LOG.md           # Complete development history
+├── TECHNICAL_DOCUMENTATION.md   # Technical architecture details
+├── .gitignore                   # Git ignore rules
+├── package.json                 # Root dependencies
+├── backend/                     # Node.js/Express API server
+│   ├── controllers/            # Business logic handlers
+│   ├── models/                 # Database schemas
+│   ├── routes/                 # API endpoints
+│   ├── middleware/             # Request processing
+│   ├── utils/                  # Helper functions
+│   ├── server.js               # Server entry point
+│   ├── package.json            # Backend dependencies
+│   └── render.yaml             # Render deployment config
+└── frontend/                    # React.js client application
+    ├── src/                    # Source code
+    ├── public/                 # Static assets
+    ├── package.json            # Frontend dependencies
+    └── build/                  # Production build
 ```
 
-## 📚 Documentation
+## 🤝 Contributing
 
-### For Developers
-- **[Development Log](./DEVELOPMENT_LOG.md)** - Complete development history and fixes
-- **[Technical Documentation](./TECHNICAL_DOCUMENTATION.md)** - Architecture and implementation details
-- **[Organization Setup Guide](./ORGANIZATION_SETUP_GUIDE.md)** - Multi-tenant system guide
-
-### For Users
-- **[User Guide](./USER_GUIDE.md)** - Complete user manual for all features
-- **[Deployment Guide](./DEPLOYMENT_GUIDE.md)** - Production deployment instructions
-
-## 🏆 Key Achievements
-
-✅ **Complete Multi-Tenancy** - Full data isolation between organizations  
-✅ **Advanced RBAC** - Five-tier role-based access control  
-✅ **Professional PDF Generation** - Clean, GST-compliant invoices  
-✅ **Real-time Dashboard** - Role-based analytics and insights  
-✅ **Theme System** - Light/Dark mode with theme-aware components  
-✅ **Document Management** - File upload/download with robust error handling  
-✅ **Notification System** - Real-time alerts with role-based filtering  
-✅ **Comprehensive Demo** - Ready-to-use demo organization with complete data  
-✅ **Production Ready** - Deployment-ready with proper security and error handling  
+1. **Fork the repository**
+2. **Create a feature branch**: `git checkout -b feature-name`
+3. **Make your changes** and test thoroughly
+4. **Commit your changes**: `git commit -m 'Add feature'`
+5. **Push to the branch**: `git push origin feature-name`
+6. **Submit a pull request**
 
 ## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🙏 Acknowledgments
+## 🆘 Support
 
-- **Indian Healthcare Context**: Designed specifically for Indian dental practices
-- **GST Compliance**: Built-in GST calculations and invoice formatting
-- **Multi-Clinic Operations**: Optimized for clinic chains and multi-location practices
-- **Modern Architecture**: Following current best practices for scalable web applications
+- **Documentation**: Check the DEVELOPMENT_LOG.md for recent fixes and updates
+- **Issues**: Report bugs or feature requests through GitHub issues
+- **Demo Access**: Use the demo credentials above to explore the system
+
+---
+
+**DentOS** - Professional Dental Practice Management System  
+*Built with React, Node.js, and MongoDB Atlas*

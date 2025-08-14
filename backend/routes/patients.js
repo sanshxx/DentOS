@@ -10,11 +10,12 @@ const {
   updateMedicalHistory
 } = require('../controllers/patients');
 const { protect, authorize } = require('../middleware/auth');
+const clinicScope = require('../middleware/clinicScope');
 
 const router = express.Router();
 
 // Apply protection to all routes
-router.use(protect);
+router.use(protect, clinicScope);
 
 // Get all patients and create new patient
 router.route('/')

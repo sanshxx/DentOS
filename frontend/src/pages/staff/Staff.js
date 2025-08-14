@@ -30,6 +30,7 @@ const Staff = () => {
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [clinics, setClinics] = useState([]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
@@ -52,12 +53,10 @@ const Staff = () => {
     experience: '',
     address: '',
     joinDate: '',
-    status: 'Active',
+    status: 'active',
     password: '',
-    clinic: {
-      _id: '',
-      name: ''
-    },
+    primaryClinic: '',
+    clinics: [],
     profileImage: ''
   });
   const [formErrors, setFormErrors] = useState({});
@@ -65,6 +64,7 @@ const Staff = () => {
 
   useEffect(() => {
     fetchStaff();
+    fetchClinics();
   }, []);
 
   const fetchStaff = async () => {
@@ -100,6 +100,19 @@ const Staff = () => {
       setError('Failed to load staff data. Please try again.');
       toast.error('Failed to load staff data');
       setLoading(false);
+    }
+  };
+
+  const fetchClinics = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      const res = await axios.get(`${API_URL}/clinics`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.data?.success) setClinics(res.data.data || []);
+    } catch (e) {
+      console.error('Error fetching clinics:', e);
     }
   };
   
@@ -185,6 +198,8 @@ const Staff = () => {
         joinDate: new Date().toISOString().split('T')[0],
         status: 'active',
         password: '',
+        primaryClinic: '',
+        clinics: [],
         profileImage: ''
       });
       setIsEditing(false);
@@ -273,9 +288,9 @@ const Staff = () => {
         }
       });
       
-      // Remove clinic object if it exists (not part of Staff model)
-      if (staffData.clinic) {
-        delete staffData.clinic;
+      // Ensure clinic arrays are correct
+      if (Array.isArray(staffData.clinics) && staffData.clinics.length === 0) {
+        delete staffData.clinics;
       }
       
       if (isEditing) {
@@ -653,7 +668,7 @@ const Staff = () => {
                   required
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={6}>
                 <FormControl fullWidth margin="normal" required error={!!formErrors.role}>
                   <InputLabel>Role</InputLabel>
                   <Select
@@ -678,6 +693,46 @@ const Staff = () => {
                   )}
                 </FormControl>
               </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth margin="normal">
+                <InputLabel>Primary Clinic</InputLabel>
+                <Select
+                  name="primaryClinic"
+                  value={formData.primaryClinic || ''}
+                  onChange={handleFormChange}
+                  label="Primary Clinic"
+                >
+                  <MenuItem value="">None</MenuItem>
+                  {clinics.map((c) => (
+                    <MenuItem key={c._id} value={c._id}>{c.name}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <FormControl fullWidth margin="normal">
+                <InputLabel>Additional Clinics</InputLabel>
+                <Select
+                  multiple
+                  name="clinics"
+                  value={formData.clinics || []}
+                  onChange={(e) => setFormData(prev => ({ ...prev, clinics: e.target.value }))}
+                  label="Additional Clinics"
+                  renderValue={(selected) => (
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      {(selected || []).map((id) => {
+                        const c = clinics.find(cl => cl._id === id);
+                        return <Chip key={id} label={c ? c.name : id} />
+                      })}
+                    </Box>
+                  )}
+                >
+                  {clinics.map((c) => (
+                    <MenuItem key={c._id} value={c._id}>{c.name}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth

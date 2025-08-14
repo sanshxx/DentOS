@@ -5,6 +5,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { ThemeProvider } from './context/ThemeContext';
+import { ClinicScopeProvider } from './context/ClinicScopeContext';
 
 // Layout Components
 import Layout from './components/layout/Layout';
@@ -98,6 +99,7 @@ function App() {
   return (
     <AuthProvider>
       <ThemeProvider>
+        <ClinicScopeProvider>
         <LocalizationProvider dateAdapter={AdapterDateFns}>
           <Router>
             <ToastContainer position="top-right" autoClose={5000} />
@@ -297,6 +299,7 @@ function App() {
             </Routes>
           </Router>
         </LocalizationProvider>
+        </ClinicScopeProvider>
       </ThemeProvider>
     </AuthProvider>
   );

@@ -32,7 +32,9 @@ exports.getInvoices = asyncHandler(async (req, res, next) => {
 
     // Finding resource - filter by organization
     const baseQuery = { organization: req.user.organization, ...JSON.parse(queryStr) };
-    query = Invoice.find(baseQuery);
+    // Apply clinic scope if present
+    const scopedBase = req.scope && req.scope.clinicFilter ? { ...baseQuery, ...req.scope.clinicFilter } : baseQuery;
+    query = Invoice.find(scopedBase);
 
     // Handle search
     if (req.query.search) {

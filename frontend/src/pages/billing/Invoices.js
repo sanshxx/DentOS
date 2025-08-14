@@ -16,7 +16,8 @@ import PrintIcon from '@mui/icons-material/Print';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import PaymentIcon from '@mui/icons-material/Payment';
 import axios from 'axios';
-import { printInvoice, downloadInvoicePDF, downloadInvoiceCSV } from '../../utils/invoiceUtils';
+import { downloadInvoicePDF, openInvoicePDF } from '../../utils/pdfInvoice';
+import { downloadInvoiceCSV } from '../../utils/invoiceUtils';
 
 // Get API URL from environment variables
 import { API_URL } from '../../utils/apiConfig';
@@ -139,7 +140,7 @@ const Invoices = () => {
       });
       
       const invoice = response.data.data;
-      await printInvoice(invoice);
+      await openInvoicePDF(invoice);
     } catch (error) {
       console.error('Error printing invoice:', error);
       alert('Failed to print invoice. Please try again.');

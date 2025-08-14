@@ -19,17 +19,24 @@ exports.getDashboardData = asyncHandler(async (req, res) => {
     const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const previousMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
 
-    // Get current month counts (filtered by organization)
+    // Determine clinic scope filters
+    const clinicFilter = (req.scope && req.scope.clinicFilter) ? req.scope.clinicFilter : {};
+    const patientClinicFilter = (req.scope && req.scope.patientClinicFilter) ? req.scope.patientClinicFilter : {};
+
+    // Get current month counts (filtered by organization and clinic scope if present)
     const currentMonthPatients = await Patient.countDocuments({
       organization: req.user.organization,
+      ...patientClinicFilter,
       createdAt: { $gte: currentMonthStart, $lte: currentMonthEnd }
     });
     const currentMonthAppointments = await Appointment.countDocuments({
       organization: req.user.organization,
+      ...clinicFilter,
       appointmentDate: { $gte: currentMonthStart, $lte: currentMonthEnd }
     });
     const currentMonthTreatments = await Treatment.countDocuments({
       organization: req.user.organization,
+      ...clinicFilter,
       createdAt: { $gte: currentMonthStart, $lte: currentMonthEnd }
     });
     let currentMonthInvoices = [];
@@ -37,22 +44,26 @@ exports.getDashboardData = asyncHandler(async (req, res) => {
     if (req.user.role === 'admin' || req.user.role === 'manager') {
       currentMonthInvoices = await Invoice.find({
         organization: req.user.organization,
+        ...clinicFilter,
         createdAt: { $gte: currentMonthStart, $lte: currentMonthEnd }
       });
       currentMonthRevenue = currentMonthInvoices.reduce((sum, invoice) => sum + (invoice.totalAmount || 0), 0);
     }
 
-    // Get previous month counts (filtered by organization)
+    // Get previous month counts (filtered by organization and clinic scope if present)
     const previousMonthPatients = await Patient.countDocuments({
       organization: req.user.organization,
+      ...patientClinicFilter,
       createdAt: { $gte: previousMonthStart, $lte: previousMonthEnd }
     });
     const previousMonthAppointments = await Appointment.countDocuments({
       organization: req.user.organization,
+      ...clinicFilter,
       appointmentDate: { $gte: previousMonthStart, $lte: previousMonthEnd }
     });
     const previousMonthTreatments = await Treatment.countDocuments({
       organization: req.user.organization,
+      ...clinicFilter,
       createdAt: { $gte: previousMonthStart, $lte: previousMonthEnd }
     });
     let previousMonthInvoices = [];
@@ -60,6 +71,7 @@ exports.getDashboardData = asyncHandler(async (req, res) => {
     if (req.user.role === 'admin' || req.user.role === 'manager') {
       previousMonthInvoices = await Invoice.find({
         organization: req.user.organization,
+        ...clinicFilter,
         createdAt: { $gte: previousMonthStart, $lte: previousMonthEnd }
       });
       previousMonthRevenue = previousMonthInvoices.reduce((sum, invoice) => sum + (invoice.totalAmount || 0), 0);
@@ -76,16 +88,16 @@ exports.getDashboardData = asyncHandler(async (req, res) => {
     const treatmentTrend = calculateTrend(currentMonthTreatments, previousMonthTreatments);
     const revenueTrend = calculateTrend(currentMonthRevenue, previousMonthRevenue);
 
-    // Get total counts (all time) - filtered by organization
-    const totalPatients = await Patient.countDocuments({ organization: req.user.organization });
-    const totalAppointments = await Appointment.countDocuments({ organization: req.user.organization });
-    const totalTreatments = await Treatment.countDocuments({ organization: req.user.organization });
+    // Get total counts (all time) - filtered by organization and clinic scope
+    const totalPatients = await Patient.countDocuments({ organization: req.user.organization, ...patientClinicFilter });
+    const totalAppointments = await Appointment.countDocuments({ organization: req.user.organization, ...clinicFilter });
+    const totalTreatments = await Treatment.countDocuments({ organization: req.user.organization, ...clinicFilter });
     
     // Get total revenue (all time) - filtered by organization and role
     let totalRevenue = 0;
     let invoices = [];
     if (req.user.role === 'admin' || req.user.role === 'manager') {
-      invoices = await Invoice.find({ organization: req.user.organization });
+      invoices = await Invoice.find({ organization: req.user.organization, ...clinicFilter });
       totalRevenue = invoices.reduce((sum, invoice) => sum + (invoice.totalAmount || 0), 0);
     }
     
@@ -97,6 +109,7 @@ exports.getDashboardData = asyncHandler(async (req, res) => {
     
     const appointmentsToday = await Appointment.find({
       organization: req.user.organization,
+      ...clinicFilter,
       appointmentDate: { $gte: today, $lt: tomorrow }
     }).populate('patient', 'name');
     
@@ -108,8 +121,8 @@ exports.getDashboardData = asyncHandler(async (req, res) => {
       status: appointment.status
     }));
     
-    // Get recent patients (last 5) - filtered by organization
-    const recentPatients = await Patient.find({ organization: req.user.organization })
+    // Get recent patients (last 5) - filtered by organization and clinic
+    const recentPatients = await Patient.find({ organization: req.user.organization, ...patientClinicFilter })
       .sort({ createdAt: -1 })
       .limit(5)
       .select('name phone gender createdAt');
@@ -125,6 +138,7 @@ exports.getDashboardData = asyncHandler(async (req, res) => {
     // Get upcoming appointments (next 5) - filtered by organization
     const upcomingAppointments = await Appointment.find({
       organization: req.user.organization,
+      ...clinicFilter,
       appointmentDate: { $gt: today }
     })
       .sort({ appointmentDate: 1 })
@@ -151,7 +165,8 @@ exports.getDashboardData = asyncHandler(async (req, res) => {
         {
           $match: {
             organization: new mongoose.Types.ObjectId(req.user.organization),
-            createdAt: { $gte: sevenMonthsAgo }
+            createdAt: { $gte: sevenMonthsAgo },
+            ...(clinicFilter.clinic ? { clinic: clinicFilter.clinic } : {})
           }
         },
         {
@@ -180,7 +195,8 @@ exports.getDashboardData = asyncHandler(async (req, res) => {
     const appointmentsByType = await Appointment.aggregate([
       {
         $match: {
-          organization: new mongoose.Types.ObjectId(req.user.organization)
+          organization: new mongoose.Types.ObjectId(req.user.organization),
+          ...(clinicFilter.clinic ? { clinic: clinicFilter.clinic } : {})
         }
       },
       {

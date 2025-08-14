@@ -17,7 +17,8 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { formatAddress } from '../../utils/addressFormatter';
-import { printInvoice, downloadInvoicePDF, downloadInvoiceCSV } from '../../utils/invoiceUtils';
+import { downloadInvoicePDF, openInvoicePDF } from '../../utils/pdfInvoice';
+import { downloadInvoiceCSV } from '../../utils/invoiceUtils';
 
 // Get API URL from environment variables
 import { API_URL } from '../../utils/apiConfig';
@@ -112,7 +113,7 @@ const ViewInvoice = () => {
   
   const handlePrint = async () => {
     try {
-      await printInvoice(invoice);
+      await openInvoicePDF(invoice);
     } catch (error) {
       console.error('Error printing invoice:', error);
       setNotification({

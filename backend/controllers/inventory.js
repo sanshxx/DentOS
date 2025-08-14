@@ -6,7 +6,16 @@ const Inventory = require('../models/Inventory');
 // @access  Private
 exports.getInventoryItems = asyncHandler(async (req, res) => {
   try {
-    const inventoryItems = await Inventory.find({ organization: req.user.organization });
+    // Filter by clinic scope if provided; inventory stores per-clinic in clinics array
+    const base = { organization: req.user.organization };
+    let match = base;
+    if (req.scope && req.scope.clinicFilter && req.scope.clinicFilter.clinic) {
+      match = {
+        ...base,
+        'clinics.clinic': req.scope.clinicFilter.clinic
+      };
+    }
+    const inventoryItems = await Inventory.find(match);
     
     res.status(200).json({
       success: true,

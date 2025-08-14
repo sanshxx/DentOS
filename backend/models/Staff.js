@@ -72,6 +72,17 @@ const StaffSchema = new mongoose.Schema({
     enum: ['active', 'inactive', 'on_leave', 'terminated'],
     default: 'active'
   },
+  // Clinic assignment (multi-clinic capable)
+  primaryClinic: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Clinic'
+  },
+  clinics: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Clinic'
+    }
+  ],
   password: {
     type: String,
     required: [true, 'Please add a password'],

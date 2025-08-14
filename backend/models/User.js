@@ -42,6 +42,20 @@ const UserSchema = new mongoose.Schema({
     ref: 'Organization',
     required: true
   },
+  // Clinic access RBAC: controls which clinics a user can view/interact with
+  clinicAccess: {
+    type: {
+      type: String,
+      enum: ['all', 'subset'],
+      default: 'all'
+    },
+    clinics: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Clinic'
+      }
+    ]
+  },
   clinic: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Clinic',

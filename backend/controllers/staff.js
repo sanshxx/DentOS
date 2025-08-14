@@ -23,9 +23,10 @@ exports.getStaff = asyncHandler(async (req, res, next) => {
   // Create operators ($gt, $gte, etc)
   queryStr = queryStr.replace(/\b(gt|gte|lt|lte|in)\b/g, match => `$${match}`);
 
-  // Finding resource - filter by organization
+  // Finding resource - filter by organization and clinic scope if provided
   const baseQuery = { organization: req.user.organization, ...JSON.parse(queryStr) };
-  query = Staff.find(baseQuery);
+  const scopedBase = req.scope && req.scope.clinicFilter ? { ...baseQuery, ...req.scope.clinicFilter } : baseQuery;
+  query = Staff.find(scopedBase);
 
   // Select Fields
   if (req.query.select) {
