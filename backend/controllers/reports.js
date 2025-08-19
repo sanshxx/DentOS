@@ -15,27 +15,25 @@ exports.getReports = asyncHandler(async (req, res, next) => {
     // Get query parameters for filtering
     const { startDate, endDate, clinicId: clinicIdQuery } = req.query;
     
-    // Build date filter
-    const dateFilter = {};
-    if (startDate) {
-      dateFilter.createdAt = { $gte: new Date(startDate) };
-    } else {
-      // Default to last 12 months if no start date
-      const twelveMonthsAgo = new Date();
-      twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 11);
-      twelveMonthsAgo.setDate(1);
-      twelveMonthsAgo.setHours(0, 0, 0, 0);
-      dateFilter.createdAt = { $gte: twelveMonthsAgo };
-    }
-    
-    if (endDate) {
-      if (dateFilter.createdAt) {
-        dateFilter.createdAt.$lte = new Date(endDate);
-      } else {
-        dateFilter.createdAt = { $lte: new Date(endDate) };
-      }
-    }
-    
+    // Build date range (default last 12 months)
+    const defaultStart = new Date();
+    defaultStart.setMonth(defaultStart.getMonth() - 11);
+    defaultStart.setDate(1);
+    defaultStart.setHours(0, 0, 0, 0);
+
+    const start = startDate ? new Date(startDate) : defaultStart;
+    const end = endDate ? new Date(endDate) : null;
+
+    // Build collection-specific date filters
+    const invoiceDateFilter = { invoiceDate: { $gte: start } };
+    if (end) invoiceDateFilter.invoiceDate.$lte = end;
+
+    const appointmentDateFilter = { appointmentDate: { $gte: start } };
+    if (end) appointmentDateFilter.appointmentDate.$lte = end;
+
+    const patientRegistrationFilter = { createdAt: { $gte: start } };
+    if (end) patientRegistrationFilter.createdAt.$lte = end;
+
     // Build clinic filter
     // Prefer enforced scope; fall back to query param for compatibility
     const scopedClinicId = (req.scope && req.scope.clinicFilter && req.scope.clinicFilter.clinic) || clinicIdQuery || null;
@@ -43,18 +41,18 @@ exports.getReports = asyncHandler(async (req, res, next) => {
     const patientClinicFilter = scopedClinicId ? { registeredClinic: new mongoose.Types.ObjectId(scopedClinicId) } : {};
     
     // Combine filters with organization
-    const filter = { organization: req.user.organization, ...dateFilter, ...clinicFilter };
-    const patientFilter = { organization: req.user.organization, ...dateFilter, ...patientClinicFilter };
+    const invoiceFilter = { organization: req.user.organization, ...invoiceDateFilter, ...clinicFilter };
+    const appointmentFilter = { organization: req.user.organization, ...appointmentDateFilter, ...clinicFilter };
+    const patientFilter = { organization: req.user.organization, ...patientRegistrationFilter, ...patientClinicFilter };
     
-
-    
+    // Revenue by month from invoices (use invoiceDate for when revenue was generated)
     const revenueData = await Invoice.aggregate([
       {
-        $match: filter
+        $match: invoiceFilter
       },
       {
         $group: {
-          _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
+          _id: { $dateToString: { format: "%Y-%m", date: "$invoiceDate" } },
           revenue: { $sum: "$totalAmount" }
         }
       },
@@ -82,8 +80,30 @@ exports.getReports = asyncHandler(async (req, res, next) => {
       });
     }
     
-    // Get patient data by month (new vs returning)
-    const patientData = await Patient.aggregate([
+    // Get patient activity by month (based on when they had appointments, not when registered)
+    const patientActivityData = await Appointment.aggregate([
+      {
+        $match: appointmentFilter
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m", date: "$appointmentDate" } },
+          activePatients: { $addToSet: "$patient" }
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          activePatientCount: { $size: "$activePatients" }
+        }
+      },
+      {
+        $sort: { _id: 1 }
+      }
+    ]);
+    
+    // Get new patient registrations by month (when they were added to system)
+    const newPatientData = await Patient.aggregate([
       {
         $match: patientFilter
       },
@@ -98,15 +118,15 @@ exports.getReports = asyncHandler(async (req, res, next) => {
       }
     ]);
     
-    // Get appointment data by month and status
+    // Get appointment data by month and status (use actual appointment dates)
     const appointmentData = await Appointment.aggregate([
       {
-        $match: filter
+        $match: appointmentFilter
       },
       {
         $group: {
           _id: { 
-            yearMonth: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
+            yearMonth: { $dateToString: { format: "%Y-%m", date: "$appointmentDate" } },
             status: "$status"
           },
           count: { $sum: 1 }
@@ -126,7 +146,11 @@ exports.getReports = asyncHandler(async (req, res, next) => {
       date.setMonth(currentDate.getMonth() - i);
       const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       
-      const monthPatientData = patientData.find(item => item._id === yearMonth);
+      // Find patient activity for this month
+      const monthPatientActivity = patientActivityData.find(item => item._id === yearMonth);
+      
+      // Find new patient registrations for this month
+      const monthNewPatients = newPatientData.find(item => item._id === yearMonth);
       
       // Get appointment counts by status for this month
       const scheduled = appointmentData.find(item => 
@@ -143,8 +167,8 @@ exports.getReports = asyncHandler(async (req, res, next) => {
       
       formattedPatientData.unshift({
         month: months[date.getMonth()],
-        newPatients: monthPatientData ? monthPatientData.newPatients : 0,
-        returning: 0 // This would require more complex queries with patient visit history
+        newPatients: monthNewPatients ? monthNewPatients.newPatients : 0,
+        activePatients: monthPatientActivity ? monthPatientActivity.activePatientCount : 0
       });
       
       formattedAppointmentData.unshift({
@@ -159,7 +183,7 @@ exports.getReports = asyncHandler(async (req, res, next) => {
     const treatmentData = await Appointment.aggregate([
       {
         $match: {
-          ...filter,
+          ...appointmentFilter, // Use appointmentFilter for treatment data
           appointmentType: { $exists: true, $ne: null }
         }
       },
@@ -307,7 +331,7 @@ exports.getFinancialReports = asyncHandler(async (req, res, next) => {
     // Get query parameters for filtering
     const { startDate, endDate, clinicId } = req.query;
     
-    // Build date filter
+    // Build date filter for invoices
     const dateFilter = {};
     if (startDate) {
       dateFilter.invoiceDate = { $gte: new Date(startDate) };
@@ -326,7 +350,7 @@ exports.getFinancialReports = asyncHandler(async (req, res, next) => {
     // Combine filters
     const filter = { ...dateFilter, ...clinicFilter };
     
-    // Get revenue data by month
+    // Get revenue data by month (use invoiceDate for when revenue was generated)
     const revenueData = await Invoice.aggregate([
       { $match: filter },
       {
@@ -377,9 +401,16 @@ exports.getFinancialReports = asyncHandler(async (req, res, next) => {
       { $sort: { revenue: -1 } }
     ]);
     
-    // Get revenue by dentist
+    // Get revenue by dentist (use appointment dates for when services were provided)
     const dentistRevenueData = await Appointment.aggregate([
-      { $match: { ...filter, dentist: { $exists: true } } },
+      { 
+        $match: { 
+          ...(startDate && { appointmentDate: { $gte: new Date(startDate) } }),
+          ...(endDate && { appointmentDate: { $lte: new Date(endDate) } }),
+          ...clinicFilter,
+          dentist: { $exists: true } 
+        } 
+      },
       {
         $group: {
           _id: "$dentist",
@@ -397,7 +428,7 @@ exports.getFinancialReports = asyncHandler(async (req, res, next) => {
       { $unwind: "$dentistInfo" },
       {
         $project: {
-          name: { $concat: ["$dentistInfo.firstName", " ", "$dentistInfo.lastName"] },
+          name: "$dentistInfo.name",
           count: 1
         }
       },
@@ -430,45 +461,43 @@ exports.getPatientReports = asyncHandler(async (req, res, next) => {
     // Get query parameters for filtering
     const { startDate, endDate, clinicId } = req.query;
     
-    // Build date filter
-    const dateFilter = {};
+    // Build date filter for appointments (when patients were active)
+    const appointmentDateFilter = {};
     if (startDate) {
-      dateFilter.createdAt = { $gte: new Date(startDate) };
+      appointmentDateFilter.appointmentDate = { $gte: new Date(startDate) };
     }
     if (endDate) {
-      if (dateFilter.createdAt) {
-        dateFilter.createdAt.$lte = new Date(endDate);
+      if (appointmentDateFilter.appointmentDate) {
+        appointmentDateFilter.appointmentDate.$lte = new Date(endDate);
       } else {
-        dateFilter.createdAt = { $lte: new Date(endDate) };
+        appointmentDateFilter.appointmentDate = { $lte: new Date(endDate) };
+      }
+    }
+    
+    // Build date filter for patient registrations
+    const registrationDateFilter = {};
+    if (startDate) {
+      registrationDateFilter.createdAt = { $gte: new Date(startDate) };
+    }
+    if (endDate) {
+      if (registrationDateFilter.createdAt) {
+        registrationDateFilter.createdAt.$lte = new Date(endDate);
+      } else {
+        registrationDateFilter.createdAt = { $lte: new Date(endDate) };
       }
     }
     
     // Build clinic filter for appointments
     const clinicFilter = clinicId ? { clinic: clinicId } : {};
     
-    // Get new patients by month
-    const newPatientsByMonth = await Patient.aggregate([
-      { $match: dateFilter },
+    // Get active patients by month (based on when they had appointments)
+    const activePatientsByMonth = await Appointment.aggregate([
+      { $match: { ...appointmentDateFilter, ...clinicFilter } },
       {
         $group: {
           _id: {
-            year: { $year: "$createdAt" },
-            month: { $month: "$createdAt" }
-          },
-          count: { $sum: 1 }
-        }
-      },
-      { $sort: { "_id.year": 1, "_id.month": 1 } }
-    ]);
-    
-    // Get returning patients by month (patients with appointments)
-    const returningPatientsByMonth = await Appointment.aggregate([
-      { $match: { ...dateFilter, ...clinicFilter } },
-      {
-        $group: {
-          _id: {
-            year: { $year: "$date" },
-            month: { $month: "$date" },
+            year: { $year: "$appointmentDate" },
+            month: { $month: "$appointmentDate" },
             patient: "$patient"
           }
         }
@@ -485,22 +514,37 @@ exports.getPatientReports = asyncHandler(async (req, res, next) => {
       { $sort: { "_id.year": 1, "_id.month": 1 } }
     ]);
     
+    // Get new patient registrations by month
+    const newPatientsByMonth = await Patient.aggregate([
+      { $match: registrationDateFilter },
+      {
+        $group: {
+          _id: {
+            year: { $year: "$createdAt" },
+            month: { $month: "$createdAt" }
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { "_id.year": 1, "_id.month": 1 } }
+    ]);
+    
     // Format patient data
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const formattedPatientData = [];
     
     // Create a map for quick lookup
+    const activePatientsMap = new Map();
     const newPatientsMap = new Map();
-    const returningPatientsMap = new Map();
+    
+    activePatientsByMonth.forEach(item => {
+      const key = `${item._id.year}-${item._id.month}`;
+      activePatientsMap.set(key, item.count);
+    });
     
     newPatientsByMonth.forEach(item => {
       const key = `${item._id.year}-${item._id.month}`;
       newPatientsMap.set(key, item.count);
-    });
-    
-    returningPatientsByMonth.forEach(item => {
-      const key = `${item._id.year}-${item._id.month}`;
-      returningPatientsMap.set(key, item.count);
     });
     
     // Get current year and month
@@ -518,7 +562,7 @@ exports.getPatientReports = asyncHandler(async (req, res, next) => {
       formattedPatientData.unshift({
         month: months[month - 1],
         newPatients: newPatientsMap.get(key) || 0,
-        returning: returningPatientsMap.get(key) || 0
+        activePatients: activePatientsMap.get(key) || 0
       });
     }
     
@@ -546,16 +590,16 @@ exports.getAppointmentReports = asyncHandler(async (req, res, next) => {
     // Get query parameters for filtering
     const { startDate, endDate, clinicId } = req.query;
     
-    // Build date filter
+    // Build date filter for appointments (use appointmentDate for when appointments occurred)
     const dateFilter = {};
     if (startDate) {
-      dateFilter.date = { $gte: new Date(startDate) };
+      dateFilter.appointmentDate = { $gte: new Date(startDate) };
     }
     if (endDate) {
-      if (dateFilter.date) {
-        dateFilter.date.$lte = new Date(endDate);
+      if (dateFilter.appointmentDate) {
+        dateFilter.appointmentDate.$lte = new Date(endDate);
       } else {
-        dateFilter.date = { $lte: new Date(endDate) };
+        dateFilter.appointmentDate = { $lte: new Date(endDate) };
       }
     }
     
@@ -565,14 +609,14 @@ exports.getAppointmentReports = asyncHandler(async (req, res, next) => {
     // Combine filters
     const filter = { ...dateFilter, ...clinicFilter };
     
-    // Get appointment data by month and status
+    // Get appointment data by month and status (use actual appointment dates)
     const appointmentsByMonth = await Appointment.aggregate([
       { $match: filter },
       {
         $group: {
           _id: {
-            year: { $year: "$date" },
-            month: { $month: "$date" },
+            year: { $year: "$appointmentDate" },
+            month: { $month: "$appointmentDate" },
             status: "$status"
           },
           count: { $sum: 1 }

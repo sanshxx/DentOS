@@ -22,10 +22,10 @@ import {
 import { ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider, DatePicker, TimePicker } from '@mui/x-date-pickers';
-import { Formik, Form, Field } from 'formik';
+import { Formik, Form } from 'formik';
 import * as Yup from 'yup';
 import { toast } from 'react-toastify';
-import { format, addMinutes, parse } from 'date-fns';
+import { format, addMinutes } from 'date-fns';
 
 // Get API URL from environment variables
 import { API_URL } from '../../utils/apiConfig';
@@ -86,25 +86,22 @@ const EditAppointment = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   
-  console.log('EditAppointment: ID from params:', id);
-  
   const [appointment, setAppointment] = useState(null);
   const [patients, setPatients] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const [clinics, setClinics] = useState([]);
+  const [definitions, setDefinitions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Only fetch data if we have an ID
     if (!id) return;
-    
     const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
-        
+
         if (!id) {
           throw new Error('Appointment ID is required');
         }
@@ -116,7 +113,7 @@ const EditAppointment = () => {
         }
 
         // Make API calls to get all required data
-        const [appointmentResponse, patientsResponse, doctorsResponse, clinicsResponse] = await Promise.all([
+        const [appointmentResponse, patientsResponse, doctorsResponse, clinicsResponse, defsResponse] = await Promise.all([
           axios.get(`${API_URL}/appointments/${id}`, {
             headers: { Authorization: `Bearer ${token}` }
           }),
@@ -127,6 +124,9 @@ const EditAppointment = () => {
             headers: { Authorization: `Bearer ${token}` }
           }),
           axios.get(`${API_URL}/clinics`, {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          axios.get(`${API_URL}/treatments`, {
             headers: { Authorization: `Bearer ${token}` }
           })
         ]);
@@ -149,13 +149,15 @@ const EditAppointment = () => {
           type: appointmentData.appointmentType || '',
           status: appointmentData.status || 'scheduled',
           notes: appointmentData.notes || '',
-          reasonForVisit: appointmentData.reasonForVisit || ''
+          reasonForVisit: appointmentData.reasonForVisit || '',
+          treatmentId: appointmentData.treatment?._id || '',
         };
         
         setAppointment(formattedAppointment);
         setPatients(patientsResponse.data.data || []);
         setDoctors(doctorsData);
         setClinics(clinicsResponse.data.data || []);
+        setDefinitions(defsResponse.data?.data || defsResponse.data || []);
       } catch (err) {
         console.error('Error fetching data:', err);
         setError('Failed to load appointment data. Please try again.');
@@ -168,37 +170,14 @@ const EditAppointment = () => {
     fetchData();
   }, [id]);
   
-  // Add fallback for missing ID
-  if (!id) {
-    return (
-      <Container maxWidth="lg" sx={{ mt: 4 }}>
-        <Alert severity="error">Invalid appointment ID</Alert>
-        <Button
-          variant="outlined"
-          startIcon={<ArrowBackIcon />}
-          onClick={() => navigate('/appointments')}
-          sx={{ mt: 2 }}
-        >
-          Back to Appointments
-        </Button>
-      </Container>
-    );
-  }
-
   // Calculate end time based on start time and duration (for display only)
   const calculateEndTime = (startTime, duration) => {
     if (!startTime || !duration) return '';
-    
     try {
-      // Parse the start time string to a Date object
       const today = new Date();
       const [hours, minutes] = startTime.split(':');
       const startDate = new Date(today.setHours(parseInt(hours, 10), parseInt(minutes, 10)));
-      
-      // Add the duration to get the end time
       const endDate = addMinutes(startDate, duration);
-      
-      // Format the end time back to a string
       return format(endDate, 'HH:mm');
     } catch (error) {
       console.error('Error calculating end time:', error);
@@ -206,26 +185,20 @@ const EditAppointment = () => {
     }
   };
 
-  // Handle form submission
   const handleSubmit = async (values, { setSubmitting: formikSetSubmitting }) => {
     try {
       setSubmitting(true);
       setError(null);
 
-      // Get token from localStorage
       const token = localStorage.getItem('token');
       if (!token) {
         throw new Error('Authentication token not found');
       }
 
-      // Format date and times
       const formattedDate = format(values.date, 'yyyy-MM-dd');
-      const formattedStartTime = values.startTime; // startTime is already in HH:mm format
-      
-      // Combine date and time into a single datetime
+      const formattedStartTime = values.startTime;
       const appointmentDateTime = new Date(`${formattedDate}T${formattedStartTime}`);
 
-      // Prepare data for API call
       const appointmentData = {
         patient: values.patientId,
         clinic: values.clinicId,
@@ -235,12 +208,10 @@ const EditAppointment = () => {
         appointmentType: values.type,
         reasonForVisit: values.reasonForVisit,
         notes: values.notes || '',
-        status: values.status
+        status: values.status,
+        ...(values.treatmentId ? { treatment: values.treatmentId } : {})
       };
 
-      console.log('🔍 Frontend sending appointment data:', appointmentData);
-
-      // Make API call to update appointment
       const response = await axios.put(`${API_URL}/appointments/${id}`, appointmentData, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -306,10 +277,8 @@ const EditAppointment = () => {
     );
   }
 
-  // Parse date string to Date object for the date picker
   const initialDate = appointment.date ? new Date(appointment.date) : null;
 
-  // Parse time string to Date object for the time picker
   const parseTimeStringToDate = (timeString) => {
     if (!timeString || typeof timeString !== 'string') return null;
     try {
@@ -326,7 +295,6 @@ const EditAppointment = () => {
 
   const initialStartTime = parseTimeStringToDate(appointment.startTime);
 
-  // Initial form values
   const initialValues = {
     patientId: appointment.patientId,
     doctorId: appointment.doctorId,
@@ -338,6 +306,7 @@ const EditAppointment = () => {
     status: appointment.status,
     reasonForVisit: appointment.reasonForVisit || '',
     notes: appointment.notes || '',
+    treatmentId: appointment.treatmentId || '',
   };
 
   return (
@@ -602,32 +571,27 @@ const EditAppointment = () => {
                     </FormControl>
                   </Grid>
 
-                  {/* Status */}
+                  {/* Treatment (Optional) */}
                   <Grid item xs={12} md={4}>
-                    <FormControl
-                      fullWidth
-                      error={touched.status && Boolean(errors.status)}
-                      disabled={isSubmitting || submitting}
-                    >
-                      <InputLabel id="status-label">Status</InputLabel>
+                    <FormControl fullWidth disabled={isSubmitting || submitting}>
+                      <InputLabel id="treatment-label">Treatment (Optional)</InputLabel>
                       <Select
-                        labelId="status-label"
-                        id="status"
-                        name="status"
-                        value={values.status}
+                        labelId="treatment-label"
+                        id="treatmentId"
+                        name="treatmentId"
+                        value={values.treatmentId}
                         onChange={handleChange}
-                        onBlur={handleBlur}
-                        label="Status"
+                        label="Treatment (Optional)"
                       >
-                        {APPOINTMENT_STATUSES.map((status) => (
-                          <MenuItem key={status.value} value={status.value}>
-                            {status.label}
+                        <MenuItem value="">
+                          <em>No treatment</em>
+                        </MenuItem>
+                        {definitions.map((t) => (
+                          <MenuItem key={t._id} value={t._id}>
+                            {t.name} ({t.code}) — {t.category}
                           </MenuItem>
                         ))}
                       </Select>
-                      {touched.status && errors.status && (
-                        <FormHelperText>{errors.status}</FormHelperText>
-                      )}
                     </FormControl>
                   </Grid>
 

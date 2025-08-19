@@ -24,16 +24,27 @@ Five distinct user roles with varying access levels:
 - Comprehensive patient records with medical history
 - Organization-specific patient data with unique IDs
 - Emergency contact management and treatment tracking
+- **NEW**: Dedicated prescriptions tab with complete medication history
 
 ### 📅 **Appointment System**
 - Advanced scheduling with dentist assignment
 - Multiple appointment types (consultation, treatment, emergency)
 - Status tracking and automated reminders
+- **NEW**: Direct prescription linking for treatment context
 
 ### 🦷 **Treatment Management**
 - Treatment definition library with pricing
 - Multi-step treatment plans with progress tracking
 - Procedure documentation and notes
+
+### 💊 **Prescription Management** ⭐ **NEW MAJOR FEATURE**
+- **Complete Drug Inventory**: Comprehensive drug catalog with categories, forms, and strengths
+- **Prescription Lifecycle**: Create, edit, view, delete, and issue prescriptions
+- **Patient Integration**: Direct access to patient prescriptions from patient details
+- **Appointment Linking**: Connect prescriptions to specific appointments for context
+- **Status Tracking**: Active, completed, cancelled, and expired prescription states
+- **Security**: Role-based access control with data integrity protection
+- **Professional Workflow**: Streamlined prescription creation and management
 
 ### 👨‍⚕️ **Staff & Clinic Management**
 - Multi-clinic support with staff assignments
@@ -61,11 +72,13 @@ Five distinct user roles with varying access levels:
 - **Backend**: Node.js, Express.js, Mongoose, JWT Authentication
 - **Database**: MongoDB Atlas (Cloud) with organization-based data partitioning
 - **Charts**: Chart.js with React integration
-- **PDF Generation**: jsPDF with HTML-to-PDF conversion
+- **PDF Generation**: React-PDF (@react-pdf/renderer) for text-based invoice PDFs; HTML print for browser printing
 - **Notifications**: Real-time notification system with role-based alerts
 - **Theme System**: Light/Dark mode with theme-aware components
 - **Document Management**: File upload/download with Multer
 - **Security**: bcrypt password hashing, JWT tokens, RBAC authorization
+- **Prescription Management**: Complete drug and prescription lifecycle system
+- **Data Validation**: Formik + Yup validation with comprehensive error handling
 
 ## 🚀 Quick Start
 
@@ -91,6 +104,8 @@ Five distinct user roles with varying access levels:
 - ✅ **Staff Profiles** with qualifications and role-based access
 - ✅ **Document Management** with file uploads and downloads
 - ✅ **Communication System** with SMS and email tracking
+- ✅ **Drug Inventory** with comprehensive drug catalog and categories
+- ✅ **Prescription Management** with complete medication lifecycle tracking
 
 ### 🔐 User Roles & Access Levels
 
@@ -226,7 +241,7 @@ backend/
 - **Theme System**: Light/Dark mode with theme-aware components
 - **Real-time Notifications**: Role-based alerts and updates
 
-## �� Documentation
+## 📄 Documentation
 
 ### **Essential Files**
 - **`README.md`** - This comprehensive guide (installation, features, user roles, deployment)

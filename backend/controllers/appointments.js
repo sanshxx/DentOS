@@ -22,6 +22,12 @@ exports.getAppointments = async (req, res) => {
     // Loop over removeFields and delete them from reqQuery
     removeFields.forEach(param => delete reqQuery[param]);
 
+    // Special handling for patientId - convert to ObjectId and map to patient field
+    if (reqQuery.patientId) {
+      reqQuery.patient = reqQuery.patientId;
+      delete reqQuery.patientId;
+    }
+
     // Create query string
     let queryStr = JSON.stringify(reqQuery);
 
@@ -100,7 +106,8 @@ exports.getAppointments = async (req, res) => {
     query = query.populate([
       { path: 'patient', select: 'name phone patientId' },
       { path: 'dentist', select: 'firstName lastName specialization' },
-      { path: 'clinic', select: 'name branchCode' }
+      { path: 'clinic', select: 'name branchCode' },
+      { path: 'treatment', select: 'name code category duration price' }
     ]);
 
     // Executing query
@@ -148,7 +155,8 @@ exports.getAppointment = async (req, res) => {
       .populate('patient', 'name phone email patientId')
       .populate('dentist', 'firstName lastName specialization')
       .populate('clinic', 'name branchCode address')
-      .populate('createdBy', 'name');
+      .populate('createdBy', 'name')
+      .populate('treatment', 'name code category duration price');
 
     if (!appointment) {
       return res.status(404).json({
@@ -221,7 +229,8 @@ exports.createAppointment = async (req, res) => {
     const populatedAppointment = await Appointment.findById(appointment._id)
       .populate('patient', 'name phone email')
       .populate('dentist', 'firstName lastName specialization')
-      .populate('clinic', 'name branchCode');
+      .populate('clinic', 'name branchCode')
+      .populate('treatment', 'name code category duration price');
 
     // Send confirmation SMS if patient has phone number
     if (populatedAppointment.patient.phone) {
@@ -352,7 +361,8 @@ exports.updateAppointment = async (req, res) => {
     const populatedAppointment = await Appointment.findById(appointment._id)
       .populate('patient', 'name phone email')
       .populate('dentist', 'name')
-      .populate('clinic', 'name branchCode');
+      .populate('clinic', 'name branchCode')
+      .populate('treatment', 'name code category duration price');
 
     // Send notification if status changed to confirmed or cancelled
     if ((req.body.status === 'confirmed' || req.body.status === 'cancelled') && 

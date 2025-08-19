@@ -42,10 +42,11 @@ exports.getDashboardData = asyncHandler(async (req, res) => {
     let currentMonthInvoices = [];
     let currentMonthRevenue = 0;
     if (req.user.role === 'admin' || req.user.role === 'manager') {
+      // Use invoiceDate for revenue (when revenue was generated)
       currentMonthInvoices = await Invoice.find({
         organization: req.user.organization,
         ...clinicFilter,
-        createdAt: { $gte: currentMonthStart, $lte: currentMonthEnd }
+        invoiceDate: { $gte: currentMonthStart, $lte: currentMonthEnd }
       });
       currentMonthRevenue = currentMonthInvoices.reduce((sum, invoice) => sum + (invoice.totalAmount || 0), 0);
     }
@@ -69,10 +70,11 @@ exports.getDashboardData = asyncHandler(async (req, res) => {
     let previousMonthInvoices = [];
     let previousMonthRevenue = 0;
     if (req.user.role === 'admin' || req.user.role === 'manager') {
+      // Use invoiceDate for revenue (when revenue was generated)
       previousMonthInvoices = await Invoice.find({
         organization: req.user.organization,
         ...clinicFilter,
-        createdAt: { $gte: previousMonthStart, $lte: previousMonthEnd }
+        invoiceDate: { $gte: previousMonthStart, $lte: previousMonthEnd }
       });
       previousMonthRevenue = previousMonthInvoices.reduce((sum, invoice) => sum + (invoice.totalAmount || 0), 0);
     }
@@ -161,17 +163,18 @@ exports.getDashboardData = asyncHandler(async (req, res) => {
       sevenMonthsAgo.setDate(1);
       sevenMonthsAgo.setHours(0, 0, 0, 0);
       
+      // Use invoiceDate for revenue aggregation (when revenue was generated)
       const invoicesByMonth = await Invoice.aggregate([
         {
           $match: {
             organization: new mongoose.Types.ObjectId(req.user.organization),
-            createdAt: { $gte: sevenMonthsAgo },
+            invoiceDate: { $gte: sevenMonthsAgo }, // Use invoiceDate instead of createdAt
             ...(clinicFilter.clinic ? { clinic: clinicFilter.clinic } : {})
           }
         },
         {
           $group: {
-            _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
+            _id: { $dateToString: { format: "%Y-%m", date: "$invoiceDate" } }, // Group by invoiceDate
             revenue: { $sum: "$totalAmount" }
           }
         },

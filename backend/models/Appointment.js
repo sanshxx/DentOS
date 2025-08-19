@@ -52,6 +52,11 @@ const AppointmentSchema = new mongoose.Schema({
     ],
     required: [true, 'Please specify appointment type']
   },
+  // Optional link to a treatment definition (procedure planned for this visit)
+  treatment: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'TreatmentDefinition'
+  },
   status: {
     type: String,
     enum: [

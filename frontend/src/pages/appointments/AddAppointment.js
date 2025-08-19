@@ -24,11 +24,12 @@ import {
 import { DatePicker, TimePicker } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { format, addMinutes, isAfter, parseISO, set } from 'date-fns';
+import { format, addMinutes } from 'date-fns';
 import { toast } from 'react-toastify';
 
 // Get API URL from environment variables
 import { API_URL } from '../../utils/apiConfig';
+import { treatmentsAPI } from '../../api/treatments';
 
 // Appointment types and durations are static data, not from API
 
@@ -66,6 +67,7 @@ const AddAppointment = () => {
   const [patients, setPatients] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const [clinics, setClinics] = useState([]);
+  const [definitions, setDefinitions] = useState([]);
   const [initialLoading, setInitialLoading] = useState(true);
 
   useEffect(() => {
@@ -73,8 +75,6 @@ const AddAppointment = () => {
       try {
         setInitialLoading(true);
         setError(null);
-
-
 
         // Get token from localStorage
         const token = localStorage.getItem('token');
@@ -94,11 +94,14 @@ const AddAppointment = () => {
         const clinicsResponse = await axios.get(`${API_URL}/clinics`, {
           headers: { Authorization: `Bearer ${token}` }
         });
+
+        const defsResponse = await treatmentsAPI.getDefinitions();
         
         // Set data from API responses
         setPatients(patientsResponse.data.data);
         setDoctors(doctorsResponse.data.data.filter(staff => staff.role === 'dentist'));
         setClinics(clinicsResponse.data.data);
+        setDefinitions(defsResponse.data || defsResponse);
       } catch (err) {
         console.error('Error fetching data:', err);
         setError('Failed to load necessary data. Please try again.');
@@ -130,6 +133,7 @@ const AddAppointment = () => {
       status: 'scheduled',
       reasonForVisit: '',
       notes: '',
+      treatmentId: '',
     },
     validationSchema: Yup.object({
       patientId: Yup.string().required('Patient is required'),
@@ -142,31 +146,31 @@ const AddAppointment = () => {
       reasonForVisit: Yup.string().required('Reason for visit is required'),
       notes: Yup.string(),
     }),
-         onSubmit: async (values) => {
-       // Additional validation before submission
-       const errors = {};
-       if (!values.patientId) errors.patientId = 'Please select a patient';
-       if (!values.doctorId) errors.doctorId = 'Please select a doctor';
-       if (!values.clinicId) errors.clinicId = 'Please select a clinic';
-       if (!values.type) errors.type = 'Please select an appointment type';
-       if (!values.date) errors.date = 'Please select an appointment date';
-       if (!values.startTime) errors.startTime = 'Please select a start time';
-       if (!values.reasonForVisit) errors.reasonForVisit = 'Please provide a reason for visit';
+    onSubmit: async (values) => {
+      // Additional validation before submission
+      const errors = {};
+      if (!values.patientId) errors.patientId = 'Please select a patient';
+      if (!values.doctorId) errors.doctorId = 'Please select a doctor';
+      if (!values.clinicId) errors.clinicId = 'Please select a clinic';
+      if (!values.type) errors.type = 'Please select an appointment type';
+      if (!values.date) errors.date = 'Please select an appointment date';
+      if (!values.startTime) errors.startTime = 'Please select a start time';
+      if (!values.reasonForVisit) errors.reasonForVisit = 'Please provide a reason for visit';
+      
+      if (Object.keys(errors).length > 0) {
+        // Set all errors at once
+        Object.keys(errors).forEach(key => {
+          formik.setFieldError(key, errors[key]);
+          formik.setFieldTouched(key, true);
+        });
+        toast.error('Please fill in all required fields');
+        return;
+      }
+      
+      try {
+        setLoading(true);
+        setError(null);
        
-       if (Object.keys(errors).length > 0) {
-         // Set all errors at once
-         Object.keys(errors).forEach(key => {
-           formik.setFieldError(key, errors[key]);
-           formik.setFieldTouched(key, true);
-         });
-         toast.error('Please fill in all required fields');
-         return;
-       }
-       
-       try {
-         setLoading(true);
-         setError(null);
-        
         // Get token from localStorage
         const token = localStorage.getItem('token');
         if (!token) {
@@ -195,11 +199,12 @@ const AddAppointment = () => {
           appointmentType: values.type,
           reasonForVisit: values.reasonForVisit,
           notes: values.notes || '',
-          status: 'scheduled'
+          status: 'scheduled',
+          ...(values.treatmentId ? { treatment: values.treatmentId } : {}),
         };
         
         // Make API call to create appointment
-        const response = await axios.post(`${API_URL}/appointments`, appointmentData, {
+        await axios.post(`${API_URL}/appointments`, appointmentData, {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -236,13 +241,13 @@ const AddAppointment = () => {
   return (
     <Container maxWidth="lg">
       <Paper elevation={3} sx={{ p: 4, mt: 4, mb: 4, borderRadius: 2 }}>
-                 <Typography variant="h4" component="h1" gutterBottom>
-           Schedule New Appointment
-         </Typography>
-         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-           Fields marked with * are required
-         </Typography>
-         <Divider sx={{ mb: 4 }} />
+        <Typography variant="h4" component="h1" gutterBottom>
+          Schedule New Appointment
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Fields marked with * are required
+        </Typography>
+        <Divider sx={{ mb: 4 }} />
 
         {error && (
           <Alert severity="error" sx={{ mb: 3 }}>
@@ -260,23 +265,23 @@ const AddAppointment = () => {
             </Grid>
 
             <Grid item xs={12}>
-                             <Autocomplete
-                 id="patientId"
-                 options={patients}
-                 getOptionLabel={(option) => `${option.name} (${option.phone})`}
-                 value={patients.find(p => p._id === formik.values.patientId) || null}
-                 onChange={(event, newValue) => {
-                   formik.setFieldValue('patientId', newValue ? newValue._id : '');
-                 }}
+              <Autocomplete
+                id="patientId"
+                options={patients}
+                getOptionLabel={(option) => `${option.name} (${option.phone})`}
+                value={patients.find(p => p._id === formik.values.patientId) || null}
+                onChange={(event, newValue) => {
+                  formik.setFieldValue('patientId', newValue ? newValue._id : '');
+                }}
                 renderInput={(params) => (
-                                     <TextField
-                     {...params}
-                     label="Select Patient *"
-                     error={formik.touched.patientId && Boolean(formik.errors.patientId)}
-                     helperText={formik.touched.patientId && formik.errors.patientId}
-                     disabled={loading}
-                     required
-                   />
+                  <TextField
+                    {...params}
+                    label="Select Patient *"
+                    error={formik.touched.patientId && Boolean(formik.errors.patientId)}
+                    helperText={formik.touched.patientId && formik.errors.patientId}
+                    disabled={loading}
+                    required
+                  />
                 )}
                 disabled={loading}
               />
@@ -291,7 +296,7 @@ const AddAppointment = () => {
 
             <Grid item xs={12} sm={6} md={4}>
               <FormControl fullWidth error={formik.touched.clinicId && Boolean(formik.errors.clinicId)}>
-                                 <InputLabel id="clinic-label">Clinic *</InputLabel>
+                <InputLabel id="clinic-label">Clinic *</InputLabel>
                 <Select
                   labelId="clinic-label"
                   id="clinicId"
@@ -316,7 +321,7 @@ const AddAppointment = () => {
 
             <Grid item xs={12} sm={6} md={4}>
               <FormControl fullWidth error={formik.touched.doctorId && Boolean(formik.errors.doctorId)}>
-                                 <InputLabel id="doctor-label">Doctor *</InputLabel>
+                <InputLabel id="doctor-label">Doctor *</InputLabel>
                 <Select
                   labelId="doctor-label"
                   id="doctorId"
@@ -341,7 +346,7 @@ const AddAppointment = () => {
 
             <Grid item xs={12} sm={6} md={4}>
               <FormControl fullWidth error={formik.touched.type && Boolean(formik.errors.type)}>
-                                 <InputLabel id="type-label">Appointment Type *</InputLabel>
+                <InputLabel id="type-label">Appointment Type *</InputLabel>
                 <Select
                   labelId="type-label"
                   id="type"
@@ -364,10 +369,35 @@ const AddAppointment = () => {
               </FormControl>
             </Grid>
 
+            {/* Optional Treatment Link */}
+            <Grid item xs={12} sm={6} md={4}>
+              <FormControl fullWidth>
+                <InputLabel id="treatment-label">Treatment (Optional)</InputLabel>
+                <Select
+                  labelId="treatment-label"
+                  id="treatmentId"
+                  name="treatmentId"
+                  value={formik.values.treatmentId}
+                  onChange={formik.handleChange}
+                  label="Treatment (Optional)"
+                  disabled={loading}
+                >
+                  <MenuItem value="">
+                    <em>No treatment</em>
+                  </MenuItem>
+                  {definitions.map((t) => (
+                    <MenuItem key={t._id} value={t._id}>
+                      {t.name} ({t.code}) — {t.category}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
             <Grid item xs={12} sm={6} md={4}>
               <LocalizationProvider dateAdapter={AdapterDateFns}>
                 <DatePicker
-                                     label="Appointment Date *"
+                  label="Appointment Date *"
                   value={formik.values.date}
                   onChange={(date) => {
                     formik.setFieldValue('date', date);
@@ -392,7 +422,7 @@ const AddAppointment = () => {
             <Grid item xs={12} sm={6} md={4}>
               <LocalizationProvider dateAdapter={AdapterDateFns}>
                 <TimePicker
-                                     label="Start Time *"
+                  label="Start Time *"
                   value={formik.values.startTime}
                   onChange={(time) => {
                     formik.setFieldValue('startTime', time);
@@ -416,7 +446,7 @@ const AddAppointment = () => {
 
             <Grid item xs={12} sm={6} md={4}>
               <FormControl fullWidth error={formik.touched.duration && Boolean(formik.errors.duration)}>
-                                 <InputLabel id="duration-label">Duration *</InputLabel>
+                <InputLabel id="duration-label">Duration *</InputLabel>
                 <Select
                   labelId="duration-label"
                   id="duration"

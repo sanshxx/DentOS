@@ -152,6 +152,18 @@ const Sidebar = ({ open, handleDrawerClose, drawerWidth }) => {
       roles: ['admin', 'manager', 'assistant']
     },
     {
+      text: 'Drugs',
+      icon: <MedicalServicesIcon />,
+      path: '/drugs',
+      roles: ['admin', 'manager', 'dentist']
+    },
+    {
+      text: 'Prescriptions',
+      icon: <MedicalServicesIcon />,
+      path: '/prescriptions',
+      roles: ['admin', 'manager', 'dentist', 'pharmacist']
+    },
+    {
       text: 'Clinics',
       icon: <BusinessIcon />,
       path: '/clinics',

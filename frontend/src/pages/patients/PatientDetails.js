@@ -60,6 +60,7 @@ import {
   Send as SendIcon,
   Message as MessageIcon,
   Notifications as NotificationsIcon,
+  LocalPharmacy as PharmacyIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { toast } from 'react-toastify';
@@ -129,6 +130,7 @@ const PatientDetails = () => {
   const [invoices, setInvoices] = useState([]);
   const [documents, setDocuments] = useState([]);
   const [communications, setCommunications] = useState([]);
+  const [prescriptions, setPrescriptions] = useState([]); // Added prescriptions state
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [tabValue, setTabValue] = useState(0);
@@ -211,6 +213,43 @@ const PatientDetails = () => {
           }
         });
         setCommunications(communicationsResponse.data.data || []);
+
+        // Fetch patient prescriptions
+        const prescriptionsResponse = await axios.get(`${API_URL}/prescriptions/patient/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        // Handle different possible response structures
+        let prescriptionsData = [];
+        if (prescriptionsResponse.data) {
+          if (prescriptionsResponse.data.data) {
+            // If response has data.data structure (like getPrescriptionsByPatient)
+            if (prescriptionsResponse.data.data.docs) {
+              // Paginated response - prescriptions are in data.data.docs
+              prescriptionsData = Array.isArray(prescriptionsResponse.data.data.docs) 
+                ? prescriptionsResponse.data.data.docs 
+                : [];
+            } else {
+              // Direct data array
+              prescriptionsData = Array.isArray(prescriptionsResponse.data.data) 
+                ? prescriptionsResponse.data.data 
+                : [];
+            }
+          } else if (prescriptionsResponse.data.docs) {
+            // If response has data.docs structure (pagination)
+            prescriptionsData = Array.isArray(prescriptionsResponse.data.docs) 
+              ? prescriptionsResponse.data.docs 
+              : [];
+          } else if (Array.isArray(prescriptionsResponse.data)) {
+            // If response is directly an array
+            prescriptionsData = prescriptionsResponse.data;
+          }
+        }
+        
+        setPrescriptions(prescriptionsData);
+        
       } catch (err) {
         console.error('Error fetching patient data:', err);
         setError('Failed to load patient data. Please try again.');
@@ -555,6 +594,18 @@ const PatientDetails = () => {
     }
   };
 
+  // Prescription functions
+  const handleViewPrescription = (prescription) => {
+    // For now, navigate to prescriptions page with the prescription ID
+    // In the future, this could open a modal or navigate to a detailed view
+    navigate(`/prescriptions?selectedPrescription=${prescription._id}`);
+  };
+
+  const handleEditPrescription = (prescription) => {
+    // Navigate to prescriptions page with edit mode
+    navigate(`/prescriptions?editPrescription=${prescription._id}`);
+  };
+
   // Utility functions
   const showSnackbar = (message, severity = 'success') => {
     setSnackbarMessage(message);
@@ -697,6 +748,7 @@ const PatientDetails = () => {
           <Tab label="Invoices" />
           <Tab label="Documents & Images" />
           <Tab label="Communication" />
+          <Tab label="Prescriptions" />
         </Tabs>
       </Box>
 
@@ -1230,6 +1282,134 @@ const PatientDetails = () => {
                           ) : (
                             <Typography variant="body2" color="text.secondary">No response</Typography>
                           )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+          </Box>
+        )}
+
+        {/* Prescriptions Tab */}
+        {tabValue === 6 && (
+          <Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Box>
+                <Typography variant="h6">Prescription History</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Showing prescriptions for {patient?.firstName} {patient?.lastName}
+                  {Array.isArray(prescriptions) && prescriptions.length > 0 && (
+                    <span> • {prescriptions.length} prescription(s) found</span>
+                  )}
+                </Typography>
+              </Box>
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<AddIcon />}
+                onClick={() => navigate(`/prescriptions?patientId=${patient._id}`)}
+              >
+                Create Prescription
+              </Button>
+            </Box>
+
+            {(Array.isArray(prescriptions) && prescriptions.length === 0) ? (
+              <Paper elevation={2} sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                <PharmacyIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
+                <Typography variant="h6" color="text.secondary" gutterBottom>
+                  No Prescriptions Found
+                </Typography>
+                <Typography variant="body2" color="text.secondary" paragraph>
+                  This patient hasn't been prescribed any medications yet. Create their first prescription to get started.
+                </Typography>
+                <Button
+                  variant="outlined"
+                  startIcon={<AddIcon />}
+                  onClick={() => navigate(`/prescriptions?patientId=${patient._id}`)}
+                >
+                  Create First Prescription
+                </Button>
+              </Paper>
+            ) : (
+              <TableContainer component={Paper} elevation={2} sx={{ borderRadius: 2 }}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Prescription #</TableCell>
+                      <TableCell>Date</TableCell>
+                      <TableCell>Doctor</TableCell>
+                      <TableCell>Diagnosis</TableCell>
+                      <TableCell>Medications</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell>Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {(Array.isArray(prescriptions) ? prescriptions : []).map((prescription) => (
+                      <TableRow key={prescription._id}>
+                        <TableCell>
+                          <Typography variant="body2" fontWeight="medium">
+                            {prescription.prescriptionNumber}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          {safeFormatDate(prescription.date)}
+                        </TableCell>
+                        <TableCell>
+                          Dr. {prescription.doctor?.firstName || ''} {prescription.doctor?.lastName || 'Unknown'}
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" noWrap sx={{ maxWidth: 200 }}>
+                            {prescription.diagnosis || 'No diagnosis'}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" noWrap sx={{ maxWidth: 200 }}>
+                            {prescription.medications?.length || 0} medication(s)
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={prescription.status.charAt(0).toUpperCase() + prescription.status.slice(1)}
+                            color={
+                              prescription.status === 'active' ? 'primary' :
+                              prescription.status === 'completed' ? 'success' :
+                              prescription.status === 'cancelled' ? 'error' : 'default'
+                            }
+                            size="small"
+                          />
+                          {prescription.isIssuedToPatient && (
+                            <Chip
+                              label="Issued"
+                              color="success"
+                              size="small"
+                              sx={{ ml: 0.5 }}
+                            />
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', gap: 0.5 }}>
+                            <Tooltip title="View Details">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleViewPrescription(prescription)}
+                              >
+                                <ViewIcon />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Edit Prescription">
+                              <IconButton
+                                size="small"
+                                color="primary"
+                                disabled={prescription.isIssuedToPatient}
+                                onClick={() => handleEditPrescription(prescription)}
+                              >
+                                <EditIcon />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
                         </TableCell>
                       </TableRow>
                     ))}

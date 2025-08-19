@@ -22,6 +22,8 @@ const documentRoutes = require('./routes/documents');
 const notificationRoutes = require('./routes/notifications');
 const communicationRoutes = require('./routes/communications');
 const dashboardRoutes = require('./routes/dashboard');
+const drugRoutes = require('./routes/drugs');
+const prescriptionRoutes = require('./routes/prescriptions');
 
 // Initialize Express app
 const app = express();
@@ -88,6 +90,8 @@ app.use('/api/inventory', inventoryRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/drugs', drugRoutes);
+app.use('/api/prescriptions', prescriptionRoutes);
 
 // Document and Communication routes (nested under patients)
 app.use('/api/patients/:patientId/documents', documentRoutes);

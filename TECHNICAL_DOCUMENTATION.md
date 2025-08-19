@@ -17,6 +17,7 @@ DentOS is a comprehensive web application designed to streamline dental practice
 - **Theme System**: Light/Dark mode with theme-aware components
 - **File Management**: Document upload/download with blob handling
 - **Notifications**: Real-time notification system with role-based filtering
+- **PDF Generation**: React-PDF (@react-pdf/renderer) for text-based invoice PDFs; print-friendly HTML templates for browser printing
 
 ### Backend
 
@@ -43,6 +44,22 @@ DentOS is a comprehensive web application designed to streamline dental practice
 - Contact details
 - Document management (references to PatientDocument model)
 - Communication history (references to Communication model)
+
+#### Prescription Model ⭐ **NEW**
+- Prescription number and metadata
+- Patient and doctor references
+- Appointment linking for treatment context
+- Diagnosis and clinical notes
+- Medications array with drug details, dosage, frequency, duration, and instructions
+- Status tracking (active, completed, cancelled, expired)
+- Issue tracking (issued to patient with timestamp and user)
+- Organization and clinic scoping for multi-tenant support
+
+#### Drug Model ⭐ **NEW**
+- Drug name, strength, and form (tablet, capsule, syrup, injection, etc.)
+- Category classification (antibiotics, painkillers, anti-inflammatory, etc.)
+- Manufacturer information and description
+- Organization and clinic scoping for multi-tenant support
 
 #### Appointment Model
 - Scheduling information
@@ -98,13 +115,28 @@ DentOS is a comprehensive web application designed to streamline dental practice
 
 #### Patient Management
 - `Patients.js`: Patient listing with search and filtering
-- `PatientDetails.js`: Comprehensive patient information with document management and communication features
-- `CreatePatient.js`: Patient registration form
+- `AddPatient.js`: Patient creation form
+- `EditPatient.js`: Patient editing form
+- `PatientDetails.js`: Comprehensive patient view with tabs
+- `PatientList.js`: Patient list component
+
+#### Prescription Management ⭐ **NEW**
+- `Prescriptions.js`: Main prescription listing with filtering and actions
+- `AddPrescription.js`: Prescription creation form with patient/appointment linking
+- `EditPrescription.js`: Prescription editing form with validation
+- `PrescriptionDetails.js`: Comprehensive prescription view
+- `Drugs.js`: Drug inventory management
+- `AddDrug.js`: Drug creation form
+- `EditDrug.js`: Drug editing form
+- `DrugDetails.js`: Drug information display
 
 #### Appointment Management
-- `Appointments.js`: Appointment listing
-- `Calendar.js`: Visual calendar interface
-- `CreateAppointment.js`: Appointment scheduling form
+- `Appointments.js`: Appointment listing and management
+- `AddAppointment.js`: Appointment creation form
+- `EditAppointment.js`: Appointment editing form
+- `AppointmentDetails.js`: Appointment information display
+- `AppointmentCalendar.js`: Calendar view for appointments
+- `AppointmentList.js`: List view for appointments
 
 #### Treatment Management
 - `Treatments.js`: Treatment catalog
@@ -173,58 +205,60 @@ DentOS is a comprehensive web application designed to streamline dental practice
 ## API Endpoints
 
 ### Authentication
-- `POST /api/auth/register`: Create new user
-- `POST /api/auth/login`: Authenticate user
-- `POST /api/auth/forgot-password`: Initiate password reset
-- `POST /api/auth/reset-password`: Complete password reset
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/login` - User authentication
+- `GET /api/auth/me` - Get current user profile
+- `PUT /api/auth/updatedetails` - Update user details
 
 ### Patients
-- `GET /api/patients`: List all patients
-- `GET /api/patients/:id`: Get single patient
-- `POST /api/patients`: Create patient
-- `PUT /api/patients/:id`: Update patient
-- `DELETE /api/patients/:id`: Delete patient
+- `GET /api/patients` - Get all patients (with filtering)
+- `POST /api/patients` - Create new patient
+- `GET /api/patients/:id` - Get patient details
+- `PUT /api/patients/:id` - Update patient
+- `DELETE /api/patients/:id` - Delete patient
 
-### Patient Documents
-- `GET /api/patients/:patientId/documents`: List all documents for a patient
-- `GET /api/patients/:patientId/documents/:id`: Get single document
-- `POST /api/patients/:patientId/documents`: Upload document
-- `GET /api/patients/:patientId/documents/:id/download`: Download document
-- `PUT /api/patients/:patientId/documents/:id`: Update document details
-- `DELETE /api/patients/:patientId/documents/:id`: Delete document
-- `GET /api/patients/:patientId/documents/search`: Search documents
+### Prescriptions ⭐ **NEW**
+- `GET /api/prescriptions` - Get all prescriptions (with filtering)
+- `POST /api/prescriptions` - Create new prescription
+- `GET /api/prescriptions/:id` - Get prescription details
+- `PUT /api/prescriptions/:id` - Update prescription
+- `DELETE /api/prescriptions/:id` - Delete prescription
+- `PUT /api/prescriptions/:id/issue` - Issue prescription to patient
+- `GET /api/prescriptions/patient/:patientId` - Get prescriptions by patient
+- `GET /api/prescriptions/doctor/:doctorId` - Get prescriptions by doctor
 
-### Patient Communications
-- `GET /api/patients/:patientId/communications`: List all communications for a patient
-- `GET /api/patients/:patientId/communications/:id`: Get single communication
-- `POST /api/patients/:patientId/communications`: Send communication
-- `PUT /api/patients/:patientId/communications/:id/status`: Update communication status
-- `GET /api/patients/:patientId/communications/stats`: Get communication statistics
-- `POST /api/patients/communications/bulk`: Send bulk communications
+### Drugs ⭐ **NEW**
+- `GET /api/drugs` - Get all drugs (with filtering)
+- `POST /api/drugs` - Create new drug
+- `GET /api/drugs/:id` - Get drug details
+- `PUT /api/drugs/:id` - Update drug
+- `DELETE /api/drugs/:id` - Delete drug
+- `GET /api/drugs/categories` - Get all drug categories
+- `GET /api/drugs/forms` - Get all drug forms
 
 ### Appointments
-- `GET /api/appointments`: List all appointments
-- `GET /api/appointments/:id`: Get single appointment
-- `POST /api/appointments`: Create appointment
-- `PUT /api/appointments/:id`: Update appointment
-- `DELETE /api/appointments/:id`: Delete appointment
+- `GET /api/appointments` - Get all appointments
+- `POST /api/appointments` - Create new appointment
+- `GET /api/appointments/:id` - Get appointment details
+- `PUT /api/appointments/:id` - Update appointment
+- `DELETE /api/appointments/:id` - Delete appointment
 
 ### Treatments
-- `GET /api/treatments`: List all treatments
-- `GET /api/treatments/:id`: Get single treatment
-- `POST /api/treatments`: Create treatment
-- `PUT /api/treatments/:id`: Update treatment
-- `DELETE /api/treatments/:id`: Delete treatment
-- `GET /api/treatments/plans`: List treatment plans
-- `POST /api/treatments/plans`: Create treatment plan
+- `GET /api/treatments` - Get all treatments
+- `POST /api/treatments` - Create new treatment
+- `GET /api/treatments/:id` - Get treatment details
+- `PUT /api/treatments/:id` - Update treatment
+- `DELETE /api/treatments/:id` - Delete treatment
 
 ### Billing
-- `GET /api/billing`: List all invoices
-- `GET /api/billing/:id`: Get single invoice
-- `POST /api/billing`: Create invoice
-- `PUT /api/billing/:id`: Update invoice
-- `DELETE /api/billing/:id`: Delete invoice
-- `POST /api/billing/:id/payment`: Record payment
+- `GET /api/billing` - Get all invoices
+- `POST /api/billing` - Create new invoice
+- `GET /api/billing/:id` - Get invoice details
+- `PUT /api/billing/:id` - Update invoice
+- `DELETE /api/billing/:id` - Delete invoice
+- `POST /api/billing/:id/payments` - Record payment
+- `PUT /api/billing/:id/payments/:paymentId` - Update payment
+- `DELETE /api/billing/:id/payments/:paymentId` - Delete payment
 
 ### Inventory
 - `GET /api/inventory`: List all items
@@ -401,3 +435,44 @@ The frontend sidebar menu dynamically adjusts based on the user's role, showing 
 ## Conclusion
 
 The DentOS application provides a comprehensive solution for dental practice management with a modern, scalable architecture. This technical documentation serves as a guide for developers working on maintaining and extending the application's capabilities.
+
+## Technical Patterns & Features
+
+### Authentication & Authorization
+- JWT-based authentication with automatic token refresh
+- Role-based access control (RBAC) middleware
+- Clinic scope middleware for multi-tenant data isolation
+- Protected routes with role-specific permissions
+
+### Data Management
+- Mongoose ODM with comprehensive schema validation
+- Population for related data fetching
+- Pagination for large datasets
+- Search and filtering capabilities
+
+### Prescription Management System ⭐ **NEW**
+- **Drug Inventory**: Complete drug catalog with categories and forms
+- **Prescription Lifecycle**: Full CRUD operations with status tracking
+- **Patient Integration**: Direct access from patient details
+- **Appointment Linking**: Context-aware prescription creation
+- **Security**: Data integrity protection for issued prescriptions
+- **Validation**: Comprehensive frontend and backend validation
+- **Multi-tenant**: Organization and clinic-specific data isolation
+
+### Form Handling & Validation
+- Formik for form state management
+- Yup for schema validation
+- Material-UI components with consistent styling
+- Real-time validation feedback
+
+### Error Handling
+- Centralized error handling middleware
+- Consistent error response format
+- User-friendly error messages
+- Graceful degradation for missing data
+
+### File Management
+- Multer for file uploads
+- Secure file storage with metadata
+- Download tracking and access control
+- Support for multiple file types

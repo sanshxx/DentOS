@@ -83,6 +83,12 @@ import RootRedirect from './components/routing/RootRedirect';
 // Team Components
 import Team from './pages/team/Team';
 
+// Drug Components
+import Drugs from './pages/drugs/Drugs';
+
+// Prescription Components
+import Prescriptions from './pages/prescriptions/Prescriptions';
+
 // Theme is now handled by ThemeContext
 
 // Debug: Log the API URL being used
@@ -225,6 +231,28 @@ function App() {
                 <Route path="add" element={<AddInventory />} />
                 <Route path=":id" element={<InventoryDetails />} />
                 <Route path=":id/edit" element={<EditInventory />} />
+              </Route>
+              
+              {/* Drug Routes */}
+              <Route path="/drugs" element={
+                <PrivateRoute>
+                  <OrganizationCheck>
+                    <Layout />
+                  </OrganizationCheck>
+                </PrivateRoute>
+              }>
+                <Route index element={<Drugs />} />
+              </Route>
+              
+              {/* Prescription Routes */}
+              <Route path="/prescriptions" element={
+                <PrivateRoute>
+                  <OrganizationCheck>
+                    <Layout />
+                  </OrganizationCheck>
+                </PrivateRoute>
+              }>
+                <Route index element={<Prescriptions />} />
               </Route>
               
               {/* Clinic Routes */}
